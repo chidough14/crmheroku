@@ -1,0 +1,16 @@
+.my-calendar .rbc-time-header {
+  display: none;
+}
+
+.my-calendar  .rbc-calendar{
+  padding-bottom: 15px;
+  margin-top: -20px;
+}
+
+.my-calendar .rbc-time-gutter{
+  width: 23%;
+}
+
+.my-calendar  .rbc-label{
+  font-size: 75%;
+}
