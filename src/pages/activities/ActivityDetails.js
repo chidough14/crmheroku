@@ -299,7 +299,7 @@ const ActivityDetails = () => {
       }
     })
 
-    axios.post(`http://localhost:4000/api/create-checkout-session`, {
+    axios.post(`https://crmclient14.herokuapp.com/api/create-checkout-session`, {
       userId: activity?.user_id,
       items,
       activityId: activity?.id,
