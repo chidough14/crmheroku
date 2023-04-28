@@ -13,7 +13,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { getToken } from '../../services/LocalStorageService';
 import { useNavigate } from 'react-router-dom';
 import ListModal from './ListModal';
-import { addList, closeAlert, removeList, showAlert } from '../../features/listSlice';
+import { addList, closeAlert, removeList, setShowCloningNotification, setShowSpinner, showAlert } from '../../features/listSlice';
 import instance from '../../services/fetchApi';
 import ListTransferModal from './ListTransferModal';
 
@@ -31,7 +31,7 @@ const Alert = React.forwardRef(function Alert(props, ref) {
 });
 
 
-const ListCard = ({list, socket}) => {
+const ListCard = ({list, socket, showSpinner}) => {
 
   const dispatch = useDispatch()
   const token = getToken()
@@ -47,9 +47,10 @@ const ListCard = ({list, socket}) => {
   const [openDialog, setOpenDialog] = React.useState(false);
   const [openTransferModal, setOpenTransferModal] = React.useState(false);
   const [listObj, setListObj] = React.useState();
+  const [listId, setListId] = React.useState();
   //const [openAlert, setOpenAlert] = React.useState(false);
 
-  const {openAlert, alertMessage, severity} = useSelector((state) => state.list)
+  const {openAlert, alertMessage, severity, showCloningNotification} = useSelector((state) => state.list)
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
@@ -58,9 +59,12 @@ const ListCard = ({list, socket}) => {
   const handleClick = (event) => {
     event.stopPropagation()
     setAnchorEl(event.currentTarget);
+
+    setListId(list.id)
   };
   const handleClose = () => {
     setAnchorEl(null);
+    setListId(null)
   };
 
   const showEditModal = (event) => {
@@ -78,28 +82,35 @@ const ListCard = ({list, socket}) => {
       return;
     }
 
-    dispatch(closeAlert())
+    dispatch(closeAlert({alertMessage: "", severity: ""}))
   };
 
   const deleteList = async (id, e) => {
+    dispatch(setShowSpinner({showSpinner: true}))
 
-    const res = await instance.delete(`mylists/${id}`)
+    await instance.delete(`mylists/${id}`)
     .then(() => {
+      setOpenDialog(false);
       dispatch(showAlert({alertMessage: "List deleted", severity: "success"}))
       dispatch(removeList({listId: id}))
+      dispatch(setShowSpinner({showSpinner: false}))
     })
     .catch(() => {
+      dispatch(setShowSpinner({showSpinner: false}))
       dispatch(showAlert({alertMessage: "Ooops an error was encountered", severity: "error"}))
     })
   };
 
   const cloneList = async (list) => {
+    dispatch(setShowCloningNotification({showCloningNotification: true}))
 
     await instance.get(`mylists/${list.id}/clone`)
     .then((res)=> {
        dispatch(addList({list: res.data.clonedList}))
+       dispatch(setShowCloningNotification({showCloningNotification: false}))
     })
     .catch(() => {
+      dispatch(setShowCloningNotification({showCloningNotification: false}))
       dispatch(showAlert({alertMessage: "Ooops an error was encountered", severity: "error"}))
     })
     
@@ -170,6 +181,10 @@ const ListCard = ({list, socket}) => {
           
           <Typography variant="h7" component="div">
             <b>{list.name}</b>
+            {
+              listId === list.id && showCloningNotification ? <span style={{marginLeft: "20px", fontSize: "12px", color: "green"}}>Cloning....</span> : null
+            }
+           
           </Typography>
           <div style={{display: "flex", justifyContent: "space-between"}}>
             <Typography variant="body2">
@@ -179,7 +194,7 @@ const ListCard = ({list, socket}) => {
             <Button size="small" onClick={() => navigate(`/listsview/${list.id}`)}>
               <b>View</b>
             </Button>
-          </div>  
+          </div> 
         </CardContent>
         {/* <CardActions>
           <Button size="small" onClick={() => navigate(`/listsview/${list.id}`)}>
@@ -192,6 +207,7 @@ const ListCard = ({list, socket}) => {
         list={list}
         open={openModal}
         setOpen={setOpenModal}
+        showSpinner={showSpinner}
       />
 
       <ListTransferModal
@@ -199,6 +215,7 @@ const ListCard = ({list, socket}) => {
         open={openTransferModal}
         setOpen={setOpenTransferModal}
         socket={socket}
+        showSpinner={showSpinner}
       />
 
 
@@ -214,6 +231,12 @@ const ListCard = ({list, socket}) => {
         <DialogContent>
           <DialogContentText id="alert-dialog-description">
             Are you sure you want to delete this list ?
+          </DialogContentText>
+
+          <DialogContentText sx={{textAlign: "center", color: "red"}}>
+            {
+              showSpinner ? "Deleting...." : null
+            }
           </DialogContentText>
         </DialogContent>
         <DialogActions>

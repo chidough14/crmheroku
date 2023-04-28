@@ -1,10 +1,10 @@
-import { Box, Button, InputLabel, Modal, Select, TextField, Typography, MenuItem, Snackbar } from '@mui/material'
+import { Box, Button, InputLabel, Modal, Select, TextField, Typography, MenuItem, Snackbar, CircularProgress } from '@mui/material'
 import MuiAlert from '@mui/material/Alert';
 import { useFormik } from 'formik';
 import React, { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import * as yup from 'yup';
-import { addList, updateList } from '../../features/listSlice';
+import { addList, setShowSpinner, updateList } from '../../features/listSlice';
 import instance from '../../services/fetchApi';
 
 const Alert = React.forwardRef(function Alert(props, ref) {
@@ -29,7 +29,7 @@ const validationSchema = yup.object({
     .required('Email is required'),
 });
 
-const ListTransferModal = ({ open, setOpen, list, socket}) => {
+const ListTransferModal = ({ open, setOpen, list, socket, showSpinner}) => {
   const [openAlert, setOpenAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
   const [severity, setSeverity] = useState("");
@@ -62,8 +62,11 @@ const ListTransferModal = ({ open, setOpen, list, socket}) => {
     },
     validationSchema: validationSchema,
     onSubmit: async (values, {resetForm}) => {
+      dispatch(setShowSpinner({showSpinner: true}))
+
       await instance.post(`mylists/${list?.id}/transfer`, values)
       .then((res)=> {
+        dispatch(setShowSpinner({showSpinner: false}))
        
         if (res.data.status === "success") {
           showAlert("List Transfered", "success")
@@ -81,6 +84,7 @@ const ListTransferModal = ({ open, setOpen, list, socket}) => {
         }
       })
       .catch(() => {
+        dispatch(setShowSpinner({showSpinner: false}))
         showAlert("Ooops an error was encountered", "error")
       })
     },
@@ -120,7 +124,13 @@ const ListTransferModal = ({ open, setOpen, list, socket}) => {
             <p></p>
             <div style={{display: "flex", justifyContent: "space-between"}}>
               <Button size='small' color="primary" variant="contained"  type="submit" style={{borderRadius: "30px"}}>
-               Transfer
+               {
+                showSpinner ? (
+                  <Box sx={{ display: 'flex' }}>
+                    <CircularProgress size={24} color="inherit" />
+                  </Box>
+                ) : "Transfer"
+               }
               </Button>
 
               <Button 

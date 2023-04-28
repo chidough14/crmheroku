@@ -11,8 +11,8 @@ import CloseIcon from '@mui/icons-material/Close';
 import Typography from '@mui/material/Typography';
 import FileUpload from "react-mui-fileuploader"
 import instance from '../../services/fetchApi';
-import { useDispatch } from 'react-redux';
-import { addList } from '../../features/listSlice';
+import { useDispatch, useSelector } from 'react-redux';
+import { addList, setShowUploadNotification } from '../../features/listSlice';
 import Papa from "papaparse";
 import {  Snackbar } from '@mui/material';
 import MuiAlert from '@mui/material/Alert';
@@ -71,6 +71,7 @@ export default function UploadModal({open, setOpen}) {
   const [openAlert, setOpenAlert] = React.useState(false);
   const [alertMessage, setAlertMessage] = React.useState("");
   const [severity, setSeverity] = React.useState("");
+  const {showUploadNotification} = useSelector((state) => state.list)
 
   const showAlert = (msg, sev) => {
     setOpenAlert(true)
@@ -101,18 +102,23 @@ export default function UploadModal({open, setOpen}) {
   };
 
   const uploadList = async (arr) => {
+    dispatch(setShowUploadNotification({showUploadNotification: true}))
+
     let body = {
       name: filesToUpload[0].name,
       companies: arr
     }
     await instance.post(`upload-list`, body)
     .then((res) => {
-       dispatch(addList({list: res.data.list}))
+     
+      dispatch(addList({list: res.data.list}))
       
-       showAlert("List uploaded", "success")
-       handleClose()
+      showAlert("List uploaded", "success")
+      handleClose()
+      dispatch(setShowUploadNotification({showUploadNotification: false}))
     })
     .catch(()=> {
+      dispatch(setShowUploadNotification({showUploadNotification: false}))
       showAlert("Oops an error was encountered", "error")
     })
   }
@@ -198,7 +204,9 @@ export default function UploadModal({open, setOpen}) {
               style={{borderRadius: "30px"}}
               disabled={!filesToUpload.length}
             >
-              Save 
+              {
+                showUploadNotification ? "Uploading..." : "Save"
+              } 
             </Button>
 
 

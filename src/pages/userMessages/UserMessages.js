@@ -61,7 +61,7 @@ const UserMessages = ({socket}) => {
 
   const token = getToken()
   const navigate = useNavigate()
-  const {inbox, outbox}  = useSelector(state => state.message)
+  const {inbox, outbox, sendingMessage}  = useSelector(state => state.message)
   const [openAlert, setOpenAlert] = React.useState(false)
   const [severity, setSeverity] = React.useState("")
   const [text, setText] = React.useState("")
@@ -166,7 +166,7 @@ const UserMessages = ({socket}) => {
           <UserMessagesTable messages={outbox} isInbox={false} getOutboxMessages={getOutboxMessages} loading={outboxLoading} />
         </TabPanel>
         <TabPanel value={value} index={2}>
-          <ComposeMessage socket={socket} state={state} />
+          <ComposeMessage socket={socket} state={state} sendingMessage={sendingMessage} />
         </TabPanel>
       </Box>
 

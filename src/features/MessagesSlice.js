@@ -7,7 +7,8 @@ const initialState = {
   inbox: undefined,
   outbox: undefined,
   singleMessage: undefined,
-  fetchNotifications: undefined
+  fetchNotifications: undefined,
+  sendingMessage: false
 }
 
 export const MessageSlice = createSlice({
@@ -47,6 +48,9 @@ export const MessageSlice = createSlice({
     },
     reloadNotifications: (state, action) => {
       state.fetchNotifications = !state.fetchNotifications
+    },
+    setSendingMessage: (state, action) => {
+      state.sendingMessage = action.payload.isSending
     }
   },
 })
@@ -63,7 +67,8 @@ export const {
   addNewMessage,
   removeMessage,
   readInboxMessages,
-  reloadNotifications
+  reloadNotifications,
+  setSendingMessage
 } = MessageSlice.actions
 
 export default MessageSlice.reducer
