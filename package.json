@@ -17,6 +17,7 @@
     "@zegocloud/zego-uikit-prebuilt": "^1.6.2",
     "axios": "^1.2.1",
     "chart.js": "^4.1.1",
+    "concurrently": "^8.0.1",
     "faker": "^6.6.6",
     "formik": "^2.2.9",
     "html2canvas": "^1.4.1",
@@ -40,10 +41,12 @@
   },
   "scripts": {
     "start-client": "react-scripts start",
+    "build-client": "react-scripts build",
     "build": "react-scripts build && (cd chatserver && npm install)",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "start": "cd chatserver && npm start"
+    "start": "cd chatserver && npm start",
+    "dev": "concurrently \"npm run start\" \"npm run start-client\""
   },
   "eslintConfig": {
     "extends": [

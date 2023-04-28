@@ -1,7 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit'
 
 const initialState = {
-  //lists: [],
   lists: undefined,
   openAlert: false,
   alertMessage: "",
@@ -9,7 +8,10 @@ const initialState = {
   list: undefined,
   selectedCompanyId: undefined,
   loadingCompanies: false,
-  sortOption: "all"
+  sortOption: "all",
+  showSpinner: false,
+  showCloningNotification: false,
+  showUploadNotification: false
 }
 
 export const listSlice = createSlice({
@@ -62,6 +64,15 @@ export const listSlice = createSlice({
     setSortOptionValue: (state, action) => {
       state.sortOption = action.payload.option
     },
+    setShowSpinner: (state, action) => {
+      state.showSpinner = action.payload.showSpinner
+    },
+    setShowCloningNotification: (state, action) => {
+      state.showCloningNotification = action.payload.showCloningNotification
+    },
+    setShowUploadNotification: (state, action) => {
+      state.showUploadNotification = action.payload.showUploadNotification
+    }
   },
 })
 
@@ -77,7 +88,10 @@ export const {
   setSelectedCompanyId ,
   removeCompanyFromList,
   setLoadingCompanies,
-  setSortOptionValue
+  setSortOptionValue,
+  setShowSpinner,
+  setShowCloningNotification,
+  setShowUploadNotification
 } = listSlice.actions
 
 export default listSlice.reducer

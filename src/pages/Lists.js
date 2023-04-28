@@ -38,7 +38,7 @@ export default function Lists({socket}) {
   const token = getToken()
   const navigate = useNavigate()
   const dispatch = useDispatch()
-  const {lists, sortOption} = useSelector((state) => state.list)
+  const {lists, sortOption, showSpinner} = useSelector((state) => state.list)
   const [page, setPage] = React.useState(1)
 
   const [open, setOpen] = React.useState(false);
@@ -201,7 +201,7 @@ export default function Lists({socket}) {
                 ) :
                 lists?.data?.map((list, idx) => (
                   <Grid item key={idx} >
-                    <ListCard list={list} socket={socket}/>
+                    <ListCard list={list} socket={socket} showSpinner={showSpinner}/>
                   </Grid>
                 ))
               }  
@@ -237,6 +237,7 @@ export default function Lists({socket}) {
       <ListModal
          open={open}
          setOpen={setOpen}
+         showSpinner={showSpinner}
       />
 
 

@@ -18,7 +18,7 @@ const SingleMessage = ({socket}) => {
   const params = useParams()
   const location = useLocation()
   const dispatch = useDispatch()
-  const { singleMessage } = useSelector(state => state.message)
+  const { singleMessage, sendingMessage } = useSelector(state => state.message)
   const {allUsers} = useSelector(state => state.user)
   const [replyMode, setReplyMode] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -179,7 +179,7 @@ const SingleMessage = ({socket}) => {
           
           {
             replyMode ? (
-              <ComposeMessage replyMode={replyMode} singleMessage={singleMessage} socket={socket}/>
+              <ComposeMessage replyMode={replyMode} singleMessage={singleMessage} socket={socket} sendingMessage={sendingMessage} />
             ) : (
               <Box
                 sx={{  bgcolor: 'background.paper', height: 224, marginTop: "20px" }}

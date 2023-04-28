@@ -1,11 +1,11 @@
-import {  Box, Button, Chip, FormControlLabel, InputLabel, MenuItem, OutlinedInput, Select, Snackbar, Switch, TextField, Typography } from '@mui/material'
+import {  Box, Button, Chip, CircularProgress, FormControlLabel, InputLabel, MenuItem, OutlinedInput, Select, Snackbar, Switch, TextField, Typography } from '@mui/material'
 import React from 'react'
 import { useFormik } from 'formik';
 import * as yup from 'yup';
 import { useDispatch, useSelector } from 'react-redux';
 import instance from '../../services/fetchApi';
 import { useState } from 'react';
-import { addNewMessage } from '../../features/MessagesSlice';
+import { addNewMessage, setSendingMessage } from '../../features/MessagesSlice';
 import { useEffect } from 'react';
 import MuiAlert from '@mui/material/Alert';
 
@@ -44,7 +44,7 @@ const validationSchema = yup.object({
 });
 
 
-const ComposeMessage = ({replyMode, singleMessage, socket, state}) => {
+const ComposeMessage = ({replyMode, singleMessage, socket, state, sendingMessage}) => {
   const user = useSelector((state) => state.user)
   const [openAlert, setOpenAlert] = useState(false)
   const [text, setText] = useState("")
@@ -78,6 +78,8 @@ const ComposeMessage = ({replyMode, singleMessage, socket, state}) => {
     validationSchema: validationSchema,
     onSubmit: async (values, {resetForm}) => {
       if (checked && usersValue.length){
+        dispatch(setSendingMessage({isSending: true}))
+
         let ids = usersValue.map((a) => {
           return user?.allUsers?.find((b) => b.email === a)?.id
         })
@@ -91,6 +93,7 @@ const ComposeMessage = ({replyMode, singleMessage, socket, state}) => {
   
         await instance.post(`messages`, body)
         .then((res) => {
+          dispatch(setSendingMessage({isSending: false}))
           for (let i = 0; i < res.data.createdMessages.length; i++) {
              dispatch(addNewMessage({message: res.data.createdMessages[i]}))
 
@@ -103,9 +106,12 @@ const ComposeMessage = ({replyMode, singleMessage, socket, state}) => {
           // socket.emit('sendNotification', { recipientId, message });
         })
         .catch(() => {
+          dispatch(setSendingMessage({isSending: false}))
           showAlert("Ooops an error was encountered", "error")
         })
       } else {
+        dispatch(setSendingMessage({isSending: true}))
+
         let receiverId = user?.allUsers?.find((a) => a.email === values.email)?.id
 
         if (receiverId) {
@@ -118,6 +124,7 @@ const ComposeMessage = ({replyMode, singleMessage, socket, state}) => {
     
           await instance.post(`messages`, body)
           .then((res) => {
+            dispatch(setSendingMessage({isSending: false}))
             dispatch(addNewMessage({message: res.data.createdMessage}))
             showAlert("Message sent", "success")
             resetForm()
@@ -125,6 +132,7 @@ const ComposeMessage = ({replyMode, singleMessage, socket, state}) => {
             socket.emit('sendNotification', { recipientId: receiverId, message: values.message });
           })
           .catch(() => {
+            dispatch(setSendingMessage({isSending: false}))
             showAlert("Ooops an error was encountered", "error")
           })
         } else {
@@ -272,7 +280,13 @@ const ComposeMessage = ({replyMode, singleMessage, socket, state}) => {
           <p></p>
           <div style={{display: "flex", justifyContent: "space-between"}}>
             <Button size='small' color="primary" variant="contained"  type="submit" style={{borderRadius: "30px"}}>
-              Send
+              {
+                sendingMessage ? (
+                  <Box sx={{ display: 'flex' }}>
+                    <CircularProgress size={24} color="inherit" />
+                  </Box>
+                ) : "Send"
+              }
             </Button>
 
             <Button 

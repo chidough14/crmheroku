@@ -1,10 +1,10 @@
-import { Box, Button, InputLabel, Modal, Select, TextField, Typography, MenuItem, Snackbar } from '@mui/material'
+import { Box, Button, InputLabel, Modal, Select, TextField, Typography, MenuItem, Snackbar, CircularProgress } from '@mui/material'
 import MuiAlert from '@mui/material/Alert';
 import { useFormik } from 'formik';
 import React, { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import * as yup from 'yup';
-import { addList, updateList } from '../../features/listSlice';
+import { addList, setShowSpinner, updateList } from '../../features/listSlice';
 import instance from '../../services/fetchApi';
 
 const Alert = React.forwardRef(function Alert(props, ref) {
@@ -32,7 +32,7 @@ const validationSchema = yup.object({
     .required('Description is required'),
 });
 
-const ListModal = ({list, open, setOpen}) => {
+const ListModal = ({list, open, setOpen, showSpinner}) => {
   const [openAlert, setOpenAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
   const [severity, setSeverity] = useState("");
@@ -80,6 +80,8 @@ const ListModal = ({list, open, setOpen}) => {
     validationSchema: validationSchema,
     onSubmit: async (values, {resetForm}) => {
       if(list){
+        dispatch(setShowSpinner({showSpinner: true}))
+
         let body
         if (values.type === "") {
           body = {
@@ -96,6 +98,7 @@ const ListModal = ({list, open, setOpen}) => {
         
         await instance.patch(`mylists/${list.id}`, body)
         .then((res) => {
+          dispatch(setShowSpinner({showSpinner: false}))
           showAlert("List updated successfully", "success")
 
           dispatch(updateList({list: res.data.list}))
@@ -103,9 +106,12 @@ const ListModal = ({list, open, setOpen}) => {
           resetForm();
         })
         .catch(() => {
+          dispatch(setShowSpinner({showSpinner: false}))
           showAlert("Ooops an error was encountered", "error")
         })
       } else {
+        dispatch(setShowSpinner({showSpinner: true}))
+
         let body
         if (values.type === "") {
           body = {
@@ -124,6 +130,7 @@ const ListModal = ({list, open, setOpen}) => {
 
         await instance.post(`mylists`, body)
         .then((res) => {
+          dispatch(setShowSpinner({showSpinner: false}))
           showAlert("List created successfully", "success")
 
           dispatch(addList({list: res.data.list}))
@@ -131,6 +138,7 @@ const ListModal = ({list, open, setOpen}) => {
           resetForm();
         })
         .catch(() => {
+          dispatch(setShowSpinner({showSpinner: false}))
           showAlert("Ooops an error was encountered", "error")
         })
       }
@@ -138,6 +146,19 @@ const ListModal = ({list, open, setOpen}) => {
       
     },
   });
+
+
+  const showSendingSpinner = (text) => {
+    if (showSpinner) {
+      return (
+        <Box sx={{ display: 'flex' }}>
+          <CircularProgress size={24} color="inherit" />
+        </Box>
+      )
+    } else {
+      return text
+    }
+  }
 
   return (
     <>
@@ -200,7 +221,7 @@ const ListModal = ({list, open, setOpen}) => {
             <div style={{display: "flex", justifyContent: "space-between"}}>
               <Button size='small' color="primary" variant="contained"  type="submit" style={{borderRadius: "30px"}}>
                 {
-                  list ? "Save" : "Add"
+                  list ? showSendingSpinner("Save") : showSendingSpinner("Add")
                 }
               </Button>
 
