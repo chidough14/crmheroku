@@ -4,7 +4,13 @@ const initialState = {
   activities: [],
   activity: undefined,
   openPrompt: false,
-  sortOption: "all"
+  sortOption: "all",
+  showCompanySearchNotification: false,
+  showSendingSpinner: false,
+  showCloningNotification: false,
+  showDeleteNotification: false,
+  showTransferNotification: false,
+  showCreatingInvoiceSpinner: false
 }
 
 export const ActivitySlice = createSlice({
@@ -72,6 +78,24 @@ export const ActivitySlice = createSlice({
     setSortOptionValue: (state, action) => {
       state.sortOption = action.payload.option
     },
+    setShowCompanySearchNotification: (state, action) => {
+      state.showCompanySearchNotification = action.payload.showCompanySearchNotification
+    },
+    setShowSendingSpinner: (state, action) => {
+      state.showSendingSpinner = action.payload.showSendingSpinner
+    },
+    setShowCloningNotification: (state, action) => {
+      state.showCloningNotification = action.payload.showCloningNotification
+    },
+    setShowDeleteNotification: (state, action) => {
+      state.showDeleteNotification = action.payload.showDeleteNotification
+    },
+    setShowTransferNotification: (state, action) => {
+      state.showTransferNotification = action.payload.showTransferNotification
+    },
+    setShowCreatingInvoiceSpinner: (state, action) => {
+      state.showCreatingInvoiceSpinner = action.payload.showCreatingInvoiceSpinner
+    }
   },
 })
 
@@ -92,7 +116,13 @@ export const {
   addInvoiceToActivity,
   removeInvoiceFromActivity,
   setSortOptionValue,
-  editActivityProbability
+  editActivityProbability,
+  setShowCompanySearchNotification,
+  setShowSendingSpinner,
+  setShowCloningNotification,
+  setShowDeleteNotification,
+  setShowTransferNotification,
+  setShowCreatingInvoiceSpinner
 } = ActivitySlice.actions
 
 export default ActivitySlice.reducer

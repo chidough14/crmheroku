@@ -1,11 +1,11 @@
-import { Box, Button, InputLabel, Modal, Select, TextField, Typography, MenuItem, Snackbar } from '@mui/material'
+import { Box, Button, InputLabel, Modal, Select, TextField, Typography, MenuItem, Snackbar, CircularProgress } from '@mui/material'
 import MuiAlert from '@mui/material/Alert';
 import { useFormik } from 'formik';
 import React, { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import * as yup from 'yup';
-import { addActivity, editActivity, setOpenPrompt, setSingleActivity } from '../../features/ActivitySlice';
+import { addActivity, editActivity, setOpenPrompt, setShowCompanySearchNotification, setShowSendingSpinner, setSingleActivity } from '../../features/ActivitySlice';
 import { addActivityToCompany, setCompany, setSearchResults } from '../../features/companySlice';
 import { addEvent } from '../../features/EventSlice';
 import instance from '../../services/fetchApi';
@@ -53,12 +53,18 @@ const ActivityModal = ({open, setOpen, companyObject, openActivityModal, activit
   const [searchQuery, setSearchQuery] = useState("");
   const [companyId, setCompanyId] = useState();
   const [formerPobability, setFormerProbability] = useState(activity?.probability);
+  const [showEmptyResultsNotification, setShowEmptyResultsNotification] = useState(false);
 
-  const handleClose = () => setOpen(false);
   const user = useSelector((state) => state.user)
   const dispatch = useDispatch()
   const {searchResults} = useSelector(state=> state.company)
+  const { showCompanySearchNotification, showSendingSpinner } = useSelector(state=> state.activity)
   const navigate = useNavigate()
+
+  const handleClose = () => {
+    setOpen(false)
+    setShowEmptyResultsNotification(false)
+  }
 
   const showAlert = (msg, sev) => {
     setOpenAlert(true)
@@ -92,15 +98,25 @@ const ActivityModal = ({open, setOpen, companyObject, openActivityModal, activit
 
   useEffect(()=> {
     const getSearchResult = async () => {
+      setShowEmptyResultsNotification(false)
+      dispatch(setShowCompanySearchNotification({showCompanySearchNotification: true}))
+
       await instance({
         url: `companies/search?query=${searchQuery}`,
         method: "GET",
       }).then((res) => {
-
+        dispatch(setShowCompanySearchNotification({showCompanySearchNotification: false}))
         dispatch(setSearchResults({companies: res.data.companies}))
+
+        if (!res.data.companies.length) {
+          setShowEmptyResultsNotification(true)
+        } else {
+          setShowEmptyResultsNotification(false)
+        }
       })
       .catch(()=> {
         showAlert("Ooops an error was encountered", "error")
+        dispatch(setShowCompanySearchNotification({showCompanySearchNotification: false}))
       })
     }
 
@@ -128,6 +144,8 @@ const ActivityModal = ({open, setOpen, companyObject, openActivityModal, activit
     validationSchema: validationSchema,
     onSubmit: async (values, {resetForm}) => {
       if (editMode) {
+        dispatch(setShowSendingSpinner({showSendingSpinner: true}))
+
         values.earningEstimate = parseInt(values.earningEstimate)
         delete values.decreased_probability
         
@@ -147,11 +165,15 @@ const ActivityModal = ({open, setOpen, companyObject, openActivityModal, activit
   
           handleClose()
           resetForm();
+          dispatch(setShowSendingSpinner({showSendingSpinner: false}))
         })
         .catch(()=> {
           showAlert("Ooops an error was encountered", "error")
+          dispatch(setShowSendingSpinner({showSendingSpinner: false}))
         })
       } else {
+        dispatch(setShowSendingSpinner({showSendingSpinner: true}))
+        
         values.company_id = companyId
         values.user_id = user.id
         values.earningEstimate = parseInt(values.earningEstimate)
@@ -171,15 +193,29 @@ const ActivityModal = ({open, setOpen, companyObject, openActivityModal, activit
           }
           handleClose()
           resetForm();
+          dispatch(setShowSendingSpinner({showSendingSpinner: false}))
         })
         .catch(()=> {
           showAlert("Ooops an error was encountered", "error")
+          dispatch(setShowSendingSpinner({showSendingSpinner: false}))
         })
       }
       
       
     },
   });
+
+  const showText = (text) => {
+    if (showSendingSpinner) {
+      return (
+        <Box sx={{ display: 'flex' }}>
+          <CircularProgress size={24} color="inherit" />
+        </Box>
+      )
+    } else {
+      return text
+    }
+  }
 
   return (
     <>
@@ -200,12 +236,26 @@ const ActivityModal = ({open, setOpen, companyObject, openActivityModal, activit
                 <></>
 
               ) : (
+                <>
                 <SearchBar 
                   activityModal={true} 
                   populateFields={populateFields}  
                   data={searchResults} 
-                  setSearchQuery={setSearchQuery} 
+                  setSearchQuery={setSearchQuery}
                 />
+                {
+                  showCompanySearchNotification ? (
+                    <p style={{marginTop: "-2px", fontSize: "13px", color: "green"}}>Searching....</p>
+                  ) : null
+                }
+
+                {
+                  showEmptyResultsNotification ? (
+                    <p style={{marginTop: "-2px", fontSize: "13px", color: "red"}}><b>No Results</b></p>
+                  ) : null
+                }
+               
+                </>
               )
             }
 
@@ -306,7 +356,7 @@ const ActivityModal = ({open, setOpen, companyObject, openActivityModal, activit
             <p></p>
             <div style={{display: "flex", justifyContent: "space-between"}}>
               <Button size='small' color="primary" variant="contained"  type="submit" style={{borderRadius: "30px"}}>
-                {editMode ? "Save" : "Add"}
+                {editMode ? showText("Save") : showText("Add") }
               </Button>
 
               <Button 

@@ -4,6 +4,7 @@ import { useFormik } from 'formik';
 import React, { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import * as yup from 'yup';
+import { setShowTransferNotification } from '../../features/ActivitySlice';
 import { addList, updateList } from '../../features/listSlice';
 import instance from '../../services/fetchApi';
 
@@ -35,6 +36,7 @@ const ActivityTransferModal = ({ open, setOpen, activity, socket}) => {
   const [severity, setSeverity] = useState("");
   const [showEmailError, setShowEmailError] = useState(false);
   const {allUsers} = useSelector((state) => state.user)
+  const {showTransferNotification} = useSelector((state) => state.activity)
   const dispatch = useDispatch()
 
   const showAlert = (msg, sev) => {
@@ -62,6 +64,8 @@ const ActivityTransferModal = ({ open, setOpen, activity, socket}) => {
     },
     validationSchema: validationSchema,
     onSubmit: async (values, {resetForm}) => {
+      dispatch(setShowTransferNotification({showTransferNotification: true}))
+
       await instance.post(`activities/${activity?.id}/transfer`, values)
       .then((res)=> {
        
@@ -78,9 +82,12 @@ const ActivityTransferModal = ({ open, setOpen, activity, socket}) => {
         if (res.data.status === "error") {
           setShowEmailError(true)
         }
+
+        dispatch(setShowTransferNotification({showTransferNotification: false}))
       })
       .catch(() => {
         showAlert("Ooops an error was encountered", "error")
+        dispatch(setShowTransferNotification({showTransferNotification: false}))
       })
     },
   });
@@ -119,7 +126,9 @@ const ActivityTransferModal = ({ open, setOpen, activity, socket}) => {
             <p></p>
             <div style={{display: "flex", justifyContent: "space-between"}}>
               <Button size='small' color="primary" variant="contained"  type="submit" style={{borderRadius: "30px"}}>
-               Transfer
+               {
+                showTransferNotification ? "Transfering..." : "Transfer"
+               }
               </Button>
 
               <Button 
