@@ -1,4 +1,4 @@
-import { Box, Button, InputLabel, Modal, Select, TextField, Typography, MenuItem, Snackbar, Autocomplete } from '@mui/material'
+import { Box, Button, InputLabel, Modal, Select, TextField, Typography, MenuItem, Snackbar, Autocomplete, CircularProgress } from '@mui/material'
 import MuiAlert from '@mui/material/Alert';
 import { useFormik } from 'formik';
 import React, { useEffect, useState } from 'react'
@@ -33,7 +33,8 @@ const AddProductToActivityModal = ({open, setOpen, setProductId, quantity, setQu
   const [searchQuery, setSearchQuery] = useState("");
   const [companyId, setCompanyId] = useState();
   const [data, setData] = useState([]);
-  const {productsAll} = useSelector((state) => state.product)
+  const [productsLoading, setProductsLoading] = useState(false);
+  const {productsAll, productAdding} = useSelector((state) => state.product)
   const dispatch = useDispatch()
 
   const handleCloseAlert = (event, reason) => {
@@ -57,9 +58,12 @@ const AddProductToActivityModal = ({open, setOpen, setProductId, quantity, setQu
 
   useEffect(() => {
     const fetchProducts = async () => {
+      setProductsLoading(true)
+
       await instance.get(`products-all`)
       .then((res) => {
         dispatch(setProductsAll({products: res.data.products}))
+        setProductsLoading(false)
       })
     }
 
@@ -72,6 +76,18 @@ const AddProductToActivityModal = ({open, setOpen, setProductId, quantity, setQu
    
   }, [])
 
+  const showButtonLabel = (text) => {
+    if (productAdding) {
+      return (
+        <Box sx={{ display: 'flex' }}>
+          <CircularProgress size={24} color="inherit" />
+        </Box>
+      )
+    } else {
+      return text
+    }
+  }
+
   return (
     <>
       <Modal
@@ -82,7 +98,9 @@ const AddProductToActivityModal = ({open, setOpen, setProductId, quantity, setQu
         >
         <Box sx={style}>
           {
-            !editMode &&
+            !editMode && 
+            (
+            <> 
             <Autocomplete
               size='small'
               freeSolo
@@ -134,6 +152,14 @@ const AddProductToActivityModal = ({open, setOpen, setProductId, quantity, setQu
                 //padding: 10,
               }}
             />
+            
+            {
+              productsLoading && (
+                <p style={{marginTop: "-30px", fontSize: "13px", color: "green"}}>Loading.....</p>
+              )
+            }
+            </> 
+            )
           }
          
 
@@ -152,7 +178,7 @@ const AddProductToActivityModal = ({open, setOpen, setProductId, quantity, setQu
           <p></p>
           <div style={{display: "flex", justifyContent: "space-between"}}>
             <Button size='small' color="primary" variant="contained"  onClick={() => addProductToActivity()} style={{borderRadius: "30px"}}>
-              {editMode ?  "Save" : "Add"}
+              {editMode ?  showButtonLabel("Save") : showButtonLabel("Add")}
             </Button>
 
             <Button 

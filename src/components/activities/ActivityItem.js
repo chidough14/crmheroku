@@ -11,7 +11,7 @@ import {  ArrowDownwardOutlined, ArrowUpwardOutlined, CopyAllOutlined, DeleteOut
 import { useState } from 'react';
 import ActivityModal from './ActivityModal';
 import instance from '../../services/fetchApi';
-import { addActivity, removeActivity } from '../../features/ActivitySlice';
+import { addActivity, removeActivity, setShowCloningNotification, setShowDeleteNotification } from '../../features/ActivitySlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { deleteEvent } from '../../features/EventSlice';
@@ -42,8 +42,10 @@ const ActivityItem = ({activity, index, socket}) => {
   const [severity, setSeverity] = useState("");
   const [openTransferModal, setOpenTransferModal] = useState(false);
   const [activityObj, setActivityObj] = useState();
+  const [activityId, setActivityId] = useState();
   const handleOpen = () => setOpenModal(true);
   const user = useSelector(state => state.user)
+  const { showCloningNotification, showDeleteNotification } = useSelector(state => state.activity)
 
   const showAlert = (msg, sev) => {
     setOpenAlert(true)
@@ -57,9 +59,11 @@ const ActivityItem = ({activity, index, socket}) => {
   const handleClick = (event) => {
     event.stopPropagation()
     setAnchorEl(event.currentTarget);
+    setActivityId(activity.id)
   };
   const handleClose = () => {
     setAnchorEl(null);
+    setActivityId(null)
   };
 
   const showEditModal = (event) => {
@@ -85,6 +89,7 @@ const ActivityItem = ({activity, index, socket}) => {
   };
 
   const deleteActivity = async (id, e) => {
+    dispatch(setShowDeleteNotification({showDeleteNotification: true}))
 
     await instance.delete(`activities/${id}`)
     .then(() => {
@@ -92,21 +97,27 @@ const ActivityItem = ({activity, index, socket}) => {
       handleCloseDialog()
       dispatch(removeActivity({activityId: id}))
       dispatch(deleteEvent({activityId: id}))
+      dispatch(setShowDeleteNotification({showDeleteNotification: false}))
     })
     .catch(() => {
       showAlert("Ooops an error was encountered", "error")
+      dispatch(setShowDeleteNotification({showDeleteNotification: false}))
     })
   };
 
   const cloneActivity = async (value) => {
+    dispatch(setShowCloningNotification({showCloningNotification: true}))
+
     await instance.get(`activities/${value.id}/clone`)
     .then((res)=> {
       res.data.clonedActivity.decreased_probability = null
       res.data.clonedActivity.total = value.total
       dispatch(addActivity({activity: res.data.clonedActivity}))
+      dispatch(setShowCloningNotification({showCloningNotification: false}))
    })
    .catch(() => {
       showAlert("Ooops an error was encountered", "error")
+      dispatch(setShowCloningNotification({showCloningNotification: false}))
     })
   };
 
@@ -162,6 +173,11 @@ const ActivityItem = ({activity, index, socket}) => {
               
                 <Typography sx={{ mb: -0.5 }} color="text.primary">
                   <b>{activity.label}</b>
+                  {
+                    activityId === activity.id && showCloningNotification ? (
+                      <span style={{marginLeft: "20px", fontSize: "13px", color: "green" }}>Cloning...</span>
+                    ) : null
+                  }
                 </Typography>
                 <div style={{display: "flex", justifyContent: "space-between"}}>
                   <Typography variant="body2">
@@ -239,6 +255,12 @@ const ActivityItem = ({activity, index, socket}) => {
         <DialogContent>
           <DialogContentText id="alert-dialog-description">
             Are you sure you want to delete this activity ?
+          </DialogContentText>
+
+          <DialogContentText id="alert-dialog-description" sx={{textAlign: "center", color: "red"}}>
+            {
+              showDeleteNotification ? "Deleting...." : null
+            }
           </DialogContentText>
         </DialogContent>
         <DialogActions>

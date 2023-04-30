@@ -1,11 +1,11 @@
 
-import { Box, Button, InputLabel, Modal, Select, TextField, Typography, MenuItem, Snackbar } from '@mui/material'
+import { Box, Button, InputLabel, Modal, Select, TextField, Typography, MenuItem, Snackbar, CircularProgress } from '@mui/material'
 import MuiAlert from '@mui/material/Alert';
 import { useFormik } from 'formik';
 import React, { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import * as yup from 'yup';
-import { addInvoiceToActivity } from '../../features/ActivitySlice';
+import { addInvoiceToActivity, setShowCreatingInvoiceSpinner } from '../../features/ActivitySlice';
 import { setInvoice, updateInvoice } from '../../features/InvoiceSlice';
 import instance from '../../services/fetchApi';
 
@@ -49,7 +49,7 @@ const randomString = (length, chars) => {
   return result;
 }
 
-const InvoiceForm = ({activityId, invoice, editMode}) => {
+const InvoiceForm = ({activityId, invoice, editMode, showCreatingInvoiceSpinner}) => {
   const user = useSelector((state) => state.user)
   const [openAlert, setOpenAlert] = useState(false)
   const [message, setMessage] = useState("")
@@ -86,6 +86,8 @@ const InvoiceForm = ({activityId, invoice, editMode}) => {
     validationSchema: validationSchema,
     onSubmit: async (values, {resetForm}) => {
       if (editMode) {
+        dispatch(setShowCreatingInvoiceSpinner({showCreatingInvoiceSpinner: true}))
+
         let body = {
           ...values,
           status: values.status === "" ? null : values.status,
@@ -97,11 +99,15 @@ const InvoiceForm = ({activityId, invoice, editMode}) => {
           showAlert("Invoice updated", "success")
           dispatch(setInvoice({invoice: res.data.invoice}))
           dispatch(updateInvoice({invoice: res.data.invoice}))
+          dispatch(setShowCreatingInvoiceSpinner({showCreatingInvoiceSpinner: false}))
         })
         .catch(() => {
           showAlert("Oops an error was encountered", "error")
+          dispatch(setShowCreatingInvoiceSpinner({showCreatingInvoiceSpinner: false}))
         })
       } else {
+        dispatch(setShowCreatingInvoiceSpinner({showCreatingInvoiceSpinner: true}))
+
         let body = {
           ...values,
           invoice_no: randomString(10, '#A'),
@@ -116,15 +122,29 @@ const InvoiceForm = ({activityId, invoice, editMode}) => {
           showAlert("Invoice created successfully", "success")
           resetForm()
           dispatch(addInvoiceToActivity({invoice: res.data.invoice}))
+          dispatch(setShowCreatingInvoiceSpinner({showCreatingInvoiceSpinner: false}))
         })
         .catch(() => {
           showAlert("Oops an error was encountered", "error")
+          dispatch(setShowCreatingInvoiceSpinner({showCreatingInvoiceSpinner: false}))
         })
       }
    
       
     },
   });
+
+  const showButtonContent = (text) => {
+    if (showCreatingInvoiceSpinner) {
+      return (
+        <Box sx={{ display: 'flex' }}>
+          <CircularProgress size={24} color="inherit" />
+        </Box>
+      )
+    } else {
+      return text
+    }
+  }
 
 
   return (
@@ -269,7 +289,7 @@ const InvoiceForm = ({activityId, invoice, editMode}) => {
               style={{borderRadius: "30px"}} 
               type="submit" 
             >
-               {editMode ? "Save Changes" : "Create Invoice"}
+               {editMode ? showButtonContent("Save Changes") : showButtonContent("Create Invoice")}
             </Button>
           </div>
         

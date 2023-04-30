@@ -1,4 +1,4 @@
-import { Box, Button,  Modal,  Typography, Snackbar,Paper, FormControl, Select, MenuItem, InputLabel } from '@mui/material'
+import { Box, Button,  Modal,  Typography, Snackbar,Paper, FormControl, Select, MenuItem, InputLabel, CircularProgress } from '@mui/material'
 import MuiAlert from '@mui/material/Alert';
 import { styled } from '@mui/material/styles';
 import React, { useEffect, useState } from 'react'
@@ -35,6 +35,8 @@ const AddCompanyToListModal = ({ open, setOpen, companyId}) => {
   const [severity, setSeverity] = useState("");
   const [listId, setListId] = useState(undefined);
   const [listWithCompanies, setListWithCompanies] = useState([]);
+  const [loadingList, setLoadingList] = useState(false);
+  const [addingList, setAddingList] = useState(false);
 
   const showAlert = (msg, sev) => {
     setOpenAlert(true)
@@ -63,25 +65,33 @@ const AddCompanyToListModal = ({ open, setOpen, companyId}) => {
   }
 
   const addToList = async () => {
+    setAddingList(true)
     
    await instance.post(`companies/${companyId}/lists`, {listId: listId})
    .then((res) => {
     handleClose()
     showAlert("Company added to list", "success")
+    setListId(undefined)
+    setAddingList(false)
    })
    .catch(()=> {
     showAlert("Ooops an error was encountered", "error")
+    setListId(undefined)
+    setAddingList(false)
    })
   }
 
   useEffect(() => {
     const getUserLists = async () => {
+      setLoadingList(true)
       await instance.get(`userListsAndCompanies`)
       .then((res) => {
        setListWithCompanies(res.data.lists)
+       setLoadingList(false)
       })
       .catch(()=> {
         showAlert("Ooops an error was encountered", "error")
+        setLoadingList(false)
       })
     }
 
@@ -133,6 +143,12 @@ const AddCompanyToListModal = ({ open, setOpen, companyId}) => {
                 }
               </Select>
             </FormControl>
+
+           {
+            loadingList ? (
+              <p style={{marginTop: "-10px", fontSize: "13px", color: "green"}}>Loading lists...</p>
+            ) : null
+           }
             
 
             <p></p>
@@ -146,8 +162,15 @@ const AddCompanyToListModal = ({ open, setOpen, companyId}) => {
                   addToList()
                 }}
                 style={{borderRadius: "30px"}}
+                disabled={!listId}
               >
-                Add
+                {
+                  addingList ? (
+                    <Box sx={{ display: 'flex' }}>
+                      <CircularProgress size={24} color="inherit" />
+                    </Box>
+                  ) : "Add"
+                }
               </Button>
 
               <Button 

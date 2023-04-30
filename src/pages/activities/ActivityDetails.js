@@ -23,6 +23,7 @@ import { getToken } from '../../services/LocalStorageService';
 import MuiAlert from '@mui/material/Alert';
 import { loadStripe } from "@stripe/stripe-js"; 
 import axios from "axios"
+import { setProductAdding } from '../../features/ProductSlice';
 
 const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
@@ -64,8 +65,7 @@ function a11yProps(index) {
 const ActivityDetails = () => {
   const params = useParams()
   const dispatch = useDispatch()
-  const {activity} = useSelector((state) => state.activity)
-  const {openPrompt} = useSelector((state) => state.activity)
+  const {activity, openPrompt, showCreatingInvoiceSpinner} = useSelector((state) => state.activity)
   const user = useSelector((state) => state.user)
   const [value, setValue] = React.useState(0);
   const [open, setOpen] = React.useState(false);
@@ -154,6 +154,7 @@ const ActivityDetails = () => {
   }, [activity])
 
   const addProductToActivity = async () => {
+    dispatch(setProductAdding({productAdding: true}))
     let body = {
       productId: productId,
       quantity: quantity
@@ -171,10 +172,12 @@ const ActivityDetails = () => {
       setEditMode(false)
       setQuantity(0)
       setProductId(undefined)
+      dispatch(setProductAdding({productAdding: false}))
     
     })
     .catch(() => {
       showAlert("Oops an error was encountered", "error")
+      dispatch(setProductAdding({productAdding: false}))
     })
   }
 
@@ -457,7 +460,7 @@ const ActivityDetails = () => {
               {
                 openForm && (
                   <div>
-                    <InvoiceForm activityId={activity?.id} />
+                    <InvoiceForm activityId={activity?.id} showCreatingInvoiceSpinner={showCreatingInvoiceSpinner} />
                   </div>
                 )
               }
