@@ -5,10 +5,10 @@ import moment from 'moment';
 import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop'
 import 'react-big-calendar/lib/addons/dragAndDrop/styles.css'
 import "react-big-calendar/lib/css/react-big-calendar.css";
-import {  Snackbar } from '@mui/material';
+import {  Backdrop, Button, CircularProgress, Snackbar } from '@mui/material';
 import instance from '../services/fetchApi.js';
 import { useDispatch, useSelector } from 'react-redux';
-import {  setEvents, updateEvent } from '../features/EventSlice.js';
+import {  setEvents, setOpenMask, updateEvent } from '../features/EventSlice.js';
 import EventModal from '../components/events/EventModal.js';
 import ViewEventModal from '../components/events/ViewEventModal.js';
 import { useNavigate } from 'react-router-dom';
@@ -26,7 +26,7 @@ const DnDCalendar = withDragAndDrop(Calendar)
 const localizer = momentLocalizer(moment);
 
 const CalendarEvents = ({socket}) => {
-  const {events} = useSelector(state => state.event)
+  const {events, openMask} = useSelector(state => state.event)
   const [myEvents, setMyEvents] = useState([])
   const [open, setOpen] = useState(false);
   const [openViewEventModal, setOpenViewEventModal] = useState(false);
@@ -75,13 +75,16 @@ const CalendarEvents = ({socket}) => {
 
   useEffect(()=> {
     const getEventsResult = async () => {
+      dispatch(setOpenMask({openMask: true}))
 
       await instance.get(`events`)
       .then((res)=> {
+        dispatch(setOpenMask({openMask: false}))
         dispatch(setEvents({events: res.data.events}))
       })
       .catch((err)=> {
         showAlert("An error was encountered", "error")
+        dispatch(setOpenMask({openMask: false}))
       })
     }
 
@@ -195,6 +198,14 @@ const CalendarEvents = ({socket}) => {
           {alertMessage}
         </Alert>
       </Snackbar>
+
+      <Backdrop
+        sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
+        open={openMask}
+      >
+        <CircularProgress color="inherit" />
+        <p style={{ color: "purple", marginLeft: "14px"}}>Loading Events</p>
+      </Backdrop>
     </div>
        
   )

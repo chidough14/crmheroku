@@ -1,4 +1,4 @@
-import { Box, Button, InputLabel, Modal, Select, TextField, Typography, MenuItem, Snackbar, OutlinedInput, Switch, FormControlLabel, Chip } from '@mui/material'
+import { Box, Button, InputLabel, Modal, Select, TextField, Typography, MenuItem, Snackbar, OutlinedInput, Switch, FormControlLabel, Chip, CircularProgress } from '@mui/material'
 import MuiAlert from '@mui/material/Alert';
 import { useFormik } from 'formik';
 import React, { useEffect, useState } from 'react'
@@ -6,7 +6,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import * as yup from 'yup';
 import moment from 'moment';
 import instance from '../../services/fetchApi';
-import { addEvent } from '../../features/EventSlice';
+import { addEvent, setShowSendingSpinner } from '../../features/EventSlice';
 import { CloseOutlined } from '@mui/icons-material';
 import { addEventToActivity } from '../../features/ActivitySlice';
 import { addMeeting } from '../../features/MeetingSlice';
@@ -82,6 +82,7 @@ const EventModal = ({ open, setOpen, startTime, endTime, activities, user, activ
   const [usersValueSingle, setUsersValueSingle] = useState("");
   const [size, setSize] = useState(1);
   const [anyoneCanJoin, setAnyoneCanJoin] = useState(false);
+  const { showSendingSpinner } = useSelector(state => state.event)
 
   const handleClose = () => {
     setOpen(false);
@@ -160,6 +161,8 @@ const EventModal = ({ open, setOpen, startTime, endTime, activities, user, activ
     },
     validationSchema: validationSchema,
     onSubmit: async (values, {resetForm}) => {
+      dispatch(setShowSendingSpinner({showSendingSpinner: true}))
+
       let body = {
         ...values,
         user_id: user.id,
@@ -222,10 +225,13 @@ const EventModal = ({ open, setOpen, startTime, endTime, activities, user, activ
           handleClose()
           resetForm();
         }
+
+        dispatch(setShowSendingSpinner({showSendingSpinner: false}))
       
       })
       .catch(()=> {
         showAlert("Ooops an error was encountered", "error")
+        dispatch(setShowSendingSpinner({showSendingSpinner: false}))
       });
     },
   });
@@ -258,6 +264,18 @@ const EventModal = ({ open, setOpen, startTime, endTime, activities, user, activ
     // let value = JSON.parse(event.target.value).id
    
     setUsersValue(typeof value === 'string' ? value.split(',') : value)
+  }
+
+  const showButtonContent = (text) => {
+    if (showSendingSpinner) {
+      return (
+        <Box sx={{ display: 'flex' }}>
+          <CircularProgress size={24} color="inherit" />
+        </Box>
+      )
+    } else {
+      return text
+    }
   }
 
   return (
@@ -523,7 +541,7 @@ const EventModal = ({ open, setOpen, startTime, endTime, activities, user, activ
               <p></p>
             <div style={{display: "flex", justifyContent: "space-between"}}>
               <Button size='small' color="primary" variant="contained"  type="submit" style={{borderRadius: "30px"}}>
-               Add
+                { showButtonContent("Add") }
               </Button>
 
               <Button 

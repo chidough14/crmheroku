@@ -6,7 +6,7 @@ import Typography from '@mui/material/Typography';
 import CloseIcon from '@mui/icons-material/Close';
 import Slide from '@mui/material/Slide';
 import { useDispatch, useSelector } from 'react-redux';
-import { addProductItemToInvoice, removeInvoiceProductItem, setInvoice, setOpenViewInvoiceModal, updateInvoiceProduct } from '../../features/InvoiceSlice';
+import { addProductItemToInvoice, removeInvoiceProductItem, setInvoice, setOpenViewInvoiceModal, setShowAddingSpinner, setShowDeletingNotification, setShowMask, updateInvoiceProduct } from '../../features/InvoiceSlice';
 import { EditOutlined, PrintOutlined } from '@mui/icons-material';
 import "./index.css"
 import moment from 'moment';
@@ -15,11 +15,12 @@ import instance from '../../services/fetchApi';
 import InvoiceForm from '../../pages/activities/InvoiceForm';
 import InvoiceProductsTable from './InvoiceProductsTable';
 import AddProductToInvoiceModal from './AddProductToInvoiceModal';
-import { DialogActions, DialogContent, DialogContentText, DialogTitle, Snackbar } from '@mui/material';
+import { Backdrop, CircularProgress, DialogActions, DialogContent, DialogContentText, DialogTitle, Snackbar } from '@mui/material';
 import { jsPDF } from "jspdf";
 import html2canvas from 'html2canvas';
 import MuiAlert from '@mui/material/Alert';
 import logo from '../../assets/logo.jpg'
+import { Box } from '@mui/system';
 
 const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
@@ -30,8 +31,8 @@ const Transition = React.forwardRef(function Transition(props, ref) {
 });
 
 const ViewInvoiceModal = ({invoice, companyName, activity, user}) => {
-  const {openViewInvoiceModal} = useSelector((state) => state.invoice)
-  const {singleInvoice} = useSelector((state) => state.invoice)
+  const {openViewInvoiceModal, singleInvoice, showDeletingNotification, showMask} = useSelector((state) => state.invoice)
+  const {showCreatingInvoiceSpinner} = useSelector((state) => state.activity)
   const dispatch = useDispatch()
   const [total, setTotal] = useState(0)
   const [showEditForm, setShowEditForm] = useState(false)
@@ -60,6 +61,8 @@ const ViewInvoiceModal = ({invoice, companyName, activity, user}) => {
 
   useEffect(() => {
     const fetchInvoiceDetails = async () => {
+      dispatch(setShowMask({showMask: true}))
+
       await instance.get(`invoices/${invoice?.id}`)
       .then((res) => {
        
@@ -70,9 +73,11 @@ const ViewInvoiceModal = ({invoice, companyName, activity, user}) => {
         })
         dispatch(setInvoice({invoice: res.data.invoice}))
         setTotal(arr.reduce((a, b) => a + b, 0))
+        dispatch(setShowMask({showMask: false}))
       })
       .catch(() => {
         showAlert("Ooops an error was encountered", "error")
+        dispatch(setShowMask({showMask: false}))
       })
     }
 
@@ -120,6 +125,7 @@ const ViewInvoiceModal = ({invoice, companyName, activity, user}) => {
   };
 
   const removeItem = async () => {
+    dispatch(setShowDeletingNotification({showDeletingNotification: true}))
     await instance.delete(`invoices/${invoice?.id}/deleteProduct`, { data: {productId: productId}})
     .then((res) => {
 
@@ -127,14 +133,18 @@ const ViewInvoiceModal = ({invoice, companyName, activity, user}) => {
       dispatch(removeInvoiceProductItem({id: productId}))
       setOpen(false)
       setProductId(undefined)
+      dispatch(setShowDeletingNotification({showDeletingNotification: false}))
     
     })
     .catch(() => {
       showAlert("Ooops an error was encountered")
+      dispatch(setShowDeletingNotification({showDeletingNotification: false}))
     })
   };
 
   const addProductToInvoice = async () => {
+
+    dispatch(setShowAddingSpinner({showAddingSpinner: true}))
     
     let body = {
       productId: productId,
@@ -152,10 +162,12 @@ const ViewInvoiceModal = ({invoice, companyName, activity, user}) => {
       setEditMode(false)
       setQuantity(0)
       setProductId(undefined)
+      dispatch(setShowAddingSpinner({showAddingSpinner: false}))
     
     })
     .catch(() => {
       showAlert("Ooops an error was encountered", "error")
+      dispatch(setShowAddingSpinner({showAddingSpinner: false}))
     })
   };
 
@@ -172,52 +184,18 @@ const ViewInvoiceModal = ({invoice, companyName, activity, user}) => {
     ;
   }
 
-  return (
-    <>
-      <Dialog
-        fullScreen
-        open={openViewInvoiceModal}
-        onClose={handleClose}
-        TransitionComponent={Transition}
-      >
-        <div style={{display: "flex", justifyContent: "space-between",margin: "30px"}}>
-          <Typography variant='h6'></Typography>
-          <IconButton
-            edge="start"
-            color="inherit"
-            onClick={handleClose}
-            aria-label="close"
-          >
-            <CloseIcon />
-          </IconButton>
-        </div>
-
-        {
-          showEditForm ? (
-            <div className="invoice-box" style={{width: "80%", marginTop: "-30px"}}>
-              <Button size='small' color="secondary" variant="contained"   style={{borderRadius: "30px"}} onClick={()=> setShowEditForm(false)}>Close Form</Button>
-              <div style={{display: "flex", justifyContent: "space between"}}>
-                <InvoiceForm editMode={true} invoice={singleInvoice}/>
-                
-                <div>
-                  <div style={{display: "flex", justifyContent: "space-between"}}>
-                    <Typography variant='h6'><b>Products</b></Typography>
-
-                    <Button variant="contained" size='small' style={{borderRadius: "30px"}} onClick={() => setOpenAddModal(true)}>Add Product</Button>
-                  </div>
-
-                  <InvoiceProductsTable
-                    products={singleInvoice?.products}
-                    editItem={editItem}
-                    deleteItem={deleteItem}
-                  />
-                </div>
-              </div>
-             
-            </div>
-          ): (
-            // <div id="divToPrint" className="invoice-box" style={{width: "100%", marginTop: "-30px"}}>
-          <>
+  const renderInvoice = (singleInvoice, activity, user) => {
+    if(showMask) {
+     
+      return (
+        <Box sx={{ display: 'flex', marginLeft: "50%" }}>
+          <CircularProgress />
+          <p style={{marginLeft: "10px"}}>Loading Invoice details....</p>
+        </Box>
+      )
+    } else {
+      return (
+        <>
           <div id="divToPrint" className="invoice-box" style={{width: "40%", margin: "auto"}}>
             <table cellpadding="0" cellspacing="0">
               <tr className="top">
@@ -325,8 +303,55 @@ const ViewInvoiceModal = ({invoice, companyName, activity, user}) => {
             </Button>
         
           </div>
-          </>
-          )
+        </>
+      )
+    }
+  }
+
+  return (
+    <>
+      <Dialog
+        fullScreen
+        open={openViewInvoiceModal}
+        onClose={handleClose}
+        TransitionComponent={Transition}
+      >
+        <div style={{display: "flex", justifyContent: "space-between",margin: "30px"}}>
+          <Typography variant='h6'></Typography>
+          <IconButton
+            edge="start"
+            color="inherit"
+            onClick={handleClose}
+            aria-label="close"
+          >
+            <CloseIcon />
+          </IconButton>
+        </div>
+
+        {
+          showEditForm ? (
+            <div className="invoice-box" style={{width: "80%", marginTop: "-30px"}}>
+              <Button size='small' color="secondary" variant="contained"   style={{borderRadius: "30px"}} onClick={()=> setShowEditForm(false)}>Close Form</Button>
+              <div style={{display: "flex", justifyContent: "space between"}}>
+                <InvoiceForm editMode={true} invoice={singleInvoice} showCreatingInvoiceSpinner={showCreatingInvoiceSpinner} />
+                
+                <div>
+                  <div style={{display: "flex", justifyContent: "space-between"}}> 
+                    <Typography variant='h6'><b>Products</b></Typography>
+
+                    <Button variant="contained" size='small' style={{borderRadius: "30px"}} onClick={() => setOpenAddModal(true)}>Add Product</Button>
+                  </div>
+
+                  <InvoiceProductsTable
+                    products={singleInvoice?.products}
+                    editItem={editItem}
+                    deleteItem={deleteItem}
+                  />
+                </div>
+              </div>
+             
+            </div>
+          ) : renderInvoice(singleInvoice, activity, user)
         }
 
         <AddProductToInvoiceModal
@@ -353,6 +378,12 @@ const ViewInvoiceModal = ({invoice, companyName, activity, user}) => {
           <DialogContent>
             <DialogContentText id="alert-dialog-description">
               Are you sure you want to delete this product ?
+            </DialogContentText>
+
+            <DialogContentText id="alert-dialog-description" sx={{textAlign: "center", color: "red"}}>
+              {
+                showDeletingNotification ? "Deleting..." : null
+              }
             </DialogContentText>
           </DialogContent>
           <DialogActions>
