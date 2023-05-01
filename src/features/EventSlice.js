@@ -2,6 +2,9 @@ import { createSlice } from '@reduxjs/toolkit'
 
 const initialState = {
   events: [],
+  openMask: false,
+  showSendingSpinner: false,
+  showDeletingNotification: false
 }
 
 export const EventSlice = createSlice({
@@ -28,6 +31,15 @@ export const EventSlice = createSlice({
         state.events = state.events.filter((a) => a.activity_id !== action.payload.activityId)
       }
     },
+    setShowSendingSpinner: (state, action) => {
+      state.showSendingSpinner = action.payload.showSendingSpinner
+    },
+    setShowDeletingNotification: (state, action) => {
+      state.showDeletingNotification = action.payload.showDeletingNotification
+    },
+    setOpenMask: (state, action) => {
+      state.openMask = action.payload.openMask
+    },
   },
 })
 
@@ -35,7 +47,10 @@ export const {
   setEvents,
   addEvent,
   updateEvent,
-  deleteEvent
+  deleteEvent,
+  setOpenMask,
+  setShowSendingSpinner,
+  setShowDeletingNotification
 } = EventSlice.actions
 
 export default EventSlice.reducer

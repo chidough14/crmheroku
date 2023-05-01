@@ -6,7 +6,10 @@ const initialState = {
   invoices: undefined,
   sortOption: "all",
   sortOptionPayments: "all",
-  stripeOrders: undefined
+  stripeOrders: undefined,
+  showAddingSpinner: false,
+  showDeletingNotification: false,
+  showMask: false
 }
 
 export const InvoiceSlice = createSlice({
@@ -44,6 +47,15 @@ export const InvoiceSlice = createSlice({
     },
     setStripeOrders: (state, action) => {
       state.stripeOrders = action.payload.stripeOrders
+    },
+    setShowAddingSpinner: (state, action) => {
+      state.showAddingSpinner = action.payload.showAddingSpinner
+    },
+    setShowDeletingNotification: (state, action) => {
+      state.showDeletingNotification = action.payload.showDeletingNotification
+    },
+    setShowMask: (state, action) => {
+      state.showMask = action.payload.showMask
     }
   },
 })
@@ -58,7 +70,10 @@ export const {
   setSortOptionValue,
   setSortOptionValuePayments,
   updateInvoice,
-  setStripeOrders
+  setStripeOrders,
+  setShowAddingSpinner,
+  setShowDeletingNotification,
+  setShowMask
 } = InvoiceSlice.actions
 
 export default InvoiceSlice.reducer

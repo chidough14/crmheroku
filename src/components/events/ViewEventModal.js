@@ -1,4 +1,4 @@
-import { Box, Button, InputLabel, Modal, Select, TextField, Typography, MenuItem, Snackbar, Tooltip, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material'
+import { Box, Button, InputLabel, Modal, Select, TextField, Typography, MenuItem, Snackbar, Tooltip, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, CircularProgress } from '@mui/material'
 import MuiAlert from '@mui/material/Alert';
 import { useFormik } from 'formik';
 import React, { useEffect, useState } from 'react'
@@ -6,7 +6,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import * as yup from 'yup';
 import moment from 'moment';
 import instance from '../../services/fetchApi';
-import { deleteEvent, updateEvent } from '../../features/EventSlice';
+import { deleteEvent, setShowDeletingNotification, setShowSendingSpinner, updateEvent } from '../../features/EventSlice';
 import { CloseOutlined, DeleteOutlined, EditOutlined } from '@mui/icons-material';
 import { updateActivityEvent } from '../../features/ActivitySlice';
 import { Link } from 'react-router-dom';
@@ -53,6 +53,7 @@ const ViewEventModal = ({ open, setOpen, event, relatedActivity, showForm, dashb
   const [showEditForm, setShowEditForm] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
   const user = useSelector(state=> state.user)
+  const { showSendingSpinner, showDeletingNotification } = useSelector(state => state.event)
   const dispatch = useDispatch()
 
   const handleCloseAlert = (event, reason) => {
@@ -88,6 +89,8 @@ const ViewEventModal = ({ open, setOpen, event, relatedActivity, showForm, dashb
     },
     validationSchema: validationSchema,
     onSubmit: async (values, {resetForm}) => {
+      dispatch(setShowSendingSpinner({showSendingSpinner: true}))
+
       let body = {
         ...values,
         start: moment(values.start).format(),
@@ -104,9 +107,11 @@ const ViewEventModal = ({ open, setOpen, event, relatedActivity, showForm, dashb
         dispatch(updateEvent({event: res.data.event}))
         handleClose()
         resetForm();
+        dispatch(setShowSendingSpinner({showSendingSpinner: false}))
       })
       .catch(() => {
         showAlert("Ooops an error was encountered", "error")
+        dispatch(setShowSendingSpinner({showSendingSpinner: false}))
       })
     },
   });
@@ -134,6 +139,7 @@ const ViewEventModal = ({ open, setOpen, event, relatedActivity, showForm, dashb
   }
 
   const removeEvent = async (event) => {
+    dispatch(setShowDeletingNotification({showDeletingNotification: true}))
 
     await instance.delete(`events/${event.id}`)
     .then((res)=> {
@@ -141,11 +147,25 @@ const ViewEventModal = ({ open, setOpen, event, relatedActivity, showForm, dashb
       dispatch(deleteEvent({eventId: event.id}))
       setOpenDialog(false)
       handleClose()
+      dispatch(setShowDeletingNotification({showDeletingNotification: false}))
     })
     .catch(() => {
       showAlert("Ooops an error was encountered", "error")
+      dispatch(setShowDeletingNotification({showDeletingNotification: false}))
     })
   };
+
+  const showButtonContent = (text) => {
+    if (showSendingSpinner) {
+      return (
+        <Box sx={{ display: 'flex' }}>
+          <CircularProgress size={24} color="inherit" />
+        </Box>
+      )
+    } else {
+      return text
+    }
+  }
 
   return (
     <>
@@ -232,7 +252,7 @@ const ViewEventModal = ({ open, setOpen, event, relatedActivity, showForm, dashb
                 
                 <div style={{display: "flex", justifyContent: "space-between"}}>
                   <Button size='small' color="primary" variant="contained"  type="submit" style={{borderRadius: "30px"}}>
-                  Save
+                    { showButtonContent("Save") }
                   </Button>
     
                   <Button 
@@ -338,6 +358,12 @@ const ViewEventModal = ({ open, setOpen, event, relatedActivity, showForm, dashb
             <DialogContent>
               <DialogContentText id="alert-dialog-description">
                 Are you sure you want to delete this list ?
+              </DialogContentText>
+
+              <DialogContentText id="alert-dialog-description" sx={{textAlign: "center", color: "red"}}>
+                {
+                  showDeletingNotification ? "Deleting..." : null
+                }
               </DialogContentText>
             </DialogContent>
             <DialogActions>

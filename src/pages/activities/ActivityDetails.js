@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import PropTypes from 'prop-types';
 import { useNavigate, useParams } from 'react-router-dom'
-import { addProductItemToActivity, deleteActivityEvent, removeActivity, removeInvoiceFromActivity, removeProductItem, setClosePrompt, setSingleActivity, updateProductItem } from '../../features/ActivitySlice'
+import { addProductItemToActivity, deleteActivityEvent, removeActivity, removeInvoiceFromActivity, removeProductItem, setClosePrompt, setShowDeleteNotification, setSingleActivity, updateProductItem } from '../../features/ActivitySlice'
 import instance from '../../services/fetchApi'
 import { AddOutlined, DeleteOutlined, EditOutlined } from '@mui/icons-material';
 import ActivityProductsTable from './ActivityProductsTable';
@@ -65,7 +65,7 @@ function a11yProps(index) {
 const ActivityDetails = () => {
   const params = useParams()
   const dispatch = useDispatch()
-  const {activity, openPrompt, showCreatingInvoiceSpinner} = useSelector((state) => state.activity)
+  const {activity, openPrompt, showCreatingInvoiceSpinner, showDeleteNotification} = useSelector((state) => state.activity)
   const user = useSelector((state) => state.user)
   const [value, setValue] = React.useState(0);
   const [open, setOpen] = React.useState(false);
@@ -195,8 +195,11 @@ const ActivityDetails = () => {
 
   const removeItem = async () => {
     if (eventObj) {
+      dispatch(setShowDeleteNotification({showDeleteNotification: true}))
+
       await instance.delete(`events/${eventObj.id}`)
       .then((res) => {
+        dispatch(setShowDeleteNotification({showDeleteNotification: false}))
         showAlert("Event deleted", "success")
         dispatch(deleteActivityEvent({id: eventObj.id}))
         dispatch(deleteEvent({eventId: eventObj.id}))
@@ -206,11 +209,15 @@ const ActivityDetails = () => {
       })
       .catch(()=> {
         showAlert("Oops an error was encountered", "error")
+        dispatch(setShowDeleteNotification({showDeleteNotification: false}))
       })
 
     } else {
+      dispatch(setShowDeleteNotification({showDeleteNotification: true}))
+
       await instance.delete(`activities/${params.id}/deleteProduct`, { data: {productId: productId}})
       .then((res) => {
+        dispatch(setShowDeleteNotification({showDeleteNotification: false}))
         showAlert("Product deleted", "success")
         dispatch(removeProductItem({id: productId}))
         setOpen(false)
@@ -219,6 +226,7 @@ const ActivityDetails = () => {
       })
       .catch(()=> {
         showAlert("Oops an error was encountered", "error")
+        dispatch(setShowDeleteNotification({showDeleteNotification: false}))
       })
     }
   
@@ -507,6 +515,12 @@ const ActivityDetails = () => {
         <DialogContent>
           <DialogContentText id="alert-dialog-description">
             Are you sure you want to delete this {eventObj ? "event" : "product"} ?
+          </DialogContentText>
+
+          <DialogContentText id="alert-dialog-description" sx={{textAlign: "center", color: "red"}}>
+            {
+              showDeleteNotification && "Deleting..."
+            }
           </DialogContentText>
         </DialogContent>
         <DialogActions>
