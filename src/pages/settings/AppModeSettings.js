@@ -1,9 +1,10 @@
-import { InputLabel, Select, MenuItem, Button, Snackbar } from '@mui/material'
+import { InputLabel, Select, MenuItem, Button, Snackbar, CircularProgress } from '@mui/material'
 import React, { useEffect, useReducer, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { updateUserSettings } from '../../features/userSlice'
+import { setShowSaveNotification, updateUserSettings } from '../../features/userSlice'
 import instance from '../../services/fetchApi'
 import MuiAlert from '@mui/material/Alert';
+import { Box } from '@mui/system'
 
 
 const Alert = React.forwardRef(function Alert(props, ref) {
@@ -11,7 +12,7 @@ const Alert = React.forwardRef(function Alert(props, ref) {
 });
 
 const AppModeSettings = ({user}) => {
-  //const user = useSelector(state => state.user)
+  const { showSaveNotification } = useSelector(state => state.user)
   const dispatch = useDispatch()
 
   
@@ -46,6 +47,7 @@ const AppModeSettings = ({user}) => {
   }, [user?.setting])
 
   const updateSettings = async () => {
+    dispatch(setShowSaveNotification({showSaveNotification: true}))
     let body = {
       user_id: user?.id,
       dashboard_mode: data.dashboard_mode,
@@ -56,10 +58,12 @@ const AppModeSettings = ({user}) => {
 
     await instance.patch(`settings`, body)
     .then((res) => {
+      dispatch(setShowSaveNotification({showSaveNotification: false}))
       dispatch(updateUserSettings({setting: res.data.setting}))
       updateData({openAlert: true, severity: "success", text: "Sttings updated successfully"})
     })
     .catch(() => {
+      dispatch(setShowSaveNotification({showSaveNotification: false}))
       updateData({openAlert: true, severity: "error", text: "Ooops an error was encountered"})
     })
   }
@@ -140,7 +144,13 @@ const AppModeSettings = ({user}) => {
         style={{borderRadius: "30px"}}
         onClick={updateSettings}
       >
-          Save
+          {
+            showSaveNotification ? (
+              <Box sx={{ display: 'flex' }}>
+                <CircularProgress size={24} color="inherit" />
+              </Box>
+            ) : "Save"
+          }
       </Button>
 
 

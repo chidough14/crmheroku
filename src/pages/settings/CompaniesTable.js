@@ -20,8 +20,8 @@ import { AddOutlined, DeleteOutlined, EditOutlined } from '@mui/icons-material';
 import AddCompanyModal from './modals/AddCompanyModal';
 import AlertDialog from './modals/AlertDialog';
 import instance from '../../services/fetchApi';
-import { removeCompany } from '../../features/companySlice';
-import { useDispatch } from 'react-redux';
+import { removeCompany, setShowDeleteNotification } from '../../features/companySlice';
+import { useDispatch, useSelector } from 'react-redux';
 import MuiAlert from '@mui/material/Alert';
 
 
@@ -101,6 +101,7 @@ const CompaniesTable = ({rows, getCompanies, loading, user}) => {
   const [companyObj, setCompanyObj] = React.useState();
   const [openAlert, setOpenAlert] = React.useState(false);
   const [severity, setSeverity] = React.useState("");
+  const { showDeleteNotification } = useSelector(state => state.company)
 
   const dispatch = useDispatch()
   React.useEffect(() => {
@@ -120,8 +121,10 @@ const CompaniesTable = ({rows, getCompanies, loading, user}) => {
   };
 
   const deleteCompany = async () => {
+    dispatch(setShowDeleteNotification({showDeleteNotification: true}))
     await instance.delete(`companies/${companyObj.id}`)
     .then(() => {
+      dispatch(setShowDeleteNotification({showDeleteNotification: false}))
       dispatch(removeCompany({companyId: companyObj.id}))
       setOpenAlert(false)
       setOpenSnackAlert(true)
@@ -129,6 +132,7 @@ const CompaniesTable = ({rows, getCompanies, loading, user}) => {
       setAlertMessage("Company Deleted")
     })
     .catch(()=> {
+      dispatch(setShowDeleteNotification({showDeleteNotification: false}))
       setOpenSnackAlert(true)
       setSeverity("error")
       setAlertMessage("Ooops an error was encountered")
@@ -261,6 +265,7 @@ const CompaniesTable = ({rows, getCompanies, loading, user}) => {
       setOpen={setOpenAlert}
       deleteItem={deleteCompany}
       companyMode={true}
+      showDeleteNotification={showDeleteNotification}
     />
     </>
   );

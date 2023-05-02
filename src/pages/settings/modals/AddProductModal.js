@@ -1,10 +1,10 @@
-import { Box, Button, InputLabel, Modal, Select, TextField, Typography, MenuItem, Snackbar } from '@mui/material'
+import { Box, Button, InputLabel, Modal, Select, TextField, Typography, MenuItem, Snackbar, CircularProgress } from '@mui/material'
 import MuiAlert from '@mui/material/Alert';
 import { useFormik } from 'formik';
 import React, { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import * as yup from 'yup';
-import { addProduct, updateProduct } from '../../../features/ProductSlice';
+import { addProduct, setProductAdding, updateProduct } from '../../../features/ProductSlice';
 import instance from '../../../services/fetchApi';
 
 // const Alert = React.forwardRef(function Alert(props, ref) {
@@ -35,6 +35,7 @@ const validationSchema = yup.object({
 const AddProductModal = ({open, setOpen, editMode, product, setOpenAlert, setAlertMessage, setSeverity}) => {
   const handleClose = () => setOpen(false);
   const user = useSelector((state) => state.user)
+  const { productAdding } = useSelector((state) => state.product)
   const dispatch = useDispatch()
 
   useEffect(() => {
@@ -53,6 +54,7 @@ const AddProductModal = ({open, setOpen, editMode, product, setOpenAlert, setAle
     },
     validationSchema: validationSchema,
     onSubmit: async (values, {resetForm}) => {
+      dispatch(setProductAdding({productAdding: true}))
       if (editMode) {
         let body = {
           name: values.name,
@@ -63,14 +65,16 @@ const AddProductModal = ({open, setOpen, editMode, product, setOpenAlert, setAle
 
         await instance.patch(`products/${product.id}`, body)
         .then((res) => {
+          dispatch(setProductAdding({productAdding: false}))
           setOpenAlert(true)
           setSeverity("success")
-          setAlertMessage("Product Updated")
+          setAlertMessage("Product Added")
           dispatch(updateProduct({product: res.data.product}))
           handleClose()
           resetForm()
         })
         .catch((err) => {
+          dispatch(setProductAdding({productAdding: false}))
           setOpenAlert(true)
           setSeverity("error")
           setAlertMessage("Ooops an error was encountered")
@@ -86,6 +90,7 @@ const AddProductModal = ({open, setOpen, editMode, product, setOpenAlert, setAle
   
         await instance.post(`products`, body)
         .then((res) => {
+          dispatch(setProductAdding({productAdding: false}))
           setOpenAlert(true)
           setSeverity("success")
           setAlertMessage("Product Added")
@@ -94,6 +99,7 @@ const AddProductModal = ({open, setOpen, editMode, product, setOpenAlert, setAle
           resetForm()
         })
         .catch((err) => {
+          dispatch(setProductAdding({productAdding: false}))
           setOpenAlert(true)
           setSeverity("error")
           setAlertMessage("Ooops an error was encountered")
@@ -105,6 +111,18 @@ const AddProductModal = ({open, setOpen, editMode, product, setOpenAlert, setAle
       
     },
   });
+
+  const showButtonText = (text) => {
+    if (productAdding) {
+      return (
+        <Box sx={{ display: 'flex' }}>
+          <CircularProgress size={24} color="inherit" />
+        </Box>
+      )
+    } else {
+      return text
+    }
+  }
 
   return (
     <>
@@ -174,7 +192,7 @@ const AddProductModal = ({open, setOpen, editMode, product, setOpenAlert, setAle
               <p></p>
               <div style={{display: "flex", justifyContent: "space-between"}}>
                 <Button size='small' color="primary" variant="contained"  type="submit" style={{borderRadius: "30px"}}>
-                 {editMode ? "Save": "Add"}
+                 {editMode ? showButtonText("Save"): showButtonText("Add")}
                 </Button>
 
                 <Button 

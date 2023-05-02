@@ -1,10 +1,10 @@
-import { Box, Button, Modal, TextField, Typography} from '@mui/material'
+import { Box, Button, CircularProgress, Modal, TextField, Typography} from '@mui/material'
 import MuiAlert from '@mui/material/Alert';
 import { useFormik } from 'formik';
 import React, { useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import * as yup from 'yup';
-import { addCompany, updateCompany } from '../../../features/companySlice';
+import { addCompany, setShowAddSpinner, updateCompany } from '../../../features/companySlice';
 import instance from '../../../services/fetchApi';
 
 const Alert = React.forwardRef(function Alert(props, ref) {
@@ -44,6 +44,7 @@ const validationSchema = yup.object({
 const AddCompanyModal = ({open, setOpen, setOpenAlert, setAlertMessage, editMode, company, setSeverity}) => {
   const handleClose = () => setOpen(false);
   const dispatch = useDispatch()
+  const { showAddSpinner } = useSelector(state => state.company)
 
   useEffect(() => {
     if (editMode && company) {
@@ -62,6 +63,8 @@ const AddCompanyModal = ({open, setOpen, setOpenAlert, setAlertMessage, editMode
     },
     validationSchema: validationSchema,
     onSubmit: async (values, {resetForm}) => {
+      dispatch(setShowAddSpinner({showAddSpinner: true}))
+
       if (editMode) {
         let body = {
           name: values.name,
@@ -73,6 +76,7 @@ const AddCompanyModal = ({open, setOpen, setOpenAlert, setAlertMessage, editMode
 
         await instance.patch(`companies/${company.id}`, body)
         .then((res) => {
+          dispatch(setShowAddSpinner({showAddSpinner: false}))
           setOpenAlert(true)
           setSeverity("success")
           setAlertMessage("Company Updated")
@@ -81,6 +85,7 @@ const AddCompanyModal = ({open, setOpen, setOpenAlert, setAlertMessage, editMode
           resetForm()
         })
         .catch((err) => {
+          dispatch(setShowAddSpinner({showAddSpinner: false}))
           setOpenAlert(true)
           setSeverity("error")
           setAlertMessage("Ooops an error was encountered")
@@ -90,6 +95,7 @@ const AddCompanyModal = ({open, setOpen, setOpenAlert, setAlertMessage, editMode
       } else {
         await instance.post(`companies`, values)
         .then((res) => {
+          dispatch(setShowAddSpinner({showAddSpinner: false}))
           setOpenAlert(true)
           setSeverity("success")
           setAlertMessage("Company Added")
@@ -103,12 +109,25 @@ const AddCompanyModal = ({open, setOpen, setOpenAlert, setAlertMessage, editMode
           setAlertMessage("Ooops an error was encountered")
           handleClose()
           resetForm()
+          dispatch(setShowAddSpinner({showAddSpinner: false}))
         })
       }
      
       
     },
   });
+
+  const showButtonText = (text) => {
+    if (showAddSpinner) {
+      return (
+        <Box sx={{ display: 'flex' }}>
+          <CircularProgress size={24} color="inherit" />
+        </Box>
+      )
+    } else {
+      return text
+    }
+  }
 
   return (
     <>
@@ -190,7 +209,7 @@ const AddCompanyModal = ({open, setOpen, setOpenAlert, setAlertMessage, editMode
               <p></p>
               <div style={{display: "flex", justifyContent: "space-between"}}>
                 <Button size='small' color="primary" variant="contained"  type="submit" style={{borderRadius: "30px"}}>
-                 {editMode ? "Save" : "Add"}
+                 {editMode ? showButtonText("Save") : showButtonText("Add")}
                 </Button>
 
                 <Button 

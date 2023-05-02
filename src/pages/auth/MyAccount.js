@@ -1,4 +1,4 @@
-import { Box, TextField, Button, Typography, Tooltip, Snackbar } from '@mui/material';
+import { Box, TextField, Button, Typography, Tooltip, Snackbar, CircularProgress } from '@mui/material';
 import React, { useEffect, useReducer, useState } from 'react';
 import { getToken } from '../../services/LocalStorageService';
 import { useChangeUserPasswordMutation } from '../../services/userAuthApi';
@@ -7,7 +7,7 @@ import { ChangeCircleOutlined, MessageOutlined, PersonOutlineOutlined, SaveOutli
 import moment from 'moment';
 import UploadWidget from './UploadWidget';
 import instance from '../../services/fetchApi';
-import { setUserInfo, updateAllUsers } from '../../features/userSlice';
+import { setShowSaveNotification, setShowSpinner, setUserInfo, updateAllUsers } from '../../features/userSlice';
 import avatar from '../../assets/avtar9.jpg';
 import MuiAlert from '@mui/material/Alert';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -28,7 +28,7 @@ const MyAccount = () => {
   const [imageLoaded, setImageLoaded] = useState(false)
   const [changeUserPassword] = useChangeUserPasswordMutation()
   const token = getToken()
-  const {id, name, email, created_at, profile_pic, allUsers} = useSelector(state => state.user)
+  const {id, name, email, created_at, profile_pic, allUsers, showSpinner, showSaveNotification} = useSelector(state => state.user)
   const dispatch = useDispatch()
   const [openAlert, setOpenAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
@@ -36,6 +36,7 @@ const MyAccount = () => {
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [showUpdateProfileForm, setShowUpdateProfileForm] = useState(false);
   const [profile, setProfile] = useState();
+  const [loadingProfile, setLoadingProfile] = useState(false);
   const params = useParams()
   const navigate = useNavigate()
 
@@ -61,11 +62,14 @@ const MyAccount = () => {
   }, [profile_pic])
 
   const getUserProfile = async (user_id) => {
+    setLoadingProfile(true)
     await instance.get(`get-profile/${user_id}`)
     .then((res) => {
+      setLoadingProfile(false)
       setProfile(res.data.profile)
     })
     .catch(() => {
+      setLoadingProfile(false)
       showAlert("Ooops an error was encountred", "error")
     })
   }
@@ -132,8 +136,10 @@ const MyAccount = () => {
   };
 
   const uploadImage = async (value) => {
+    dispatch(setShowSaveNotification({showSaveNotification: true}))
     await instance.patch(`users/${id}`, {profile_pic: value})
     .then((res) => {
+      dispatch(setShowSaveNotification({showSaveNotification: false}))
       dispatch(setUserInfo(res.data.user))
       dispatch(updateAllUsers({user: res.data.user}))
       showAlert("Picture saved", "success")
@@ -141,10 +147,12 @@ const MyAccount = () => {
     })
     .catch(() => {
       showAlert("Ooops an error was encountred", "error")
+      dispatch(setShowSaveNotification({showSaveNotification: false}))
     })
   }
 
   const updateProfile = async () => {
+    dispatch(setShowSpinner({showSpinner: true}))
     let body = {
       bio: data.bio,
       company: data.company,
@@ -154,18 +162,20 @@ const MyAccount = () => {
     }
     await instance.post(`update-profile`, body)
     .then((res) => {
+      dispatch(setShowSpinner({showSpinner: false}))
       setProfile(res.data.profile)
       showAlert("Profile saved", "success")
     })
     .catch(() => {
+      dispatch(setShowSpinner({showSpinner: false}))
       showAlert("Ooops an error was encountred", "error")
     })
   }
 
   return <>
     <Box sx={{ display: 'flex', flexDirection: 'column', flexWrap: 'wrap', maxWidth: 600, mx: 4 }}>
-     
       <div style={{display: "flex", justifyContent: 'space-between', marginTop: "30px"}}>
+        
         <div>
           {
            ( imageUrl === ""  || imageUrl === null) ? (
@@ -239,41 +249,53 @@ const MyAccount = () => {
           }
         </div>
         
-        <div style={{marginLeft: "30px"}}>
-          <Typography variant="h7" display="block"  gutterBottom>
-            <b>Name</b> : { params.id === "mine" ? name : allUsers?.find((a)=> a.id === parseInt(params.id))?.name }
-          </Typography>
+        {
+          loadingProfile ? (
+              <Box sx={{ display: 'flex', marginRight: "30%", marginTop: "20%" }}>
+                <CircularProgress size={48} />
+              </Box>
+          ) : (
+            <div style={{marginLeft: "30px"}}>
+              <Typography variant="h7" display="block"  gutterBottom>
+                <b>Name</b> : { params.id === "mine" ? name : allUsers?.find((a)=> a.id === parseInt(params.id))?.name }
+              </Typography>
 
-          <Typography variant="h7" display="block"  gutterBottom>
-            <b>Email</b> : {params.id === "mine" ?  email : allUsers?.find((a)=> a.id === parseInt(params.id))?.email }
-          </Typography>
+              <Typography variant="h7" display="block"  gutterBottom>
+                <b>Email</b> : {params.id === "mine" ?  email : allUsers?.find((a)=> a.id === parseInt(params.id))?.email }
+              </Typography>
 
-          <Typography variant="h7" display="block"  gutterBottom>
-            <b>Date Registered</b> : { params.id === "mine" ? moment(created_at).format('MMMM Do YYYY') : moment(allUsers?.find((a)=> a.id === parseInt(params.id))?.created_at).format('MMMM Do YYYY') }
-          </Typography>
+              <Typography variant="h7" display="block"  gutterBottom>
+                <b>Date Registered</b> : { params.id === "mine" ? moment(created_at).format('MMMM Do YYYY') : moment(allUsers?.find((a)=> a.id === parseInt(params.id))?.created_at).format('MMMM Do YYYY') }
+              </Typography>
 
 
-          <Typography variant="h7" display="block"  gutterBottom>
-            <b>Bio</b> : { profile?.bio }
-          </Typography>
+              <Typography variant="h7" display="block"  gutterBottom>
+                <b>Bio</b> : { profile?.bio }
+              </Typography>
 
-          <Typography variant="h7" display="block"  gutterBottom>
-            <b>Company</b> : { profile?.company }
-          </Typography>
+              <Typography variant="h7" display="block"  gutterBottom>
+                <b>Company</b> : { profile?.company }
+              </Typography>
 
-          <Typography variant="h7" display="block"  gutterBottom>
-            <b>Address</b> :  { profile?.address }
-          </Typography>
+              <Typography variant="h7" display="block"  gutterBottom>
+                <b>Address</b> :  { profile?.address }
+              </Typography>
 
-          <Typography variant="h7" display="block"  gutterBottom>
-            <b>Occupation</b> :  { profile?.occupation }
-          </Typography>
+              <Typography variant="h7" display="block"  gutterBottom>
+                <b>Occupation</b> :  { profile?.occupation }
+              </Typography>
 
-          <Typography variant="h7" display="block"  gutterBottom>
-            <b>Websilte</b> :  { profile?.website }
-          </Typography>
-        </div>
+              <Typography variant="h7" display="block"  gutterBottom>
+                <b>Websilte</b> :  { profile?.website }
+              </Typography>
+            </div>
+          )
+        }
       </div>
+      
+      {
+        showSaveNotification && (<p style={{color: "green", fontSize: "14px"}}>Saving picture....</p>)
+      }
 
       {
         showChangePassword && (
@@ -298,7 +320,20 @@ const MyAccount = () => {
             <TextField size='small' margin="normal" fullWidth name="occupation" label="Occupation"  id="occupation" value={data.occupation}  onChange={(e) => updateData({occupation: e.target.value})} />
             <TextField size='small' margin="normal" fullWidth name="website" label="Website"  id="website" value={data.website} onChange={(e) => updateData({website: e.target.value})} />
             <Box textAlign='center'>
-              <Button  size='small' variant="contained" sx={{ mt: 3, mb: 2, px: 5, borderRadius: "30px" }} onClick={updateProfile}> Update </Button>
+              <Button  
+                size='small' 
+                variant="contained" 
+                sx={{ mt: 3, mb: 2, px: 5, borderRadius: "30px" }} 
+                onClick={updateProfile}
+              >
+                 {
+                  showSpinner ? (
+                    <Box sx={{ display: 'flex' }}>
+                      <CircularProgress size={24} color="inherit" />
+                    </Box>
+                  ) : "Update"
+                 } 
+              </Button>
             </Box>
           </Box>
         )
