@@ -20,9 +20,9 @@ import moment from 'moment';
 import { useNavigate } from 'react-router-dom';
 import { ChangeCircleRounded, DeleteOutline } from '@mui/icons-material';
 import instance from '../../services/fetchApi';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import MuiAlert from '@mui/material/Alert';
-import { removeUser, setUserInfo, updateAllUsers } from '../../features/userSlice';
+import { removeUser, setShowDeleteNotification, setShowSpinner, setUserInfo, updateAllUsers } from '../../features/userSlice';
 
 const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
@@ -111,6 +111,7 @@ export default function UserManagementTable({rows}) {
   const dispatch = useDispatch()
   const [openDialog, setOpenDialog] = React.useState(false);
   const [userId, setUserId] = React.useState();
+  const { showSpinner, showDeleteNotification } = useSelector(state => state.user)
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
@@ -138,15 +139,21 @@ export default function UserManagementTable({rows}) {
   };
 
   const updateUserRole = async (user, role) => {
+    dispatch(setShowSpinner({showSpinner: true}))
+    setUserId(user?.id)
     await instance.patch(`admin-users/${user?.id}`, {role})
     .then((res) => {
       //dispatch(setUserInfo(res.data.user))
+      dispatch(setShowSpinner({showSpinner: false}))
+      setUserId(null)
       dispatch(updateAllUsers({user: res.data.user}))
       setOpenAlert(true)
       setAlertMessage("User role changed")
       setSeverity("success")
     })
     .catch(() => {
+      dispatch(setShowSpinner({showSpinner: false}))
+      setUserId(null)
       setOpenAlert(true)
       setAlertMessage("Ooops an error was encountered")
       setSeverity("error")
@@ -154,15 +161,20 @@ export default function UserManagementTable({rows}) {
   };
 
   const deleteUser = async () => {
+    dispatch(setShowDeleteNotification({showDeleteNotification: true}))
     await instance.delete(`admin-users/${userId}`)
     .then(() => {
+      dispatch(setShowDeleteNotification({showDeleteNotification: false}))
       dispatch(removeUser({id: userId}))
+      setUserId(null)
       setOpenDialog(false)
       setOpenAlert(true)
       setAlertMessage("User deleted")
       setSeverity("success")
     })
     .catch(() => {
+      dispatch(setShowDeleteNotification({showDeleteNotification: false}))
+      setUserId(null)
       setOpenAlert(true)
       setAlertMessage("Ooops an error was encountered")
       setSeverity("error")
@@ -239,7 +251,7 @@ export default function UserManagementTable({rows}) {
 
 
               <TableCell style={{ width: 160 }} >
-                {row.role}
+                {row.role} { showSpinner && userId === row.id ? <span style={{fontSize: "14px", color: "green", marginLeft: "6px"}}>Updating..</span> : null } 
               </TableCell>
 
               <TableCell style={{ width: 160 }} >
@@ -324,6 +336,12 @@ export default function UserManagementTable({rows}) {
         <DialogContent>
           <DialogContentText id="alert-dialog-description">
            Are you sure you want to delete this user?
+          </DialogContentText>
+
+          <DialogContentText id="alert-dialog-description"  sx={{textAlign: "center", color: "red"}}>
+            {
+              showDeleteNotification ? "Deleting...." : null
+            }
           </DialogContentText>
         </DialogContent>
         <DialogActions>

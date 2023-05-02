@@ -3,7 +3,8 @@ import { createSlice } from '@reduxjs/toolkit'
 const initialState = {
   products: undefined,
   productsAll: [],
-  productAdding: false
+  productAdding: false,
+  showDeleteNotification: false
 }
 
 export const ProductSlice = createSlice({
@@ -29,6 +30,9 @@ export const ProductSlice = createSlice({
     setProductAdding: (state, action) => {
       state.productAdding = action.payload.productAdding
     },
+    setShowDeleteNotification: (state, action) => {
+      state.showDeleteNotification = action.payload.showDeleteNotification
+    },
   },
 })
 
@@ -38,7 +42,8 @@ export const {
   updateProduct,
   removeProduct,
   setProductsAll,
-  setProductAdding
+  setProductAdding,
+  setShowDeleteNotification
 } = ProductSlice.actions
 
 export default ProductSlice.reducer

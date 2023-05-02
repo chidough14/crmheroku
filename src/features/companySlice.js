@@ -3,7 +3,9 @@ import { createSlice } from '@reduxjs/toolkit'
 const initialState = {
   companies: undefined,
   company: undefined,
-  searchResults: []
+  searchResults: [],
+  showAddSpinner: false,
+  showDeleteNotification: false
 }
 
 export const companySlice = createSlice({
@@ -35,6 +37,12 @@ export const companySlice = createSlice({
     removeCompany: (state, action) => {
       state.companies.data = state.companies.data.filter((a) => a.id !== action.payload.companyId)
     },
+    setShowAddSpinner: (state, action) => {
+      state.showAddSpinner = action.payload.showAddSpinner
+    },
+    setShowDeleteNotification: (state, action) => {
+      state.showDeleteNotification = action.payload.showDeleteNotification
+    },
   },
 })
 
@@ -46,7 +54,9 @@ export const {
   addCompany,
   updateCompany ,
   removeCompany,
-  setSearchResults
+  setSearchResults,
+  setShowAddSpinner,
+  setShowDeleteNotification
 } = companySlice.actions
 
 export default companySlice.reducer

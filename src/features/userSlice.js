@@ -10,7 +10,10 @@ const initialState = {
   role: "",
   allUsers: [],
   onlineUsers: [],
-  loadingDashboard: false
+  loadingDashboard: false,
+  showSpinner: false,
+  showSaveNotification: false,
+  showDeleteNotification: false,
 }
 
 export const userSlice = createSlice({
@@ -57,9 +60,30 @@ export const userSlice = createSlice({
     setOnlineUsers: (state, action) => {
       state.onlineUsers = action.payload.onlineUsers
     },
+    setShowSpinner: (state, action) => {
+      state.showSpinner = action.payload.showSpinner
+    },
+    setShowSaveNotification: (state, action) => {
+      state.showSaveNotification = action.payload.showSaveNotification
+    },
+    setShowDeleteNotification: (state, action) => {
+      state.showDeleteNotification = action.payload.showDeleteNotification
+    }
   },
 })
 
-export const { setUserInfo, unsetUserInfo, setAllUsersData, updateUserSettings, setLoadingDashboard, updateAllUsers, removeUser, setOnlineUsers } = userSlice.actions
+export const { 
+  setUserInfo, 
+  unsetUserInfo, 
+  setAllUsersData, 
+  updateUserSettings, 
+  setLoadingDashboard, 
+  updateAllUsers, 
+  removeUser, 
+  setOnlineUsers, 
+  setShowSpinner,
+  setShowSaveNotification,
+  setShowDeleteNotification 
+} = userSlice.actions
 
 export default userSlice.reducer

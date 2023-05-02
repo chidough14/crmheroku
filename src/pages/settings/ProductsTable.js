@@ -20,8 +20,8 @@ import { Add, AddOutlined, DeleteOutlined, EditOutlined } from '@mui/icons-mater
 import AddProductModal from './modals/AddProductModal';
 import AlertDialog from './modals/AlertDialog';
 import instance from '../../services/fetchApi';
-import { useDispatch } from 'react-redux';
-import { removeProduct } from '../../features/ProductSlice';
+import { useDispatch, useSelector } from 'react-redux';
+import { removeProduct, setShowDeleteNotification } from '../../features/ProductSlice';
 import MuiAlert from '@mui/material/Alert';
 
 const Alert = React.forwardRef(function Alert(props, ref) {
@@ -100,6 +100,7 @@ const ProductsTable = ({rows, getProducts, loading, user}) => {
   const [alertMessage, setAlertMessage] = React.useState("");
   const dispatch = useDispatch()
   const [severity, setSeverity] = React.useState("");
+  const { showDeleteNotification } = useSelector(state => state.product)
 
   React.useEffect(() => {
 
@@ -109,8 +110,11 @@ const ProductsTable = ({rows, getProducts, loading, user}) => {
 
 
   const deleteProduct = async () => {
+    dispatch(setShowDeleteNotification({showDeleteNotification: true}))
+
     await instance.delete(`products/${productObj.id}`)
     .then(() => {
+      dispatch(setShowDeleteNotification({showDeleteNotification: false}))
       dispatch(removeProduct({productId: productObj.id}))
       setOpenAlert(false)
       setSeverity("success")
@@ -118,6 +122,7 @@ const ProductsTable = ({rows, getProducts, loading, user}) => {
       setAlertMessage("Product Deleted")
     })
     .catch(() => {
+      dispatch(setShowDeleteNotification({showDeleteNotification: false}))
       setSeverity("error")
       setOpenSnackAlert(true)
       setAlertMessage("Ooops An error was encountered")
@@ -250,6 +255,7 @@ const ProductsTable = ({rows, getProducts, loading, user}) => {
       setOpen={setOpenAlert}
       deleteItem={deleteProduct}
       companyMode={false}
+      showDeleteNotification={showDeleteNotification}
     />
 
     <Snackbar open={openSnackAlert} autoHideDuration={6000} onClose={handleCloseAlert}>
