@@ -37,7 +37,7 @@ export const options = {
   },
 };
 
-export function BarChart({results, owner, setOwner}) {
+export function BarChart({results, owner, setOwner, showBarGraphLoadingNotification}) {
 
   const handleChange = (event) => {
     setOwner(event.target.value);
@@ -120,6 +120,9 @@ export function BarChart({results, owner, setOwner}) {
         </Select>
       </FormControl>
     </div>
+    {
+      showBarGraphLoadingNotification && (<p style={{fontSize: "14px", color: "green"}}>Loading Results...</p>)
+    }
     <Bar options={options} data={data} />
   
   </>;

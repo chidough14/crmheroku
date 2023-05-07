@@ -125,7 +125,7 @@ const ComposeMessage = ({replyMode, singleMessage, socket, state, sendingMessage
           await instance.post(`messages`, body)
           .then((res) => {
             dispatch(setSendingMessage({isSending: false}))
-            dispatch(addNewMessage({message: res.data.createdMessage}))
+            //dispatch(addNewMessage({message: res.data.createdMessage}))
             showAlert("Message sent", "success")
             resetForm()
 

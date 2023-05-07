@@ -14,6 +14,8 @@ const initialState = {
   showSpinner: false,
   showSaveNotification: false,
   showDeleteNotification: false,
+  showBarGraphLoadingNotification: false,
+  showDoughnutGraphLoadingNotification: false,
 }
 
 export const userSlice = createSlice({
@@ -68,6 +70,12 @@ export const userSlice = createSlice({
     },
     setShowDeleteNotification: (state, action) => {
       state.showDeleteNotification = action.payload.showDeleteNotification
+    },
+    setShowBarGraphLoadingNotification: (state, action) => {
+      state.showBarGraphLoadingNotification = action.payload.showBarGraphLoadingNotification
+    },
+    setShowDoughnutGraphLoadingNotification: (state, action) => {
+      state.showDoughnutGraphLoadingNotification = action.payload.showDoughnutGraphLoadingNotification
     }
   },
 })
@@ -83,7 +91,9 @@ export const {
   setOnlineUsers, 
   setShowSpinner,
   setShowSaveNotification,
-  setShowDeleteNotification 
+  setShowDeleteNotification,
+  setShowBarGraphLoadingNotification,
+  setShowDoughnutGraphLoadingNotification 
 } = userSlice.actions
 
 export default userSlice.reducer
