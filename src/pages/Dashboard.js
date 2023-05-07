@@ -8,7 +8,7 @@ import { BarChart } from '../components/dashboard/BarChart';
 import { DoughnutChart } from '../components/dashboard/DoughnutChart';
 import moment from 'moment';
 import instance from '../services/fetchApi';
-import { setLoadingDashboard } from '../features/userSlice';
+import { setLoadingDashboard, setShowBarGraphLoadingNotification, setShowDoughnutGraphLoadingNotification } from '../features/userSlice';
 import MuiAlert from '@mui/material/Alert';
 
 
@@ -23,7 +23,7 @@ const Dashboard = () => {
   //const { events } = useSelector(state => state.event)
   const { lists } = useSelector(state => state.list)
   const [eventsToday, setEventsToday] = useState([])
-  const { setting, loadingDashboard } = useSelector(state => state.user)
+  const { setting, loadingDashboard, showBarGraphLoadingNotification, showDoughnutGraphLoadingNotification } = useSelector(state => state.user)
   const [events, setEvents] = useState([])
   const [list, setList] = useState()
   const [results, setResults] = useState([])
@@ -76,22 +76,28 @@ const Dashboard = () => {
   //   }
   // }, [data, isSuccess])
   const getDoughnutChartResults = async (url) => {
+    dispatch(setShowDoughnutGraphLoadingNotification({showDoughnutGraphLoadingNotification: true}))
     await  instance.get(`${url}`)
     .then((res) => {
+     dispatch(setShowDoughnutGraphLoadingNotification({showDoughnutGraphLoadingNotification: false}))
       setDoughnutResults(res.data.results)
     })
     .catch(()=> {
       showAlert("Ooops an error was encountered", "error")
+     dispatch(setShowDoughnutGraphLoadingNotification({showDoughnutGraphLoadingNotification: false}))
     })
   }
 
   const getTotalProductsSales = async (url) => {
+    dispatch(setShowBarGraphLoadingNotification({showBarGraphLoadingNotification: true}))
     await  instance.get(`${url}`)
     .then((res) => {
+    dispatch(setShowBarGraphLoadingNotification({showBarGraphLoadingNotification: false}))
       setResults(res.data.results)
     })
     .catch(()=> {
       showAlert("Ooops an error was encountered", "error")
+    dispatch(setShowBarGraphLoadingNotification({showBarGraphLoadingNotification: false}))
     })
   }
 
@@ -164,6 +170,14 @@ const Dashboard = () => {
     setEventsToday(ev)
   }, [events])
 
+  const renderGraph = (type) => {
+    if(type === "") {
+
+    } else {
+
+    }
+  }
+
 
 
   return (
@@ -193,10 +207,20 @@ const Dashboard = () => {
                 setting?.dashboard_mode === "show_graphs" && (
                   <>
                   <div style={{width: "50%"}}>
-                    <BarChart results={results} owner={owner} setOwner={setOwner} />
+                    <BarChart 
+                      results={results} 
+                      owner={owner} 
+                      setOwner={setOwner} 
+                      showBarGraphLoadingNotification={showBarGraphLoadingNotification} 
+                    />
                   </div>
                   <div style={{width: "35%"}}>
-                    <DoughnutChart results={doughnutResults} measurement={measurement} setMeasurement={setMeasurement} />
+                    <DoughnutChart 
+                      results={doughnutResults} 
+                      measurement={measurement} 
+                      setMeasurement={setMeasurement} 
+                      showDoughnutGraphLoadingNotification={showDoughnutGraphLoadingNotification}  
+                    />
                   </div>
                   </>
                 )
@@ -206,7 +230,12 @@ const Dashboard = () => {
                 setting?.dashboard_mode === "show_bar_graph" && (
                   <>
                   <div style={{width: "50%"}}>
-                    <BarChart results={results} owner={owner} setOwner={setOwner} />
+                    <BarChart 
+                      results={results} 
+                      owner={owner} 
+                      setOwner={setOwner} 
+                      showBarGraphLoadingNotification={showBarGraphLoadingNotification}  
+                    />
                   </div>
                   <div style={{width: "30%"}}>
                     
@@ -219,7 +248,12 @@ const Dashboard = () => {
                 setting?.dashboard_mode === "show_doughnut_graph" && (
                   <>
                   <div style={{width: "40%"}}>
-                    <DoughnutChart results={doughnutResults} measurement={measurement} setMeasurement={setMeasurement} />
+                    <DoughnutChart 
+                      results={doughnutResults} 
+                      measurement={measurement} 
+                      setMeasurement={setMeasurement} 
+                      showDoughnutGraphLoadingNotification={showDoughnutGraphLoadingNotification} 
+                    />
                   </div>
                   <div style={{width: "30%"}}>
                   

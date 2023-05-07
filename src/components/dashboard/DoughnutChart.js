@@ -5,7 +5,7 @@ import { FormControl, MenuItem, Select, Typography } from '@mui/material';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-export function DoughnutChart({results, measurement, setMeasurement}) {
+export function DoughnutChart({results, measurement, setMeasurement, showDoughnutGraphLoadingNotification}) {
   const [keys, setKeys] = useState([])
   const [values, setValues] = useState([])
 
@@ -78,6 +78,10 @@ export function DoughnutChart({results, measurement, setMeasurement}) {
         </Select>
       </FormControl>
     </div>
+
+    {
+      showDoughnutGraphLoadingNotification && (<p style={{fontSize: "14px", color: "green"}}>Loading Results...</p>)
+    }
     <Doughnut data={data} options={config.options} />
   </>;
 }
