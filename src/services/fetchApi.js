@@ -4,7 +4,8 @@ import { getToken } from './LocalStorageService';
 
 const instance = axios.create({
   // baseURL: 'http://127.0.0.1:8000/api/',
-  baseURL: 'https://rocky-woodland-23114.herokuapp.com/api/'
+  // baseURL: 'https://rocky-woodland-23114.herokuapp.com/api/'
+  baseURL:  process.env.REACT_APP_BASE_URL
 });
 
 instance.CancelToken = axios.CancelToken;
@@ -15,6 +16,7 @@ instance.interceptors.request.use(
 
     //const token = store.getState()
     let token =  getToken('token')
+    console.log(process.env.REACT_APP_BASE_URL);
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
