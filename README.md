@@ -4,6 +4,8 @@
 
 ```bash
 npm install
+cd chatserver && npm install
+npm run build-client
 npm start
 ```
 
