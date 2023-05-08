@@ -23,7 +23,8 @@ const JoinMeeting = () => {
       await instance.get(`meeting/join/${params?.id}`)
       .then((res) => {
           if (res.data.meeting) {
-            let isCreator = (res.data.meeting.user_id === user.id)
+            // let isCreator = (res.data.meeting.user_id === user.id)
+            let isCreator = (res.data.meeting.user_id === parseInt(params.userId))
 
             if (res.data.meeting.meetingType === "1-on-1") {
               if (res.data.meeting.invitedUsers[0] === user?.email || isCreator) {
@@ -113,16 +114,16 @@ const JoinMeeting = () => {
       {
         isAllowed && (
           <>
-          <Button 
-            variant='contained' 
-            type='primary' 
-            onClick={() => {
-              navigate("/mymeetings")
-              window.location.reload()
-            }}
-          >
-            Leave room
-          </Button>
+            <Button 
+              variant='contained' 
+              type='primary' 
+              onClick={() => {
+                navigate("/mymeetings")
+                //window.location.reload()
+              }}
+            >
+              Leave room
+            </Button>
             <div 
               className='myCallContainer' 
               ref={myMeeting} 
