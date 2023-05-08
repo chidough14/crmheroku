@@ -156,7 +156,7 @@ const BellNotification = ({inbox, allUsers, invitedMeetings}) => {
           {
             invitedMeetings?.filter((b)=> !moment(b.event.end).isBefore(moment())).length ?
             invitedMeetings?.filter((b)=> !moment(b.event.end).isBefore(moment())).map((a) => (
-              <MenuItem>
+              <MenuItem onClick={()=>navigate(`/mymeetings`)}>
                 <p><b>Name :</b> <b>{a.meetingName}</b></p><br></br>
                 <p><b>Date:</b> {moment(a.event.start).format("MMMM Do YYYY, h:mm a")}</p>
               </MenuItem>

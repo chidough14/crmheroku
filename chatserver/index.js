@@ -24,6 +24,14 @@ const socketIO = require('socket.io')(http, {
   // }
 });
 
+app.get('/*', function(req, res) {
+  res.sendFile(path.join(__dirname, '..', 'build/index.html'), function(err) {
+    if (err) {
+      res.status(500).send(err)
+    }
+  })
+})
+
 let users = [];
 let arr = []
 //Add this before the app.get() block
