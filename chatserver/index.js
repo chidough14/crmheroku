@@ -20,7 +20,7 @@ app.use(express.static(buildPath));
 
 const socketIO = require('socket.io')(http, {
   // cors: {
-  //     origin: "http://localhost:5000"
+  //     origin: "http://localhost:3000"
   // }
 });
 
@@ -62,7 +62,9 @@ socketIO.on('connection', (socket) => {
   socket.on('sendNotification', (data) => {
     let xx = arr.find((a)=> a.userId === data.recipientId)
     const {  message } = data;
-    socketIO.to(xx.id).emit('receiveNotification', message);
+    if(xx) {
+      socketIO.to(xx.id).emit('receiveNotification', message);
+    }
   });
 
   socket.on('sendConferenceNotification', (data) => {

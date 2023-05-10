@@ -312,7 +312,18 @@ const ViewEventModal = ({ open, setOpen, event, relatedActivity, showForm, dashb
                 //  (event?.meeting && moment().isBetween(event?.start, event?.end, 'milliseconds', null)) &&
                 event?.meeting &&
                 <Typography variant="h7" display="block"  gutterBottom>
-                  <Link to={`/join/${event?.meeting.meetingId}/${user.id}`} target="_blank">
+                  <Link 
+                    onClick={()=> {
+                      let userDetails = {
+                        id: user.id,
+                        email: user.email
+                      }
+
+                      localStorage.setItem("userDetails", JSON.stringify(userDetails))
+                    }}
+                    to={`/join/${event?.meeting.meetingId}/`}
+                    target="_blank"
+                  >
                    <b>Meeting Link</b>
                   </Link>
                 </Typography>

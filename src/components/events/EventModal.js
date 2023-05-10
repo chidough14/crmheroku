@@ -124,21 +124,28 @@ const EventModal = ({ open, setOpen, startTime, endTime, activities, user, activ
     }
    }, [open, activityId])
 
-   const createMeeting = async (body) => {
+   const createMeeting = async (body, event) => {
     let response 
      await instance.post(`meetings`, body)
      .then((res) => {
-       dispatch(addMeeting({meeting: res.data.meeting}))
-       response = res.data.meeting
+        dispatch(addMeeting({meeting: res.data.meeting}))
+        response = res.data.meeting
 
-       if (body.invitedUsers.length) {
+        event.meeting = response
+        dispatch(addEvent({event}))
+        showAlert("Event created successfully", "success")
+        handleClose()
+        formik.resetForm();
+        dispatch(setShowSendingSpinner({showSendingSpinner: false}))
+
+        if (body.invitedUsers.length) {
           for (let i=0; i<body.invitedUsers.length; i++) {
             let xx = allUsers.find((a) => a.email === body.invitedUsers[i])
             socket.emit('sendNotification', { recipientId: xx.id, message: "You have been invited to a meeting" });
           }
-       } else {
-         socket.emit('sendConferenceNotification', { message: "You have been invited to a meeting" });
-       }
+        } else {
+          socket.emit('sendConferenceNotification', { message: "You have been invited to a meeting" });
+        }
 
       
      })
@@ -191,14 +198,10 @@ const EventModal = ({ open, setOpen, startTime, endTime, activities, user, activ
             event_id: res.data.event.id
           }
 
-          createMeeting(meetingBody)
+          createMeeting(meetingBody, res.data.event)
 
           //  socket.emit('sendNotification', { recipientId: receiverId, message: values.message });
 
-          showAlert("Event created successfully", "success")
-          dispatch(addEvent({event: res.data.event}))
-          handleClose()
-          resetForm();
         } else if (conference) {
           let meetingBody = {
             user_id: user.id,
@@ -212,21 +215,16 @@ const EventModal = ({ open, setOpen, startTime, endTime, activities, user, activ
             event_id: res.data.event.id
           }
 
-          createMeeting(meetingBody)
-
-          showAlert("Event created successfully", "success")
-          dispatch(addEvent({event: res.data.event}))
-          handleClose()
-          resetForm();
+          createMeeting(meetingBody, res.data.event)
 
         } else {
           showAlert("Event created successfully", "success")
           dispatch(addEvent({event: res.data.event}))
           handleClose()
           resetForm();
+          dispatch(setShowSendingSpinner({showSendingSpinner: false}))
         }
 
-        dispatch(setShowSendingSpinner({showSendingSpinner: false}))
       
       })
       .catch(()=> {

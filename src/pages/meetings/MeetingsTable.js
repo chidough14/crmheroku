@@ -56,7 +56,21 @@ const MeetingsTable = ({meetings, showModal, user, own}) => {
   const renderBadge = (meeting) => {
     if (meeting.status) {
       if (moment().isBetween(meeting.event.start, meeting.event.end, 'milliseconds', null)) {
-        return <Link to={`/join/${meeting.meetingId}`} style={{color: 'black'}}><Chip  size="small" label="Join" color="success" style={{cursor: "pointer"}} /></Link>
+        return <Link 
+                 to={`/join/${meeting.meetingId}`} 
+                 target="_blank" 
+                 style={{color: 'black'}}
+                 onClick={()=> {
+                  let userDetails = {
+                    id: user.id,
+                    email: user.email
+                  }
+                  
+                  localStorage.setItem("userDetails", JSON.stringify(userDetails))
+                }}
+                >
+                  <Chip  size="small" label="Join" color="success" style={{cursor: "pointer"}} />
+                </Link>
       } else if (moment(meeting.event.end).isBefore(moment())) {
         return <Chip  size="small" label="Ended" color="secondary" />
       } else {
