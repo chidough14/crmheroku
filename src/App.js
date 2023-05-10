@@ -173,7 +173,7 @@ function App() {
             {/* <Route path="/messages" element={<Messages socket={socket} />} /> */}
             <Route path="/settings" element={<Settings />} />
             <Route path="/mymeetings" element={<MyMeetings />} />
-            <Route path="/join/:id/:userId" element={<JoinMeeting />} />
+            <Route path="/join/:id" element={<JoinMeeting />} />
             <Route path="/messages" element={<UserMessages socket={socket} />} /> 
             <Route path="/messages/:id" element={<SingleMessage  socket={socket} />} /> 
             <Route path="/orders" element={<Orders  />} /> 
