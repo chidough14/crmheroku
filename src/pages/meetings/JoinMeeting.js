@@ -18,16 +18,18 @@ const JoinMeeting = () => {
   const [userLoaded, setUserLoaded] = useState(false)
   const [isAllowed, setIsAllowed] = useState(false)
 
+  const obj = JSON.parse(localStorage.getItem("userDetails"))
+
   useEffect(() => {
     const getMeetingData = async () => {
       await instance.get(`meeting/join/${params?.id}`)
       .then((res) => {
           if (res.data.meeting) {
             // let isCreator = (res.data.meeting.user_id === user.id)
-            let isCreator = (res.data.meeting.user_id === parseInt(params.userId))
+            let isCreator = (res.data.meeting.user_id === obj.id)
 
             if (res.data.meeting.meetingType === "1-on-1") {
-              if (res.data.meeting.invitedUsers[0] === user?.email || isCreator) {
+              if (res.data.meeting.invitedUsers[0] === obj.email || isCreator) {
                 if (res.data.meeting.meetingDate === moment().format("L")) {
                   setIsAllowed(true)
                 } else if (moment(res.data.meeting.meetingDate).isBefore(moment().format("L"))) {
@@ -40,7 +42,8 @@ const JoinMeeting = () => {
   
               } else navigate("/login")
             } else if (res.data.meeting.meetingType == "Conference") {
-              const index = res.data.meeting.invitedUsers.findIndex((a) => a === user?.email)
+              // const index = res.data.meeting.invitedUsers.findIndex((a) => a === user?.email)
+              const index = res.data.meeting.invitedUsers.findIndex((a) => a === obj.email)
               if (index !== -1 || isCreator) {
                 if (res.data.meeting.meetingDate === moment().format("L")) {
                   setIsAllowed(true)

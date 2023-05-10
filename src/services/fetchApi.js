@@ -16,7 +16,6 @@ instance.interceptors.request.use(
 
     //const token = store.getState()
     let token =  getToken('token')
-    console.log(process.env.REACT_APP_BASE_URL);
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
