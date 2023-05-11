@@ -84,13 +84,11 @@ const JoinMeeting = () => {
     return meetingID;
   }
 
-  const appId = 623442053
-  const serverSecret = 'adcef43052a3692789e3b26d33049801'
 
   const myMeeting = async (element) => {
     const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
-      appId, 
-      serverSecret, 
+      parseInt(process.env.REACT_APP_ZEGO_APP_ID), 
+      process.env.REACT_APP_ZEGO_SERVER_SECRET, 
       params.id, 
       user.email ? user.email : generateMeetingId(),
       user.name ? user.name : generateMeetingId()
