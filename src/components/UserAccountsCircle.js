@@ -7,14 +7,14 @@ import Divider from '@mui/material/Divider';
 import Tooltip from '@mui/material/Tooltip';
 import Settings from '@mui/icons-material/Settings';
 import Logout from '@mui/icons-material/Logout';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { getToken, removeToken } from '../services/LocalStorageService';
 import { useLogoutUserMutation } from '../services/userAuthApi';
 import { unsetUserToken } from '../features/authSlice';
-import { unsetUserInfo } from '../features/userSlice';
+import { setShowLogoutNotification, unsetUserInfo } from '../features/userSlice';
 
-const UserAccountsCircle = ({name, profile_pic}) => {
+const UserAccountsCircle = ({name, profile_pic, socket}) => {
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const token = getToken()
@@ -40,8 +40,11 @@ const UserAccountsCircle = ({name, profile_pic}) => {
   }
 
   const handleLogout = async () => {
+    dispatch(setShowLogoutNotification({showLogoutNotification: true}))
     const res = await logoutUser({ token })
     if (res.data.status === "success") {
+      socket.emit("logout")
+      dispatch(setShowLogoutNotification({showLogoutNotification: false}))
       dispatch(unsetUserToken({ token: null }))
       dispatch(unsetUserInfo({ id: undefined, email: "", name: "", setting: undefined, created_at: "", profile_pic: "" }))
       removeToken('token')

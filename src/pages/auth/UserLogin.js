@@ -1,11 +1,11 @@
-import { TextField, Button, Box, Alert } from '@mui/material';
+import { TextField, Button, Box, Alert, CircularProgress } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { getToken, storeToken } from '../../services/LocalStorageService';
 import { useLoginUserMutation } from '../../services/userAuthApi';
 import { setUserToken } from '../../features/authSlice';
-import { useDispatch } from 'react-redux';
-import { setUserInfo } from '../../features/userSlice';
+import { useDispatch, useSelector } from 'react-redux';
+import { setShowLoginSpinner, setUserInfo } from '../../features/userSlice';
 
 const UserLogin = () => {
   const [error, setError] = useState({
@@ -16,8 +16,10 @@ const UserLogin = () => {
   const navigate = useNavigate();
   const [loginUser] = useLoginUserMutation()
   const dispatch = useDispatch()
+  const { showLoginSpinner } = useSelector(state => state.user)
 
   const handleSubmit = async (e) => {
+    dispatch(setShowLoginSpinner({showLoginSpinner: true}))
     e.preventDefault();
     const data = new FormData(e.currentTarget);
     const actualData = {
@@ -32,13 +34,16 @@ const UserLogin = () => {
         storeToken(res.data.token)
         dispatch(setUserInfo({ email: res.data.user.email, name: res.data.user.name }))
         dispatch(setUserToken({ token: res.data.token }))
+        dispatch(setShowLoginSpinner({showLoginSpinner: false}))
         navigate('/dashboard')
       }
-      if (res.error && res.error.data.status === "failed") {
-        setError({ status: true, msg: res.error.data.message, type: 'error' })
+      if (res.data && res.data.status === "failed") {
+        setError({ status: true, msg: res.data.message, type: 'error' })
+        dispatch(setShowLoginSpinner({showLoginSpinner: false}))
       }
     } else {
       setError({ status: true, msg: "All Fields are Required", type: 'error' })
+      dispatch(setShowLoginSpinner({showLoginSpinner: false}))
     }
   }
 
@@ -54,7 +59,14 @@ const UserLogin = () => {
       <TextField margin='normal' required fullWidth id='email' name='email' label='Email Address' />
       <TextField margin='normal' required fullWidth id='password' name='password' label='Password' type='password' />
       <Box textAlign='center'>
-        <Button type='submit' variant='contained' sx={{ mt: 3, mb: 2, px: 5 }}>Login</Button>
+        <Button type='submit' variant='contained' sx={{ mt: 3, mb: 2, px: 5 }}>
+          Login 
+        </Button>
+        {
+          showLoginSpinner && (
+            <CircularProgress size={28}  style={{marginLeft: "16px", marginBottom: "-14px"}} />
+          )
+        }
       </Box>
       <NavLink to='/sendpasswordresetemail' >Forgot Password ?</NavLink>
       {error.status ? <Alert severity={error.type} sx={{ mt: 3 }}>{error.msg}</Alert> : ''}

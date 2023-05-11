@@ -159,7 +159,7 @@ export default function AppLayout({socket}) {
   const [open, setOpen] = React.useState(false);
 
   const token = getToken()
-  const {id, name, allUsers, profile_pic, onlineUsers} = useSelector(state => state.user)
+  const {id, name, allUsers, profile_pic, onlineUsers, showLogoutNotification} = useSelector(state => state.user)
   const {list, loadingCompanies} = useSelector(state => state.list)
   const [loggedIn, setLoggedIn] = React.useState(false)
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -339,6 +339,20 @@ export default function AppLayout({socket}) {
     }
   }
 
+  const renderBox = () => {
+    return (
+      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+        <main style={{width: "100%", marginTop: "50px"}}>
+          
+          {
+            showLogoutNotification && (<p style={{margin: "auto", textAlign: "center", color: "green"}}>Logging out...</p>)
+          }
+          <Outlet />
+        </main>
+      </Box>
+    )
+  }
+
   return (
     <>
       <Box sx={{ display: 'flex' }}>
@@ -377,7 +391,7 @@ export default function AppLayout({socket}) {
 
             {
               loggedIn ? 
-              <UserAccountsCircle name={name} profile_pic={profile_pic} /> : 
+              <UserAccountsCircle name={name} profile_pic={profile_pic} socket={socket}/> : 
               <Button 
                 component={NavLink} 
                 to='/login' style={({ isActive }) => { return { backgroundColor: isActive ? '#6d1b7b' : '' } }} 
@@ -535,19 +549,12 @@ export default function AppLayout({socket}) {
                     
                     </List>
                   </Drawer>
-                  <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
-                    <main style={{width: "100%", marginTop: "50px"}}>
-                      <Outlet />
-                    </main>
-                  </Box>
+
+                  {
+                    renderBox()
+                  }
                 </>
-            ) : (
-              <Box component="main" sx={{ flexGrow: 1, p:3 }}>
-                <main style={{width: "100%", marginTop: "50px"}}>
-                  <Outlet />
-                </main>
-              </Box>
-            )
+            ) : renderBox()
         }
       
       </Box>

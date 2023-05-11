@@ -1,10 +1,10 @@
-import { TextField, FormControlLabel, Checkbox, Button, Box, Alert } from '@mui/material';
+import { TextField, FormControlLabel, Checkbox, Button, Box, Alert, CircularProgress } from '@mui/material';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRegisterUserMutation } from '../../services/userAuthApi';
 import { storeToken } from '../../services/LocalStorageService';
-import { useDispatch } from 'react-redux';
-import { setUserInfo } from '../../features/userSlice';
+import { useDispatch, useSelector } from 'react-redux';
+import { setShowLoginSpinner, setUserInfo } from '../../features/userSlice';
 import { setUserToken } from '../../features/authSlice';
 
 const Registration = () => {
@@ -15,8 +15,10 @@ const Registration = () => {
     type: ""
   })
   const navigate = useNavigate();
+  const { showLoginSpinner } = useSelector(state => state.user)
   const [registerUser] = useRegisterUserMutation()
   const handleSubmit = async (e) => {
+    dispatch(setShowLoginSpinner({showLoginSpinner: true}))
     e.preventDefault();
     const data = new FormData(e.currentTarget);
     const actualData = {
@@ -36,17 +38,21 @@ const Registration = () => {
           storeToken(res.data.token)
           dispatch(setUserInfo({ email: res.data.user.email, name: res.data.user.name }))
           dispatch(setUserToken({ token: res.data.token }))
+          dispatch(setShowLoginSpinner({showLoginSpinner: false}))
           navigate('/dashboard')
           //window.location.reload()
         }
         if (res.data.status === "failed") {
           setError({ status: true, msg: res.data.message, type: 'error' })
+          dispatch(setShowLoginSpinner({showLoginSpinner: false}))
         }
       } else {
         setError({ status: true, msg: "Password and Confirm Password Doesn't Match", type: 'error' })
+        dispatch(setShowLoginSpinner({showLoginSpinner: false}))
       }
     } else {
       setError({ status: true, msg: "All Fields are Required", type: 'error' })
+      dispatch(setShowLoginSpinner({showLoginSpinner: false}))
     }
   }
   return <>
@@ -58,6 +64,11 @@ const Registration = () => {
       <FormControlLabel control={<Checkbox value={true} color="primary" name="tc" id="tc" />} label="I agree to term and condition." />
       <Box textAlign='center'>
         <Button type='submit' variant='contained' sx={{ mt: 3, mb: 2, px: 5 }}>Join</Button>
+        {
+          showLoginSpinner && (
+            <CircularProgress size={28}  style={{marginLeft: "16px", marginBottom: "-14px"}} />
+          )
+        }
       </Box>
       {error.status ? <Alert severity={error.type}>{error.msg}</Alert> : ''}
     </Box>

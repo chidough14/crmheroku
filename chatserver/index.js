@@ -91,12 +91,21 @@ socketIO.on('connection', (socket) => {
     
   });
 
+  socket.on('logout', () => {
+    console.log(': A user loggedout');
+
+    //Updates the list of users when a user disconnects from the server
+    arr = arr.filter((user) => user.id !== socket.id)
+    //Sends the list of users to the client
+    socketIO.emit('userLogoutResponse', arr);
+  });
+
   
   socket.on('disconnect', () => {
     console.log(': A user disconnected');
+ 
     //Updates the list of users when a user disconnects from the server
     arr = arr.filter((user) => user.id !== socket.id)
-    // console.log(users);
     //Sends the list of users to the client
     socketIO.emit('userLogoutResponse', arr);
  
