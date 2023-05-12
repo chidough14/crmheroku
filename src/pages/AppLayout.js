@@ -171,6 +171,7 @@ export default function AppLayout({socket}) {
   const [invitedMeetingsData, setInvitedMeetingsData] = React.useState([])
   const { invitedMeetings } = useSelector((state) => state.meeting) 
   const {fetchNotifications} = useSelector(state => state.message)
+  const {activities} = useSelector(state=> state.activity)
   const [openAlert, setOpenAlert] = React.useState(false)
   const [text, setText] = React.useState("")
   const [alertType, setAlertType] = React.useState("")
@@ -353,6 +354,18 @@ export default function AppLayout({socket}) {
     )
   }
 
+  const renderExpandIcon = (open) => {
+    if(open) {
+      return (
+        <ExpandLess />
+      )
+    } else {
+      return (
+        <ExpandMore />
+      )
+    }
+  }
+
   return (
     <>
       <Box sx={{ display: 'flex' }}>
@@ -508,6 +521,10 @@ export default function AppLayout({socket}) {
                                   {a.icon}
                                 </ListItemIcon>
                                 <ListItemText primary={a.name} sx={{ opacity: open ? 1 : 0 }} />
+                                {
+                                  a.name === "Activities" && (<span>{activities.length}</span>)
+                                }
+                               
                               </ListItemButton>
                             </ListItem>
                           </Tooltip>
@@ -522,12 +539,28 @@ export default function AppLayout({socket}) {
                               display: 'block',
                             }}
                           >
-                            <ListItemButton onClick={handleOpenUsersMenu}>
-                              <ListItemIcon>
+                            <ListItemButton 
+                              onClick={handleOpenUsersMenu}
+                              sx={{
+                                minHeight: 48,
+                                justifyContent: open ? 'initial' : 'center',
+                                px: 2.5,
+                              }}
+                            >
+                              <ListItemIcon
+                                sx={{
+                                  minWidth: 0,
+                                  mr: open ? 3 : 'auto',
+                                  justifyContent: 'center',
+                                }}
+                              >
                                 <PeopleOutline />
                               </ListItemIcon>
-                              <ListItemText primary="Online Users" />
-                              {openUsersMenu ? <ExpandLess /> : <ExpandMore />}
+                              <ListItemText primary="Online Users" sx={{ opacity: open ? 1 : 0 }}  />
+                              <span style={{marginTop: "3px"}}>{onlineUsers.filter((b) => b.userId !== id).length}</span>
+                              {
+                                open ? renderExpandIcon(openUsersMenu) : null
+                              }
                             </ListItemButton>
                             <Collapse in={openUsersMenu} timeout="auto" unmountOnExit>
                               <List component="div" disablePadding>
