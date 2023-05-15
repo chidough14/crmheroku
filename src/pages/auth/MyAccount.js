@@ -28,7 +28,7 @@ const MyAccount = () => {
   const [imageLoaded, setImageLoaded] = useState(false)
   const [changeUserPassword] = useChangeUserPasswordMutation()
   const token = getToken()
-  const {id, name, email, created_at, profile_pic, allUsers, showSpinner, showSaveNotification} = useSelector(state => state.user)
+  const {id, name, email, created_at, profile_pic, allUsers, showSpinner, showSaveNotification, onlineUsers} = useSelector(state => state.user)
   const dispatch = useDispatch()
   const [openAlert, setOpenAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
@@ -37,6 +37,8 @@ const MyAccount = () => {
   const [showUpdateProfileForm, setShowUpdateProfileForm] = useState(false);
   const [profile, setProfile] = useState();
   const [loadingProfile, setLoadingProfile] = useState(false);
+  const [lastSeen, setLastSeen] = useState("")
+  const [loadingLastSeen, setLoadingLastSeen] = useState(false)
   const params = useParams()
   const navigate = useNavigate()
 
@@ -55,11 +57,19 @@ const MyAccount = () => {
     setOpenAlert(false);
   };
 
-  useEffect(() => {
-    if (profile_pic !== "") {
-      setImageUrl(profile_pic)
-    }
-  }, [profile_pic])
+  
+  const getLastSeen = async (user_id) => {
+    setLoadingLastSeen(true)
+    await instance.get(`userlogout/${user_id}`)
+    .then((res) => {
+       console.log(res);
+       setLastSeen(res.data.record)
+       setLoadingLastSeen(false)
+    })
+    .catch((e) => {
+       console.log(e);
+    })
+  };
 
   const getUserProfile = async (user_id) => {
     setLoadingProfile(true)
@@ -73,6 +83,20 @@ const MyAccount = () => {
       showAlert("Ooops an error was encountred", "error")
     })
   }
+
+  useEffect(() => {
+    if (params.id === "mine") {
+      
+    } else {
+      getLastSeen(params.id)
+    }
+  }, [params.id, onlineUsers.length])
+
+  useEffect(() => {
+    if (profile_pic !== "") {
+      setImageUrl(profile_pic)
+    }
+  }, [profile_pic])
 
   useEffect(() => {
     
@@ -170,6 +194,15 @@ const MyAccount = () => {
       dispatch(setShowSpinner({showSpinner: false}))
       showAlert("Ooops an error was encountred", "error")
     })
+  }
+
+  const showOnlineStatus = (id) => {
+    let status = onlineUsers.find((a) => a.userId === parseInt(id))
+    if(status){
+      return (<span>Online</span>)
+    } else {
+      return (<span>{loadingLastSeen ?  "Loading status..."  : lastSeen.created_at}</span>)
+    }
   }
 
   return <>
@@ -286,8 +319,17 @@ const MyAccount = () => {
               </Typography>
 
               <Typography variant="h7" display="block"  gutterBottom>
-                <b>Websilte</b> :  { profile?.website }
+                <b>Website</b> :  { profile?.website }
               </Typography>
+
+              {
+                params.id !== "mine" && (
+                  <Typography variant="h7" display="block"  gutterBottom>
+                    <b>Last seen</b> :  { showOnlineStatus(params.id) }
+                  </Typography>
+                )
+              }
+             
             </div>
           )
         }

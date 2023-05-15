@@ -32,6 +32,16 @@ app.get('/*', function(req, res) {
   })
 })
 
+const addLogout = async (user) => {
+  await axios.post(`${process.env.REACT_APP_BASE_URL}addlogout`, {
+    user_id: parseInt(user.userId)
+  })
+  .then((res) => {
+     console.log(res);
+  })
+  .catch((e) => console.log(e))
+}
+
 let users = [];
 let arr = []
 //Add this before the app.get() block
@@ -94,8 +104,12 @@ socketIO.on('connection', (socket) => {
   socket.on('logout', () => {
     console.log(': A user loggedout');
 
+    let record = arr.find((a) => a.id === socket.id)
+    addLogout(record)
+
     //Updates the list of users when a user disconnects from the server
     arr = arr.filter((user) => user.id !== socket.id)
+
     //Sends the list of users to the client
     socketIO.emit('userLogoutResponse', arr);
   });
@@ -103,9 +117,13 @@ socketIO.on('connection', (socket) => {
   
   socket.on('disconnect', () => {
     console.log(': A user disconnected');
+
+    //let record = arr.find((a) => a.id === socket.id)
+    //addLogout(record)
  
     //Updates the list of users when a user disconnects from the server
     arr = arr.filter((user) => user.id !== socket.id)
+
     //Sends the list of users to the client
     socketIO.emit('userLogoutResponse', arr);
  
@@ -181,7 +199,6 @@ app.post("/api/create-checkout-session", async (req, res) => {
 
 
 const createOrder = async (customer, data) => {
-  console.log(customer);
   await axios.post('http://127.0.0.1:8000/api/create-order', {
     user_id: parseInt(customer.metadata.userId),
     products: [...JSON.parse(customer.metadata.items)],
