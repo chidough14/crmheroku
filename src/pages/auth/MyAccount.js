@@ -201,7 +201,7 @@ const MyAccount = () => {
     if(status){
       return (<span>Online</span>)
     } else {
-      return (<span>{loadingLastSeen ?  "Loading status..."  : lastSeen.created_at}</span>)
+      return (<span>{loadingLastSeen ?  "Loading status..."  : moment(lastSeen.created_at).format("MMM Do YYYY, h:mm a")}</span>)
     }
   }
 
