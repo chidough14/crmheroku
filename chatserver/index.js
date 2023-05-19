@@ -190,8 +190,8 @@ app.post("/api/create-checkout-session", async (req, res) => {
     customer: customer.id,
     line_items,
     mode: "payment", 
-    success_url: `${process.env.CLIENT_URL}/checkout-success`, 
-    cancel_url: `${process.env.CLIENT_URL}/activities/${activityId}`, 
+    success_url: `${process.env.CLIENT_URL}checkout-success`, 
+    cancel_url: `${process.env.CLIENT_URL}activities/${activityId}`, 
   }); 
   // res.json({ id: session.id }); 
   res.send({ url: session.url }); 

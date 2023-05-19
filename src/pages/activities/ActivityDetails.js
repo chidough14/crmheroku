@@ -310,7 +310,7 @@ const ActivityDetails = () => {
       }
     })
 
-    axios.post(`https://crmclient14.herokuapp.com/api/create-checkout-session`, {
+    axios.post(`${process.env.REACT_APP_CLIENT_URL}api/create-checkout-session`, {
       userId: activity?.user_id,
       items,
       activityId: activity?.id,
