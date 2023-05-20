@@ -132,6 +132,14 @@ const MyAccount = () => {
     })
   }
 
+  const showLastSeen = (lastSeen) => {
+    if(lastSeen && lastSeen.created_at) {
+      return moment(lastSeen.created_at).format("MMM Do YYYY, h:mm a")
+    } else {
+      return null
+    }
+  }
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
@@ -201,7 +209,7 @@ const MyAccount = () => {
     if(status){
       return (<span>Online</span>)
     } else {
-      return (<span>{loadingLastSeen ?  "Loading status..."  : moment(lastSeen.created_at).format("MMM Do YYYY, h:mm a")}</span>)
+      return (<span>{loadingLastSeen ?  "Loading status..."  : showLastSeen(lastSeen)}</span>)
     }
   }
 
