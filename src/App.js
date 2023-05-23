@@ -162,7 +162,7 @@ function App() {
             <Route path="/login" element={<LoginReg />} />
             <Route path="sendpasswordresetemail" element={<SendPasswordResetEmail />} />
             <Route path="api/reset/:token" element={<ResetPassword />} />
-            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/dashboard" element={<Dashboard  socket={socket} />} />
             <Route path="/lists" element={<Lists socket={socket}/>} />
             <Route path="/listsview/:id" element={<SingleList />} />
             <Route path="/companies/:id" element={<Company />} />
@@ -171,7 +171,7 @@ function App() {
             <Route path="/profile/:id" element={<MyAccount />} />
             <Route path="/events" element={<CalendarEvents socket={socket} />} />
             {/* <Route path="/messages" element={<Messages socket={socket} />} /> */}
-            <Route path="/settings" element={<Settings />} />
+            <Route path="/settings" element={<Settings socket={socket} />} />
             <Route path="/mymeetings" element={<MyMeetings />} />
             <Route path="/join/:id" element={<JoinMeeting />} />
             <Route path="/messages" element={<UserMessages socket={socket} />} /> 

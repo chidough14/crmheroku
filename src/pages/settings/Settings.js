@@ -12,6 +12,8 @@ import { useNavigate } from 'react-router-dom';
 import { getToken } from '../../services/LocalStorageService';
 import UserManagementTable from './UserManagementTable';
 import MuiAlert from '@mui/material/Alert';
+import AnnouncementsTable from './AnnouncementsTable';
+import { setAnnouncements, setAnnouncementsLoading } from '../../features/AnnouncementsSlice';
 
 const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
@@ -45,10 +47,11 @@ function a11yProps(index) {
   };
 }
 
-const Settings = () => {
+const Settings = ({socket}) => {
   const dispatch = useDispatch()
   const {products} = useSelector((state) => state.product) 
   const {companies} = useSelector((state) => state.company) 
+  const {announcements, announcementsLoading} = useSelector((state) => state.announcement) 
   const user = useSelector(state => state.user)
   const [value, setValue] = useState(0)
   const [loading, setLoading] = useState(false)
@@ -108,11 +111,25 @@ const Settings = () => {
     })
   }
 
+  const getAnnouncements = (page = 1) => {
+    dispatch(setAnnouncementsLoading({announcementsLoading: true}))
+    instance.get(`announcements?page=${page}`)
+    .then((res) => {
+      dispatch(setAnnouncements({announcements: res.data.announcements}))
+      dispatch(setAnnouncementsLoading({announcementsLoading: false}))
+      return Promise.resolve(true);
+    })
+    .catch((e)=>{
+      showAlert()
+      return Promise.resolve(false);
+    })
+  }
+
   React.useEffect(() => {
 
     let requests = []
     requests.push(
-      getProducts(), getCompanies()
+      getProducts(), getCompanies(), getAnnouncements()
     )
 
    
@@ -145,8 +162,14 @@ const Settings = () => {
           <Tab label="Companies" {...a11yProps(1)} />
           <Tab label="Products" {...a11yProps(2)} />
           {
-            user?.role === "admin"  && (
+            (user?.role === "admin" || user?.role === "super admin")  && (
               <Tab label="User management" {...a11yProps(3)} />
+            )
+          }
+
+          {
+            user?.role === "super admin" && (
+              <Tab label="Announcements" {...a11yProps(4)} />
             )
           }
         </Tabs>
@@ -168,6 +191,10 @@ const Settings = () => {
 
       <TabPanel value={value} index={3}>
         <UserManagementTable rows={user?.allUsers} />
+      </TabPanel>
+
+      <TabPanel value={value} index={4}>
+        <AnnouncementsTable rows={announcements} loading={announcementsLoading} socket={socket} getAnnouncements={getAnnouncements}  />
       </TabPanel>
 
 

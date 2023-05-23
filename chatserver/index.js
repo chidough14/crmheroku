@@ -101,6 +101,10 @@ socketIO.on('connection', (socket) => {
     
   });
 
+  socket.on('new_announcement', (data) => {
+    socketIO.emit('new_announcement_created', data);
+  });
+
   socket.on('logout', () => {
     console.log(': A user loggedout');
 

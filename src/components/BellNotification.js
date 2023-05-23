@@ -29,6 +29,17 @@ const BellNotification = ({inbox, allUsers, invitedMeetings}) => {
     return initials;
   }
 
+
+  const renderBadgeCount = (inbox, invitedMeetings) => {
+    let total = inbox?.filter((a) => !a.isRead)?.length + invitedMeetings?.filter((b)=> !moment(b.event.end).isBefore(moment()))?.length
+
+    if(total > 9) {
+      return "9+"
+    } else {
+      return inbox?.filter((a) => !a.isRead)?.length + invitedMeetings?.filter((b)=> !moment(b.event.end).isBefore(moment()))?.length
+    }
+  }
+
   const getImage = (row) => {
 
     let image_src = allUsers?.find((a)=> a.id === row.sender_id)?.profile_pic
@@ -84,7 +95,8 @@ const BellNotification = ({inbox, allUsers, invitedMeetings}) => {
     <div>
       <Badge 
         color="primary" 
-        badgeContent={inbox?.filter((a) => !a.isRead)?.length + invitedMeetings?.filter((b)=> !moment(b.event.end).isBefore(moment()))?.length}
+        badgeContent={renderBadgeCount(inbox, invitedMeetings)}
+        // badgeContent={inbox?.filter((a) => !a.isRead)?.length + invitedMeetings?.filter((b)=> !moment(b.event.end).isBefore(moment()))?.length}
       >
         <Notifications style={{cursor: "pointer"}}  onClick={handleClick} />
       </Badge>

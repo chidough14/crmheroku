@@ -8,8 +8,9 @@ import { BarChart } from '../components/dashboard/BarChart';
 import { DoughnutChart } from '../components/dashboard/DoughnutChart';
 import moment from 'moment';
 import instance from '../services/fetchApi';
-import { setLoadingDashboard, setShowBarGraphLoadingNotification, setShowDoughnutGraphLoadingNotification } from '../features/userSlice';
+import { setLoadingDashboard, setShowAnnouncementsLoading, setShowBarGraphLoadingNotification, setShowDoughnutGraphLoadingNotification } from '../features/userSlice';
 import MuiAlert from '@mui/material/Alert';
+import AnnouncementsCard from '../components/dashboard/AnnouncementsCard';
 
 
 const Alert = React.forwardRef(function Alert(props, ref) {
@@ -17,16 +18,17 @@ const Alert = React.forwardRef(function Alert(props, ref) {
 });
 
 
-const Dashboard = () => {
+const Dashboard = ({socket}) => {
   const navigate = useNavigate()
   const token = getToken()
   //const { events } = useSelector(state => state.event)
   const { lists } = useSelector(state => state.list)
   const [eventsToday, setEventsToday] = useState([])
-  const { setting, loadingDashboard, showBarGraphLoadingNotification, showDoughnutGraphLoadingNotification } = useSelector(state => state.user)
+  const { setting, loadingDashboard, showBarGraphLoadingNotification, showDoughnutGraphLoadingNotification, showAnnouncementsLoading } = useSelector(state => state.user)
   const [events, setEvents] = useState([])
   const [list, setList] = useState()
   const [results, setResults] = useState([])
+  const [announcementsResults, setAnnouncementsResults] = useState([])
   const [owner, setOwner] = useState(setting?.product_sales_mode)
   const [doughnutResults, setDoughnutResults] = useState()
   const [measurement, setMeasurement] = useState(setting?.top_sales_mode)
@@ -101,6 +103,26 @@ const Dashboard = () => {
     })
   }
 
+  const getAnnouncements = async () => {
+    dispatch(setShowAnnouncementsLoading({showAnnouncementsLoading: true}))
+    await  instance.get(`dashboardannouncements`)
+    .then((res) => {
+      dispatch(setShowAnnouncementsLoading({showAnnouncementsLoading: false}))
+      setAnnouncementsResults(res.data.announcements)
+    })
+    .catch(()=> {
+      showAlert("Ooops an error was encountered", "error")
+      dispatch(setShowAnnouncementsLoading({showAnnouncementsLoading: false}))
+    })
+  }
+
+  useEffect(() => {
+   
+    socket.on('new_announcement_created', (arr) => {
+      getAnnouncements()
+    });
+  }, [socket])
+
   useEffect(() => {
     if (owner === 'allusers') {
       getTotalProductsSales('dashboard-total-products/allusers')
@@ -122,6 +144,8 @@ const Dashboard = () => {
   }, [measurement])
 
   useEffect(() => {
+
+    getAnnouncements()
 
     let requests = []
     requests.push(
@@ -262,6 +286,13 @@ const Dashboard = () => {
                 )
               }
             
+            </div>
+
+            <div style={{width: "50%"}}>
+              <AnnouncementsCard
+                announcements={announcementsResults}
+                showAnnouncementsLoading={showAnnouncementsLoading}
+              />
             </div>
           </div>
         )
