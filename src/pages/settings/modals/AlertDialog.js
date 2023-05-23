@@ -6,7 +6,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 
-const AlertDialog = ({open, setOpen, deleteItem, companyMode, showDeleteNotification}) => {
+const AlertDialog = ({open, setOpen, deleteItem, companyMode, showDeleteNotification, header}) => {
 
   const handleClose = () => {
     setOpen(false);
@@ -21,11 +21,11 @@ const AlertDialog = ({open, setOpen, deleteItem, companyMode, showDeleteNotifica
         aria-describedby="alert-dialog-description"
       >
         <DialogTitle id="alert-dialog-title">
-         Delete {companyMode ? "Company" : "Product"}
+         Delete {header}
         </DialogTitle>
         <DialogContent>
           <DialogContentText id="alert-dialog-description">
-           Are you sure you want to delete this {companyMode ? "company" : "product"}?
+           Are you sure you want to delete this {header}?
           </DialogContentText>
 
           <DialogContentText id="alert-dialog-description" sx={{textAlign: "center", color: "red"}}>

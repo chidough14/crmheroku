@@ -11,6 +11,7 @@ import productReducer from '../features/ProductSlice'
 import invoiceReducer from '../features/InvoiceSlice'
 import messageReducer from '../features/MessagesSlice'
 import meetingReducer from '../features/MeetingSlice'
+import announcementReducer from '../features/AnnouncementsSlice'
 
 export const store = configureStore({
   reducer: {
@@ -24,7 +25,8 @@ export const store = configureStore({
     product: productReducer,
     message: messageReducer,
     invoice: invoiceReducer,
-    meeting: meetingReducer
+    meeting: meetingReducer,
+    announcement: announcementReducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware(

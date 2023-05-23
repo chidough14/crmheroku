@@ -139,6 +139,14 @@ const ProductsTable = ({rows, getProducts, loading, user}) => {
     setOpenSnackAlert(false);
   };
 
+  const renderDisabled = (user) => {
+    if(user?.role === "admin" || user?.role === "super admin"){
+      return false
+    } else {
+      return true
+    }
+  }
+
   return (
     <>
     <Button
@@ -149,7 +157,7 @@ const ProductsTable = ({rows, getProducts, loading, user}) => {
         setOpenModal(true)
         setEditMode(false)
       }}
-      disabled={user?.role !== "admin"}
+      disabled={renderDisabled(user)}
     >
       <AddOutlined />
     </Button>
@@ -196,7 +204,7 @@ const ProductsTable = ({rows, getProducts, loading, user}) => {
               <TableCell style={{ width: 160 }}>
                 <Button
                   size='small'
-                  disabled={user?.role !== "admin"}
+                  disabled={renderDisabled(user)}
                 >
                   <EditOutlined
                     style={{cursor: "pointer"}}
@@ -210,7 +218,7 @@ const ProductsTable = ({rows, getProducts, loading, user}) => {
                
                 <Button
                   size='small'
-                  disabled={user?.role !== "admin"}
+                  disabled={renderDisabled(user)}
                 >
                   <DeleteOutlined 
                     style={{cursor: "pointer"}}
@@ -256,6 +264,7 @@ const ProductsTable = ({rows, getProducts, loading, user}) => {
       deleteItem={deleteProduct}
       companyMode={false}
       showDeleteNotification={showDeleteNotification}
+      header="Product"
     />
 
     <Snackbar open={openSnackAlert} autoHideDuration={6000} onClose={handleCloseAlert}>

@@ -141,6 +141,14 @@ const CompaniesTable = ({rows, getCompanies, loading, user}) => {
     //after delete set productobj to empty
   };
 
+  const renderDisabled = (user) => {
+    if(user?.role === "admin" || user?.role === "super admin"){
+      return false
+    } else {
+      return true
+    }
+  }
+
   return (
     <>
     <Button  
@@ -151,7 +159,7 @@ const CompaniesTable = ({rows, getCompanies, loading, user}) => {
         setOpenModal(true)
         setEditMode(false)
       }}
-      disabled={user?.role !== "admin"}
+      disabled={renderDisabled(user)}
     >
       <AddOutlined />
     </Button>
@@ -198,7 +206,8 @@ const CompaniesTable = ({rows, getCompanies, loading, user}) => {
               <TableCell style={{ width: 160 }}>
                 <Button
                   size='small'
-                  disabled={user?.role !== "admin"}
+                  disabled={renderDisabled(user)}
+                  // disabled={user?.role !== "admin" || user?.role !== "super admin"}
                 >
                   <EditOutlined
                     style={{cursor: "pointer"}}
@@ -212,7 +221,7 @@ const CompaniesTable = ({rows, getCompanies, loading, user}) => {
                
                 <Button
                   size='small'
-                  disabled={user?.role !== "admin"}
+                  disabled={renderDisabled(user)}
                 >
                   <DeleteOutlined 
                     style={{cursor: "pointer"}}
@@ -266,6 +275,7 @@ const CompaniesTable = ({rows, getCompanies, loading, user}) => {
       deleteItem={deleteCompany}
       companyMode={true}
       showDeleteNotification={showDeleteNotification}
+      header="Company"
     />
     </>
   );

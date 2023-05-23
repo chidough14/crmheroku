@@ -17,7 +17,8 @@ const initialState = {
   showBarGraphLoadingNotification: false,
   showDoughnutGraphLoadingNotification: false,
   showLogoutNotification: false,
-  showLoginSpinner: false
+  showLoginSpinner: false,
+  showAnnouncementsLoading: false,
 }
 
 export const userSlice = createSlice({
@@ -84,6 +85,9 @@ export const userSlice = createSlice({
     },
     setShowLoginSpinner: (state, action) => {
       state.showLoginSpinner = action.payload.showLoginSpinner
+    },
+    setShowAnnouncementsLoading: (state, action) => {
+      state.showAnnouncementsLoading = action.payload.showAnnouncementsLoading
     }
   },
 })
@@ -103,7 +107,8 @@ export const {
   setShowBarGraphLoadingNotification,
   setShowDoughnutGraphLoadingNotification,
   setShowLogoutNotification,
-  setShowLoginSpinner 
+  setShowLoginSpinner,
+  setShowAnnouncementsLoading 
 } = userSlice.actions
 
 export default userSlice.reducer
