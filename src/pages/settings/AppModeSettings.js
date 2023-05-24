@@ -1,10 +1,11 @@
-import { InputLabel, Select, MenuItem, Button, Snackbar, CircularProgress } from '@mui/material'
+import { InputLabel, Select, MenuItem, Button, Snackbar, CircularProgress, FormControlLabel } from '@mui/material'
 import React, { useEffect, useReducer, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { setShowSaveNotification, updateUserSettings } from '../../features/userSlice'
 import instance from '../../services/fetchApi'
 import MuiAlert from '@mui/material/Alert';
 import { Box } from '@mui/system'
+import Switch from '@mui/material/Switch';
 
 
 const Alert = React.forwardRef(function Alert(props, ref) {
@@ -20,6 +21,7 @@ const AppModeSettings = ({user}) => {
     dashboard_mode: "",
     calendar_mode: "",
     product_sales_mode: "",
+    announcements_mode: false,
     top_sales_mode: "",
     openAlert: false,
     text: "",
@@ -35,13 +37,19 @@ const AppModeSettings = ({user}) => {
     updateData({openAlert: false})
   }
 
+  const handleChange = (event) => {
+    updateData({announcements_mode: event.target.checked})
+  };
+
   useEffect(() => {
     if (user?.setting) {
+      console.log(user?.setting);
       updateData({
         dashboard_mode: user?.setting?.dashboard_mode,
         calendar_mode: user?.setting?.calendar_mode,
         product_sales_mode: user?.setting?.product_sales_mode,
-        top_sales_mode: user?.setting?.top_sales_mode
+        top_sales_mode: user?.setting?.top_sales_mode,
+        announcements_mode: user?.setting?.announcements_mode === "show" ? true : false,
       })
     }
   }, [user?.setting])
@@ -53,7 +61,8 @@ const AppModeSettings = ({user}) => {
       dashboard_mode: data.dashboard_mode,
       calendar_mode: data.calendar_mode,
       product_sales_mode: data.product_sales_mode,
-      top_sales_mode: data.top_sales_mode
+      top_sales_mode: data.top_sales_mode,
+      announcements_mode: data.announcements_mode ? "show" : "hide",
     }
 
     await instance.patch(`settings`, body)
@@ -86,6 +95,20 @@ const AppModeSettings = ({user}) => {
         <MenuItem value="show_doughnut_graph">Show Doughnut Graph</MenuItem>
       </Select>
       <p></p>
+
+    
+
+      <FormControlLabel 
+        control={
+          <Switch
+            checked={data.announcements_mode}
+            onChange={handleChange}
+            inputProps={{ 'aria-label': 'controlled' }}
+          />
+        } 
+        label="Show Announcements widget" 
+      />
+
       <InputLabel id="demo-select-small">Calendar Mode</InputLabel>
       <Select
         id='calendar_mode'

@@ -22,9 +22,9 @@ const AnnouncementsCard = ({announcements, showAnnouncementsLoading}) => {
     <>
        <Card sx={{ minWidth: 275 }}>
         <CardContent>
-          <Box sx={{ width: '100%', maxWidth: 360, bgcolor: 'background.paper' }}>
+          <Box sx={{ width: '100%', bgcolor: 'background.paper' }}>
             <nav aria-label="main mailbox folders">
-              <Typography variant='h5'>
+              <Typography variant='h6'>
                 Latest Announcements
                 {
                   showAnnouncementsLoading && (<span style={{color: "green", marginLeft: "10px", fontSize: "16px"}}>Loading...</span>)
@@ -33,32 +33,28 @@ const AnnouncementsCard = ({announcements, showAnnouncementsLoading}) => {
               <List>
                 {
                   announcements?.map((a) => (
-                    <><ListItem disablePadding sx={{height: "60px"}}>
-                      {/* <ListItemButton>
-                        <ListItemIcon>
-                          <InboxIcon />
-                        </ListItemIcon>
-                        <ListItemText primary="Inbox" />
-                      </ListItemButton> */}
-                      {
-                        a.link ? (
-                            <Typography variant='h6'>
-                              {moment(a.created_at).format("MMMM DD")} 
-                              <span>
-                                <a  href={`${a.link}`}>
-                                  {a.message}
-                                </a>
-                              </span>
+                    <>
+                      <ListItem disablePadding sx={{height: "45px"}}>
+                        {
+                          a.link ? (
+                              <Typography variant='h7'>
+                                {moment(a.created_at).format("MMMM DD")} &nbsp;&nbsp;
+                                <span>
+                                  <a  href={`${a.link}`}>
+                                    {a.message}
+                                  </a>
+                                </span>
+                              </Typography>
+                          ) : (
+                            <Typography variant='h7'>
+                              {moment(a.created_at).format("MMMM DD")}  &nbsp;&nbsp; {a.message}
                             </Typography>
-                        ) : (
-                          <Typography variant='h6'>
-                            {moment(a.created_at).format("MMMM DD")} {a.message}
-                          </Typography>
-                        )
-                      }
-                    
-                    </ListItem>
-                     <Divider /></>
+                          )
+                        }
+                      
+                      </ListItem>
+                      <Divider />
+                    </>
                   ))
                 }
                
