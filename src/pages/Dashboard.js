@@ -288,12 +288,17 @@ const Dashboard = ({socket}) => {
             
             </div>
 
-            <div style={{width: "50%"}}>
-              <AnnouncementsCard
-                announcements={announcementsResults}
-                showAnnouncementsLoading={showAnnouncementsLoading}
-              />
-            </div>
+            {
+              setting?.announcements_mode === "show" && (
+                <div style={{width: "50%"}}>
+                  <AnnouncementsCard
+                    announcements={announcementsResults}
+                    showAnnouncementsLoading={showAnnouncementsLoading}
+                  />
+                </div>
+              )
+            }
+          
           </div>
         )
       }
