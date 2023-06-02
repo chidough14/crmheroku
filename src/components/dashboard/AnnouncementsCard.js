@@ -15,9 +15,11 @@ import InboxIcon from '@mui/icons-material/Inbox';
 import DraftsIcon from '@mui/icons-material/Drafts';
 import { CardHeader } from '@mui/material';
 import moment from 'moment';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const AnnouncementsCard = ({announcements, showAnnouncementsLoading}) => {
+  const navigate = useNavigate()
+
   return (
     <>
        <Card sx={{ minWidth: 275 }}>
@@ -64,7 +66,12 @@ const AnnouncementsCard = ({announcements, showAnnouncementsLoading}) => {
           </Box>
         </CardContent>
         <CardActions>
-          <Button size="small">View all announcements</Button>
+          <Button 
+            size="small"
+            onClick={()=> navigate(`/announcements`)}
+          >
+            View all announcements
+          </Button>
         </CardActions>
       </Card>
     </>

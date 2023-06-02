@@ -4,7 +4,8 @@ const initialState = {
   announcements: undefined,
   announcementsLoading: false,
   showAddSpinner: false,
-  showDeleteNotification: false
+  showDeleteNotification: false,
+  categories: []
 }
 
 export const AnnouncementsSlice = createSlice({
@@ -33,6 +34,9 @@ export const AnnouncementsSlice = createSlice({
     removeAnnouncement: (state, action) => {
       state.announcements.data = state.announcements.data.filter((a) => a.id !== action.payload.announcementId)
     },
+    setCategories: (state, action) => {
+      state.categories = action.payload.categories
+    }
   },
 })
 
@@ -43,7 +47,8 @@ export const {
   setShowAddSpinner,
   updateAnnouncement,
   setShowDeleteNotification,
-  removeAnnouncement
+  removeAnnouncement,
+  setCategories
 } = AnnouncementsSlice.actions
 
 export default AnnouncementsSlice.reducer
