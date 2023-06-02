@@ -1,11 +1,11 @@
-import { Box, Button, CircularProgress, Modal, TextField, Typography} from '@mui/material'
+import { Box, Button, CircularProgress, FormControl, MenuItem, Modal, Select, TextField, Typography} from '@mui/material'
 import MuiAlert from '@mui/material/Alert';
 import { useFormik } from 'formik';
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import * as yup from 'yup';
 import instance from '../../../services/fetchApi';
-import { addAnnouncement, setShowAddSpinner, updateAnnouncement } from '../../../features/AnnouncementsSlice';
+import { addAnnouncement, setCategories, setShowAddSpinner, updateAnnouncement } from '../../../features/AnnouncementsSlice';
 
 const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
@@ -30,9 +30,13 @@ const validationSchema = yup.object({
 });
 
 const AddAnnouuncementModal = ({open, setOpen, setOpenAlert, setAlertMessage, setSeverity, announcement, editMode, socket}) => {
-  const handleClose = () => setOpen(false);
+  const handleClose = () => {
+    setOpen(false);
+    setCategoryId('')
+  }
   const dispatch = useDispatch()
-  const { showAddSpinner } = useSelector(state => state.announcement)
+  const { showAddSpinner, categories } = useSelector(state => state.announcement)
+  const [categoryId, setCategoryId] = useState()
 
   useEffect(() => {
     if (editMode && announcement) {
@@ -41,17 +45,33 @@ const AddAnnouuncementModal = ({open, setOpen, setOpenAlert, setAlertMessage, se
 
   }, [editMode, announcement])
 
+  const getCategories = async () => {
+    await instance.get(`categories`)
+    .then((res) => {
+      dispatch(setCategories({categories: res.data.categories}))
+    })
+    .catch(() => {
+
+    })
+  }
+
+  useEffect(() => {
+    getCategories()
+  }, [])
+
   const formik = useFormik({
     initialValues: {
       message: '',
-      link: ''
+      link: '',
+      category_id: ''
     },
     validationSchema: validationSchema,
     onSubmit: async (values, {resetForm}) => {
       dispatch(setShowAddSpinner({showAddSpinner: true}))
       let body = {
         message: values.message,
-        link: values.link
+        link: values.link,
+        category_id: categoryId
       }
 
       if(editMode) {
@@ -64,6 +84,7 @@ const AddAnnouuncementModal = ({open, setOpen, setOpenAlert, setAlertMessage, se
           dispatch(updateAnnouncement({announcement: res.data.announcement}))
           handleClose()
           resetForm()
+          setCategoryId('')
         })
         .catch((err) => {
           dispatch(setShowAddSpinner({showAddSpinner: false}))
@@ -84,6 +105,7 @@ const AddAnnouuncementModal = ({open, setOpen, setOpenAlert, setAlertMessage, se
           dispatch(addAnnouncement({announcement: res.data.announcement}))
           handleClose()
           resetForm()
+          setCategoryId('')
         })
         .catch((err) => {
           dispatch(setShowAddSpinner({showAddSpinner: false}))
@@ -107,6 +129,11 @@ const AddAnnouuncementModal = ({open, setOpen, setOpenAlert, setAlertMessage, se
     } else {
       return text
     }
+  }
+
+  const handleChange = (e) => {
+    console.log(e.target.value)
+    setCategoryId(e.target.value)
   }
 
   return (
@@ -145,7 +172,27 @@ const AddAnnouuncementModal = ({open, setOpen, setOpenAlert, setAlertMessage, se
               onChange={formik.handleChange}
             />
             <p></p>
-           
+
+            <Typography variant='h7'>Categories</Typography>
+            <FormControl fullWidth>
+              <Select
+                labelId="demo-simple-select-label"
+                id="demo-simple-select"
+                value={categoryId}
+                onChange={handleChange}
+                size="small"
+                sx={{borderRadius: "30px"}}
+              >
+                {
+                  categories.map((a) => (
+                    <MenuItem value={a.id}>
+                      {a.name}
+                    </MenuItem>
+                  ))
+                }
+              </Select>
+            </FormControl>
+            <p></p>
             <div style={{display: "flex", justifyContent: "space-between"}}>
               <Button size='small' color="primary" variant="contained"  type="submit" style={{borderRadius: "30px"}}>
               {editMode ? showButtonText("Save") : showButtonText("Add")}

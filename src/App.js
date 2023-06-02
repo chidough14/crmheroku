@@ -35,6 +35,7 @@ import MyAccount from "./pages/auth/MyAccount";
 
 import socketIO from 'socket.io-client';
 import CheckoutSuccess from "./components/CheckoutSuccess";
+import Announcements from "./pages/announcements/Announcements";
 
 const socket = socketIO('');
 // const socket = socketIO('http://localhost:4000');
@@ -178,6 +179,7 @@ function App() {
             <Route path="/messages/:id" element={<SingleMessage  socket={socket} />} /> 
             <Route path="/orders" element={<Orders  />} /> 
             <Route path="/checkout-success" element={<CheckoutSuccess />} />
+            <Route path="/announcements" element={<Announcements />} />
           </Route>
           <Route path="*" element={<h1>Error 404 Page not found !!</h1>} />
         </Routes>
