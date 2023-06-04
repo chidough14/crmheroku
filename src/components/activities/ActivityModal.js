@@ -45,7 +45,7 @@ const validationSchema = yup.object({
     .required('Type is required'),
 });
 
-const ActivityModal = ({open, setOpen, companyObject, openActivityModal, activity, editMode}) => {
+const ActivityModal = ({open, setOpen, companyObject, openActivityModal, activity, editMode, mode}) => {
  
   const [openAlert, setOpenAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
@@ -194,6 +194,10 @@ const ActivityModal = ({open, setOpen, companyObject, openActivityModal, activit
           handleClose()
           resetForm();
           dispatch(setShowSendingSpinner({showSendingSpinner: false}))
+
+          if(mode === "dashboard") {
+            navigate(`/activities/${res.data.activity.id}`, {state: {showSuccessAlert: true}})
+          }
         })
         .catch(()=> {
           showAlert("Ooops an error was encountered", "error")
