@@ -3,7 +3,7 @@ import React from 'react'
 import { useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import PropTypes from 'prop-types';
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { addProductItemToActivity, deleteActivityEvent, removeActivity, removeInvoiceFromActivity, removeProductItem, setClosePrompt, setShowDeleteNotification, setSingleActivity, updateProductItem } from '../../features/ActivitySlice'
 import instance from '../../services/fetchApi'
 import { AddOutlined, DeleteOutlined, EditOutlined } from '@mui/icons-material';
@@ -87,6 +87,8 @@ const ActivityDetails = () => {
   const [openAlert, setOpenAlert] =  React.useState(false);
   const [alertMessage, setAlertMessage] =  React.useState("");
   const [severity, setSeverity] =  React.useState("");
+  
+  const {state} = useLocation()
 
 
   const showAlert = (msg, sev) => {
@@ -113,6 +115,12 @@ const ActivityDetails = () => {
       navigate('/login')
     }
   }, [token])
+
+  useEffect(() => {
+    if (state && state.showSuccessAlert) {
+      showAlert("Activity created", "success")
+    }
+  }, [state])
 
   const handleChange = (event, newValue) => {
     setValue(newValue);

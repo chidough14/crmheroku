@@ -8,18 +8,18 @@ import ListItemText from '@mui/material/ListItemText';
 import Divider from '@mui/material/Divider';
 import InboxIcon from '@mui/icons-material/Inbox';
 import DraftsIcon from '@mui/icons-material/Drafts';
-import { Autocomplete, CircularProgress, FormControlLabel, Pagination, TextField, Typography } from '@mui/material';
+import { Autocomplete, Button, CircularProgress, FormControlLabel, Pagination, TextField, Typography } from '@mui/material';
 import instance from '../../services/fetchApi';
 import { useDispatch, useSelector } from 'react-redux';
 import { setAnnouncements, setCategories } from '../../features/AnnouncementsSlice';
 import { setAnnouncementsLoading } from '../../features/AnnouncementsSlice';
 import moment from 'moment';
 import Checkbox from '@mui/material/Checkbox';
+import { SearchOutlined } from '@mui/icons-material';
 
 const style = {
   backgroundColor: "white",
-  borderRadius: "50px",
-  width: "80%"
+  borderRadius: "50px"
 }
 
 export default function Announcements() {
@@ -27,6 +27,7 @@ export default function Announcements() {
   const {announcements, announcementsLoading, categories} = useSelector(state => state.announcement)
   const [page, setPage] = useState(1);
   const [categoryNames, setCategoryNames] = useState([]);
+  const [text, setText] = useState("");
 
   const getAnnouncements = async (page = 1) => {
     dispatch(setAnnouncementsLoading({announcementsLoading: true}))
@@ -87,46 +88,55 @@ export default function Announcements() {
 
   }, [announcements?.current_page])
 
+  const handleSearch = async (text, page = 1) => {
+    dispatch(setAnnouncementsLoading({announcementsLoading: true}))
+ 
+    await instance.get(`search-announcements?query=${text}&page=${page}`)
+    .then((res) => {
+      dispatch(setAnnouncementsLoading({announcementsLoading: false}))
+      dispatch(setAnnouncements({announcements: res.data.announcements}))
+    })
+  }
+
   return (
     <>
-      <Autocomplete
-        size='small'
-        freeSolo
-        id="free-solo-2-demo"
-        disableClearable
-        options={[]}
-        getOptionLabel={(option) => option.name || ""}
-        renderInput={(params) => (
-          <TextField
-            fullWidth
-            size="small"
-            {...params}
-            label="Search Announcements"
-            InputProps={{
-              ...params.InputProps,
-              type: 'search',
-            }}
-            style={style}
-          />
-        )}
-        onInputChange={(e)=> console.log("test")}
-        onChange={(e, f)=> {
-          // if (activityModal){
-          //   populateFields(f)
+      <div style={{display: "flex"}}>
+        <Autocomplete
+          size='small'
+          freeSolo
+          id="free-solo-2-demo"
+          disableClearable
+          options={[]}
+          getOptionLabel={(option) => option.name || ""}
+          renderInput={(params) => (
+            <TextField
+              fullWidth
+              size="small"
+              {...params}
+              label="Search Announcements"
+              InputProps={{
+                ...params.InputProps,
+                type: 'search',
+              }}
+              style={style}
+            />
+          )}
+          onInputChange={(e)=> {
+            setText(e.target.value)
+          }}
+          onChange={(e, f)=> console.log(e)}
+          style={{
+            width: "60%"
+          }}
+        />
 
-          // } else {
-          //   navigate(`/companies/${f.id}`)
-          // }
-        }}
-        style={{
-          display: "flex",
-          alignSelf: "center",
-          justifyContent: "center",
-          flexDirection: "column",
-          marginBottom: "30px"
-          //padding: 10,
-        }}
-      />
+        <Button 
+          variant="contained"
+          onClick={() => handleSearch(text)}
+        >
+          <SearchOutlined />
+        </Button>
+       </div>
 
       {
         categories.map((a) => (

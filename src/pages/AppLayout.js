@@ -156,7 +156,7 @@ const sideBarItems = [
 
 export default function AppLayout({socket}) {
   const theme = useTheme();
-  const [open, setOpen] = React.useState(false);
+  const [open, setOpen] = React.useState(true);
 
   const token = getToken()
   const {id, name, allUsers, profile_pic, onlineUsers, showLogoutNotification} = useSelector(state => state.user)

@@ -1,4 +1,4 @@
-import {  CircularProgress,  Typography, Box, Snackbar } from '@mui/material';
+import {  CircularProgress,  Typography, Box, Snackbar, Button, Tooltip } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { getToken } from '../services/LocalStorageService';
 import React, { useEffect, useState } from 'react';
@@ -11,6 +11,8 @@ import instance from '../services/fetchApi';
 import { setLoadingDashboard, setShowAnnouncementsLoading, setShowBarGraphLoadingNotification, setShowDoughnutGraphLoadingNotification } from '../features/userSlice';
 import MuiAlert from '@mui/material/Alert';
 import AnnouncementsCard from '../components/dashboard/AnnouncementsCard';
+import { AddOutlined } from '@mui/icons-material';
+import ActivityModal from '../components/activities/ActivityModal';
 
 
 const Alert = React.forwardRef(function Alert(props, ref) {
@@ -35,6 +37,8 @@ const Dashboard = ({socket}) => {
   const [openAlert, setOpenAlert] = useState(false);
   const [severity, setSeverity] = useState("");
   const [alertMessage, setAlertMessage] = useState("");
+  const [open, setOpen] = useState(false);
+  const handleOpen = () => setOpen(true);
 
   const showAlert = (msg, sev) => {
     setOpenAlert(true)
@@ -213,7 +217,17 @@ const Dashboard = ({socket}) => {
           </Box>
         ) : (
           <div>
-            <Typography variant='h6'><b>Dashboard</b></Typography>
+            
+            <div style={{display: "flex", justifyContent: "space-between"}}>
+              <Typography variant='h6'><b>Dashboard</b></Typography>
+
+              <Tooltip title="Add Activity">
+                <Button variant="contained" size='small' onClick={handleOpen} style={{borderRadius: "30px", marginLeft: "30px"}}>
+                  <AddOutlined />
+                </Button>
+              </Tooltip>
+            </div>
+
             <div style={{display: "flex", justifyContent: "space-between", columnGap: "30px", marginBottom: "30px"}}>
               <div style={{width: "90%"}}>
                 <DashboardCard type="list" list={list}  />
@@ -302,6 +316,12 @@ const Dashboard = ({socket}) => {
           </div>
         )
       }
+
+      <ActivityModal
+        open={open}
+        setOpen={setOpen}
+        mode="dashboard"
+      />
 
       <Snackbar open={openAlert} autoHideDuration={6000} onClose={handleCloseAlert}>
         <Alert onClose={handleCloseAlert} severity={severity} sx={{ width: '100%' }}>

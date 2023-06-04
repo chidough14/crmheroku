@@ -319,6 +319,7 @@ const Activities = ({socket}) => {
       <ActivityModal
         open={open}
         setOpen={setOpen}
+        mode="activities"
       />
 
 

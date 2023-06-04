@@ -54,12 +54,6 @@ socketIO.on('connection', (socket) => {
 
     arr.push({id: socket.id, userId: userId})
     socketIO.emit('newUserResponse', arr);
-    // if (ids.includes(userId)) {
-
-    // } else {
-    //   arr.push({id: socket.id, userId: userId})
-    //   socketIO.emit('newUserResponse', arr);
-    // }
    
   });
 
