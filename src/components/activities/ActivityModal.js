@@ -195,7 +195,7 @@ const ActivityModal = ({open, setOpen, companyObject, openActivityModal, activit
           resetForm();
           dispatch(setShowSendingSpinner({showSendingSpinner: false}))
 
-          if(mode === "dashboard") {
+          if(mode === "sidebar") {
             navigate(`/activities/${res.data.activity.id}`, {state: {showSuccessAlert: true}})
           }
         })

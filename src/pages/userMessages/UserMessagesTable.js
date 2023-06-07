@@ -219,6 +219,7 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
 
   return (
     <>
+    <Typography variant='h7'><b>{ isInbox ? "Inbox" : "Outbox"}</b></Typography>
     <TableContainer component={Paper}>
       <Table sx={{ minWidth: 650 }} aria-label="custom pagination table">
         <TableHead>
