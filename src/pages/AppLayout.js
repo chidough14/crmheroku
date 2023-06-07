@@ -18,7 +18,7 @@ import ListItemText from '@mui/material/ListItemText';
 import { Link, matchPath, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { getToken } from "../services/LocalStorageService";
-import { DashboardOutlined, DensitySmallOutlined, MeetingRoomOutlined, MessageOutlined, PeopleOutline, SettingsOutlined, ShoppingCartOutlined } from '@mui/icons-material';
+import { AddOutlined, DashboardOutlined, DensitySmallOutlined, MeetingRoomOutlined, MessageOutlined, PeopleOutline, SettingsOutlined, ShoppingCartOutlined } from '@mui/icons-material';
 import ListIcon from '@mui/icons-material/List';
 import PointOfSaleIcon from '@mui/icons-material/PointOfSale';
 import CalendarMonthIcon from '@mui/icons-material/CalendarViewMonth';
@@ -36,6 +36,7 @@ import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import StarBorder from '@mui/icons-material/StarBorder';
 import { setOnlineUsers } from '../features/userSlice';
+import ActivityModal from '../components/activities/ActivityModal';
 
 
 const Alert = React.forwardRef(function Alert(props, ref) {
@@ -157,6 +158,7 @@ const sideBarItems = [
 export default function AppLayout({socket}) {
   const theme = useTheme();
   const [open, setOpen] = React.useState(true);
+  const [openActivityModal, setOpenActivityModal] = React.useState(false);
 
   const token = getToken()
   const {id, name, allUsers, profile_pic, onlineUsers, showLogoutNotification} = useSelector(state => state.user)
@@ -177,7 +179,9 @@ export default function AppLayout({socket}) {
   const [alertType, setAlertType] = React.useState("")
   const navigate = useNavigate()
 
-  const [openUsersMenu, setOpenUsersMenu] = React.useState(true);
+  const handleOpen = () => setOpenActivityModal(true);
+
+  const [openUsersMenu, setOpenUsersMenu] = React.useState(false);
 
   const handleOpenUsersMenu = () => {
     setOpenUsersMenu(!openUsersMenu);
@@ -527,6 +531,35 @@ export default function AppLayout({socket}) {
                       </IconButton>
                     </DrawerHeader>
                     <Divider />
+                    {
+                      isListPage?.pathnameBase !== "/listsview" && (
+                        <Tooltip title="Start Activity">
+                          {
+                            open ? (
+                              <Button 
+                                variant="contained" 
+                                size='small' 
+                                onClick={handleOpen} 
+                                style={{
+                                  borderRadius: "30px", 
+                                  marginTop: "10px", 
+                                  width: "80%", 
+                                  marginLeft: "20px"
+                                }}
+                              >
+                                <AddOutlined />Start Activity
+                              </Button>
+                            ) : (
+                              <IconButton color="primary" aria-label="start-activity" size="large"  onClick={handleOpen}>
+                                <AddOutlined fontSize="inherit" />
+                              </IconButton>
+                            )
+                          }
+                         
+                        </Tooltip>
+                      )
+                    }
+                  
                     <List>
                       {
                         isListPage?.pathnameBase === "/listsview" ? (
@@ -630,46 +663,48 @@ export default function AppLayout({socket}) {
 
                       {
                          isListPage?.pathnameBase !== "/listsview" &&  (
-                          <ListItem 
-                            disablePadding 
-                            sx={{ 
-                              display: 'block',
-                            }}
-                          >
-                            <ListItemButton 
-                              onClick={handleOpenUsersMenu}
-                              sx={{
-                                minHeight: 48,
-                                justifyContent: open ? 'initial' : 'center',
-                                px: 2.5,
+                          <Tooltip title="Online users">
+                            <ListItem 
+                              disablePadding 
+                              sx={{ 
+                                display: 'block',
                               }}
                             >
-                              {
-                                renderOnlineUsres(onlineUsers.filter((b) => b.userId !== id))
-                              }
-
-                              <ListItemText primary="Online Users" sx={{ opacity: open ? 1 : 0 }}  />
-
-                              {open && <span style={{marginTop: "3px"}}>{onlineUsers.filter((b) => b.userId !== id).length}</span>}
-
-                              {
-                                open ? renderExpandIcon(openUsersMenu) : null
-                              }
-                            </ListItemButton>
-                            <Collapse in={openUsersMenu} timeout="auto" unmountOnExit>
-                              <List component="div" disablePadding>
-    
+                              <ListItemButton 
+                                onClick={handleOpenUsersMenu}
+                                sx={{
+                                  minHeight: 48,
+                                  justifyContent: open ? 'initial' : 'center',
+                                  px: 2.5,
+                                }}
+                              >
                                 {
-                                  onlineUsers.filter((b) => b.userId !== id).map((a) => (
-                                    <ListItemButton sx={{ pl: 4 }}  onClick={() => navigate(`/profile/${allUsers?.find((c)=> c.id === a.userId)?.id}`)}>
-                                    {getImage(a.userId)}
-                                      <ListItemText primary={allUsers?.find((c) => c.id === a.userId)?.name} />
-                                    </ListItemButton>
-                                  ))
+                                  renderOnlineUsres(onlineUsers.filter((b) => b.userId !== id))
                                 }
-                              </List>
-                            </Collapse>
-                          </ListItem>
+
+                                <ListItemText primary="Online Users" sx={{ opacity: open ? 1 : 0 }}  />
+
+                                {open && <span style={{marginTop: "3px"}}>{onlineUsers.filter((b) => b.userId !== id).length}</span>}
+
+                                {
+                                  open ? renderExpandIcon(openUsersMenu) : null
+                                }
+                              </ListItemButton>
+                              <Collapse in={openUsersMenu} timeout="auto" unmountOnExit>
+                                <List component="div" disablePadding>
+      
+                                  {
+                                    onlineUsers.filter((b) => b.userId !== id).map((a) => (
+                                      <ListItemButton sx={{ pl: 4 }}  onClick={() => navigate(`/profile/${allUsers?.find((c)=> c.id === a.userId)?.id}`)}>
+                                      {getImage(a.userId)}
+                                        <ListItemText primary={allUsers?.find((c) => c.id === a.userId)?.name} />
+                                      </ListItemButton>
+                                    ))
+                                  }
+                                </List>
+                              </Collapse>
+                            </ListItem>
+                          </Tooltip>
                          )
                       }
                      
@@ -685,6 +720,12 @@ export default function AppLayout({socket}) {
         }
       
       </Box>
+
+      <ActivityModal
+        open={openActivityModal}
+        setOpen={setOpenActivityModal}
+        mode="sidebar"
+      />
 
 
       <Snackbar open={openAlert} autoHideDuration={6000} onClose={handleCloseAlert}>

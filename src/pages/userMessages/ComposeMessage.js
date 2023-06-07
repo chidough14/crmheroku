@@ -179,7 +179,7 @@ const ComposeMessage = ({replyMode, singleMessage, socket, state, sendingMessage
       <Box sx={style}>
         <form onSubmit={formik.handleSubmit}>
           <Typography variant='h7' style={{marginBottom: "10px"}}>
-            Compose Message
+            <b>Compose Message</b>
           </Typography>
           <p></p>
           {

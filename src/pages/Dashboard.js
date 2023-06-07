@@ -38,7 +38,7 @@ const Dashboard = ({socket}) => {
   const [severity, setSeverity] = useState("");
   const [alertMessage, setAlertMessage] = useState("");
   const [open, setOpen] = useState(false);
-  const handleOpen = () => setOpen(true);
+  // const handleOpen = () => setOpen(true);
 
   const showAlert = (msg, sev) => {
     setOpenAlert(true)
@@ -220,12 +220,6 @@ const Dashboard = ({socket}) => {
             
             <div style={{display: "flex", justifyContent: "space-between"}}>
               <Typography variant='h6'><b>Dashboard</b></Typography>
-
-              <Tooltip title="Add Activity">
-                <Button variant="contained" size='small' onClick={handleOpen} style={{borderRadius: "30px", marginLeft: "30px"}}>
-                  <AddOutlined />
-                </Button>
-              </Tooltip>
             </div>
 
             <div style={{display: "flex", justifyContent: "space-between", columnGap: "30px", marginBottom: "30px"}}>
