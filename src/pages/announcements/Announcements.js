@@ -11,11 +11,12 @@ import DraftsIcon from '@mui/icons-material/Drafts';
 import { Autocomplete, Button, CircularProgress, FormControlLabel, Pagination, TextField, Typography } from '@mui/material';
 import instance from '../../services/fetchApi';
 import { useDispatch, useSelector } from 'react-redux';
-import { setAnnouncements, setCategories } from '../../features/AnnouncementsSlice';
+import { setAnnouncements, setCategories, setSortOptionValue } from '../../features/AnnouncementsSlice';
 import { setAnnouncementsLoading } from '../../features/AnnouncementsSlice';
 import moment from 'moment';
 import Checkbox from '@mui/material/Checkbox';
 import { SearchOutlined } from '@mui/icons-material';
+import SortButton from '../orders/SortButton';
 
 const style = {
   backgroundColor: "white",
@@ -24,10 +25,11 @@ const style = {
 
 export default function Announcements() {
   const dispatch = useDispatch()
-  const {announcements, announcementsLoading, categories} = useSelector(state => state.announcement)
+  const {announcements, announcementsLoading, categories, sortOption} = useSelector(state => state.announcement)
   const [page, setPage] = useState(1);
   const [categoryNames, setCategoryNames] = useState([]);
   const [text, setText] = useState("");
+  const [filterCatagoryLabel, setFilterCategoryLabel] = useState(false)
 
   const getAnnouncements = async (page = 1) => {
     dispatch(setAnnouncementsLoading({announcementsLoading: true}))
@@ -66,6 +68,26 @@ export default function Announcements() {
     })
   }
 
+  const getSortedAnnouncements = async (option, page = 1) => {
+    dispatch(setAnnouncementsLoading({announcementsLoading: true}))
+    await instance.get(`filter-announcements-by-date/${option}?page=${page}`)
+    .then((res) => {
+      dispatch(setAnnouncementsLoading({announcementsLoading: false}))
+      dispatch(setAnnouncements({announcements: res.data.announcements}))
+    })
+    .catch(() => {
+      //showAlert("Oops an error was encountered", "error")
+    })
+  }
+
+  useEffect(() => {
+    if (sortOption === "all") {
+      getAnnouncements()
+    } else {
+      getSortedAnnouncements(sortOption)
+    }
+  }, [sortOption])
+
   useEffect(() => {
     if(categoryNames.length > 0) {
       fetchAnnouncementsByCategories(categoryNames)
@@ -77,7 +99,7 @@ export default function Announcements() {
   }, [categoryNames.length])
 
   useEffect(() => {
-    getAnnouncements()
+    //getAnnouncements()
 
     getCategories()
   }, [])
@@ -96,6 +118,11 @@ export default function Announcements() {
       dispatch(setAnnouncementsLoading({announcementsLoading: false}))
       dispatch(setAnnouncements({announcements: res.data.announcements}))
     })
+  }
+
+  
+  const setSortOption =  (value) => {
+    dispatch(setSortOptionValue({option: value}))
   }
 
   return (
@@ -136,9 +163,24 @@ export default function Announcements() {
         >
           <SearchOutlined />
         </Button>
-       </div>
+
+        <SortButton setSortOption={setSortOption} sortOption={sortOption} title="Sort Announcements" />
+      </div>
+
+      <div>
+        <Button
+          onClick={() => {
+            setFilterCategoryLabel(prev => !prev)
+          }}
+        >
+          {
+            filterCatagoryLabel ? "Close" : "Filter by category"
+          }
+        </Button>
+      </div>
 
       {
+        filterCatagoryLabel &&
         categories.map((a) => (
           <FormControlLabel 
             control={
@@ -160,6 +202,18 @@ export default function Announcements() {
           />
         ))
       }
+      
+      <div>
+        <Button
+          onClick={() => {
+            setCategoryNames([])
+            getAnnouncements()
+          }}
+        >
+          Clear all filters
+        </Button>
+      </div>
+    
 
       {
         announcementsLoading ? (

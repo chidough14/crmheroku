@@ -5,7 +5,8 @@ const initialState = {
   announcementsLoading: false,
   showAddSpinner: false,
   showDeleteNotification: false,
-  categories: []
+  categories: [],
+  sortOption: "all",
 }
 
 export const AnnouncementsSlice = createSlice({
@@ -36,7 +37,10 @@ export const AnnouncementsSlice = createSlice({
     },
     setCategories: (state, action) => {
       state.categories = action.payload.categories
-    }
+    },
+    setSortOptionValue: (state, action) => {
+      state.sortOption = action.payload.option
+    },
   },
 })
 
@@ -48,7 +52,8 @@ export const {
   updateAnnouncement,
   setShowDeleteNotification,
   removeAnnouncement,
-  setCategories
+  setCategories,
+  setSortOptionValue
 } = AnnouncementsSlice.actions
 
 export default AnnouncementsSlice.reducer
