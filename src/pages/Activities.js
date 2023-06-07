@@ -230,7 +230,6 @@ const Activities = ({socket}) => {
 
     if (sortOption) {
       getSortedActivities(sortOption)
-      //setFetchData(false)
     }
     
   }, [sortOption])

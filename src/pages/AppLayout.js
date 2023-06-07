@@ -22,7 +22,7 @@ import { DashboardOutlined, DensitySmallOutlined, MeetingRoomOutlined, MessageOu
 import ListIcon from '@mui/icons-material/List';
 import PointOfSaleIcon from '@mui/icons-material/PointOfSale';
 import CalendarMonthIcon from '@mui/icons-material/CalendarViewMonth';
-import { Button, CircularProgress, Collapse, Snackbar, Tooltip } from '@mui/material';
+import { Badge, Button, CircularProgress, Collapse, Snackbar, Tooltip } from '@mui/material';
 import BellNotification from '../components/BellNotification';
 import UserAccountsCircle from '../components/UserAccountsCircle';
 import SearchBar from '../components/SearchBar';
@@ -366,6 +366,106 @@ export default function AppLayout({socket}) {
     }
   }
 
+  const renderBorderRadius = (a) => {
+
+    if(!open) {
+      return "100px"
+    } else {
+      if(matchPath(`${a.link}/*`, pathname)?.pathnameBase === `${a.link}`) {
+        return "15px"
+      } else {
+        return ""
+      }
+    }
+  }
+
+  const listItemIcon = (obj) => {
+    return <ListItemIcon
+            sx={{
+              minWidth: 0,
+              mr: open ? 3 : 'auto',
+              justifyContent: 'center',
+            }}
+          >
+            {obj?.icon}
+          </ListItemIcon>
+  }
+
+  const renderListItem = (a, activities) => {
+    let total_inbox = inboxData?.filter((a) => !a.isRead)?.length 
+    if(!open ) {
+      if (a?.name === "Activities") {
+        if(activities.length > 0) {
+          return  <Badge color="secondary" variant="dot">
+                    {
+                      listItemIcon(a)
+                    }
+                  </Badge>
+        } else {
+          return listItemIcon(a)
+        }
+    
+      }
+
+      if (a?.name === "Messages") {
+        if(total_inbox > 0) {
+          return  <Badge color="secondary" variant="dot">
+                    {
+                      listItemIcon(a)
+                    }
+                  </Badge>
+        } else {
+          return listItemIcon(a)
+        }
+    
+      } 
+
+      return listItemIcon(a)
+    } else {
+      return listItemIcon(a)
+    }
+  }
+
+  const renderOnlineUsres = (users) => {
+    if(!open && users.length) {
+      return <Badge color="secondary" variant="dot">
+                <ListItemIcon
+                  sx={{
+                    minWidth: 0,
+                    mr: open ? 3 : 'auto',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <PeopleOutline />
+                </ListItemIcon>
+              </Badge>
+    } else {
+      return <ListItemIcon
+              sx={{
+                minWidth: 0,
+                mr: open ? 3 : 'auto',
+                justifyContent: 'center',
+              }}
+            >
+              <PeopleOutline />
+            </ListItemIcon>
+    }
+  }
+
+  const renderCount = (obj) => {
+    let total_inbox = inboxData?.filter((a) => !a.isRead)?.length 
+
+    if(obj?.name === "Activities") {
+      return <span>{activities.length}</span>
+    }
+    
+    if(obj?.name === "Messages") {
+      return <span>{total_inbox}</span>
+    }
+
+    return null
+  }
+
   return (
     <>
       <Box sx={{ display: 'flex' }}>
@@ -500,32 +600,29 @@ export default function AppLayout({socket}) {
                               sx={{ 
                                 display: 'block', 
                                 backgroundColor: matchPath(`${a.link}/*`, pathname)?.pathnameBase === `${a.link}` ? "#DDA0DD" : null ,
-                                borderRadius: matchPath(`${a.link}/*`, pathname)?.pathnameBase === `${a.link}` ? "15px" : "" 
+                                borderRadius: renderBorderRadius(a),
+                                width: open ? null : "50px",
+                                height: open ? null : "50px",
+                                marginLeft: open ? null : "6px"
                               }}
                               onClick={()=> navigate(`${a.link}`)}
                             >
-                              <ListItemButton
-                                sx={{
-                                  minHeight: 48,
-                                  justifyContent: open ? 'initial' : 'center',
-                                  px: 2.5,
-                                }}
-                              >
-                                <ListItemIcon
+                               <ListItemButton
                                   sx={{
-                                    minWidth: 0,
-                                    mr: open ? 3 : 'auto',
-                                    justifyContent: 'center',
+                                    minHeight: 48,
+                                    justifyContent: open ? 'initial' : 'center',
+                                    px: 2.5,
                                   }}
-                                >
-                                  {a.icon}
-                                </ListItemIcon>
-                                <ListItemText primary={a.name} sx={{ opacity: open ? 1 : 0 }} />
+                               >
                                 {
-                                  a.name === "Activities" && (<span>{activities.length}</span>)
+                                  renderListItem(a, activities)
                                 }
-                               
-                              </ListItemButton>
+                                  <ListItemText primary={a.name} sx={{ opacity: open ? 1 : 0 }} />
+                                  {
+                                    open && renderCount(a)
+                                  }
+                                
+                                </ListItemButton>
                             </ListItem>
                           </Tooltip>
                         ))
@@ -547,17 +644,14 @@ export default function AppLayout({socket}) {
                                 px: 2.5,
                               }}
                             >
-                              <ListItemIcon
-                                sx={{
-                                  minWidth: 0,
-                                  mr: open ? 3 : 'auto',
-                                  justifyContent: 'center',
-                                }}
-                              >
-                                <PeopleOutline />
-                              </ListItemIcon>
+                              {
+                                renderOnlineUsres(onlineUsers.filter((b) => b.userId !== id))
+                              }
+
                               <ListItemText primary="Online Users" sx={{ opacity: open ? 1 : 0 }}  />
-                              <span style={{marginTop: "3px"}}>{onlineUsers.filter((b) => b.userId !== id).length}</span>
+
+                              {open && <span style={{marginTop: "3px"}}>{onlineUsers.filter((b) => b.userId !== id).length}</span>}
+
                               {
                                 open ? renderExpandIcon(openUsersMenu) : null
                               }
