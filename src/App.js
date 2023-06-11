@@ -36,6 +36,7 @@ import MyAccount from "./pages/auth/MyAccount";
 import socketIO from 'socket.io-client';
 import CheckoutSuccess from "./components/CheckoutSuccess";
 import Announcements from "./pages/announcements/Announcements";
+// import SessionTimer from "./services/SessionTimer";
 
 const socket = socketIO('');
 // const socket = socketIO('http://localhost:4000');
@@ -155,6 +156,7 @@ function App() {
 
   return (
     <>
+      {/* <SessionTimer socket={socket} /> */}
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<AppLayout  socket={socket} />}>
