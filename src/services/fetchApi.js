@@ -31,6 +31,7 @@ instance.interceptors.response.use(
   err => {
     if (err.response.status === 401) {
       // store.dispatch();
+      localStorage.removeItem('token')
     }
     return Promise.reject(err);
   },
