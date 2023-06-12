@@ -15,14 +15,14 @@ import FirstPageIcon from '@mui/icons-material/FirstPage';
 import KeyboardArrowLeft from '@mui/icons-material/KeyboardArrowLeft';
 import KeyboardArrowRight from '@mui/icons-material/KeyboardArrowRight';
 import LastPageIcon from '@mui/icons-material/LastPage';
-import { Chip, CircularProgress, Pagination, Snackbar, TableHead, Tooltip, Typography } from '@mui/material';
+import { Checkbox, Chip, CircularProgress, Pagination, Snackbar, TableHead, Tooltip, Typography } from '@mui/material';
 import { ContentPasteOff, DeleteOutlined, EditOutlined, ReadMoreOutlined } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
 import moment from 'moment';
 import { useNavigate } from 'react-router-dom';
 import DeleteDialog from './DeleteDialog';
 import instance from '../../services/fetchApi';
-import { removeMessage } from '../../features/MessagesSlice';
+import { removeMessage, removeMessages } from '../../features/MessagesSlice';
 import MuiAlert from '@mui/material/Alert';
 
 
@@ -102,6 +102,14 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
   const [openAlert, setOpenAlert] = React.useState(false)
   const [severity, setSeverity] = React.useState("")
   const [text, setText] = React.useState("")
+  const [showTableActions, setShowTableActions] = React.useState(false)
+  const [checked, setChecked] = React.useState(false);
+  const [messageIds, setMessageIds] = React.useState([]);
+
+  const handleChange = (event) => {
+    setChecked(event.target.checked);
+  };
+  // const [messageId, setMessageId] = React.useState()
 
   // React.useEffect(() => {
   //   setPage(messages?.current_page)
@@ -142,16 +150,38 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
   };
 
   const handleDelete = async () => {
-    await instance.delete(`messages/${messageId}`)
-    .then(() => {
-     
-      showAlert("Message deleted","success")
-      dispatch(removeMessage({messageId: messageId}))
-      setOpenDialog(false)
-    })
-    .catch(() => {
-      showAlert("Ooops an error was encountered","error")
-    })
+    if (messageIds.length) {
+
+      let body = {
+        messageIds,
+        mode: isInbox ? "inbox" : "outbox"
+      }
+
+      await instance.post(`mass-delete-messages`, body)
+      .then(() => {
+       
+        showAlert("Messages deleted","success")
+        dispatch(removeMessages({messageIds: messageIds, isInbox}))
+        setOpenDialog(false)
+        setMessageIds([])
+      })
+      .catch(() => {
+        showAlert("Ooops an error was encountered","error")
+      })
+    } else {
+      await instance.delete(`messages/${messageId}`)
+      .then(() => {
+       
+        showAlert("Message deleted","success")
+        dispatch(removeMessage({messageId: messageId, isInbox}))
+        setOpenDialog(false)
+      })
+      .catch(() => {
+        showAlert("Ooops an error was encountered","error")
+      })
+    }
+    
+    
   };
 
   const getInitials = (string) => {
@@ -219,11 +249,32 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
 
   return (
     <>
-    <Typography variant='h7'><b>{ isInbox ? "Inbox" : "Outbox"}</b></Typography>
+    <div style={{display: "flex"}}>
+      <Typography variant='h7'><b>{ isInbox ? "Inbox" : "Outbox"}</b></Typography>
+
+      {
+        messageIds.length ? (
+          <div style={{marginLeft: "30px"}}>
+            <ReadMoreOutlined
+              style={{cursor: "pointer"}}
+            />
+    
+            <DeleteOutlined
+              style={{cursor: "pointer", marginLeft: "20px"}}
+              onClick={()=> setOpenDialog(true)}
+            />
+          </div>
+        ) : null
+      }
+
+     
+    </div>
+   
     <TableContainer component={Paper}>
       <Table sx={{ minWidth: 650 }} aria-label="custom pagination table">
         <TableHead>
             <TableRow>
+              <TableCell ></TableCell>
               <TableCell >Subject</TableCell>
 
               {isInbox && <TableCell >Sent By</TableCell>}
@@ -251,7 +302,32 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
                       </div>
                     ) :
                     messages?.data?.map((row) => (
-                      <TableRow key={row.name} sx={{backgroundColor: (isInbox && row.isRead) ? "lightgrey" : null}}>
+                      <TableRow
+                        key={row.name} 
+                        sx={{backgroundColor: (isInbox && row.isRead) ? "lightgrey" : null}} 
+                        onMouseEnter={() => {
+                          setMessageId(row.id)
+                          setShowTableActions(true)
+                        }}
+                        onMouseLeave={()=> {
+                          setShowTableActions(false)
+                        }}
+                      >
+                        <TableCell component="th" scope="row">
+                          <Checkbox
+                             checked={messageIds.includes(row.id)}
+                             onChange={(e,f) => {
+                             
+                               if(f) {
+                                 setMessageIds([...messageIds, row.id])
+                               } else {
+                                setMessageIds(messageIds.filter((b) => b !== row.id))
+                               }
+                             }}
+                            inputProps={{ 'aria-label': 'controlled' }}
+                          />
+                        </TableCell>
+
                         <TableCell component="th" scope="row">
                           {row.subject}
                         </TableCell>
@@ -287,8 +363,24 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
                           {moment(row.created_at).format("MMMM Do YYYY")}
                         </TableCell>
                         <TableCell style={{ width: 160 }} >
-                          <div style={{display: "flex", justifyContent: "space-between"}}>
-                            <ReadMoreOutlined
+                          <div style={{display: "flex", justifyContent: "space-evenly"}}>
+
+                            {
+                              (showTableActions && messageId === row.id) && (
+                                <>
+                                  <ReadMoreOutlined
+                                    style={{cursor: "pointer"}}
+                                    onClick={()=> navigate(`/messages/${row.id}`, {state: {isInbox, isRead: row.isRead, auto: !row.sender_id ? true : false}})}
+                                  />
+
+                                  <DeleteOutlined
+                                    style={{cursor: "pointer"}}
+                                    onClick={()=> deleteMessage(row)}
+                                  />
+                                </>
+                              )
+                            }
+                            {/* <ReadMoreOutlined
                               style={{cursor: "pointer"}}
                               onClick={()=> navigate(`/messages/${row.id}`, {state: {isInbox, isRead: row.isRead, auto: !row.sender_id ? true : false}})}
                             />
@@ -299,7 +391,7 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
                                 style={{cursor: "pointer"}}
                                 onClick={()=> deleteMessage(row)}
                               />
-                            }
+                            } */}
                           
                           </div>
                         </TableCell>

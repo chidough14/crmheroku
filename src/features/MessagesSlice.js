@@ -44,7 +44,18 @@ export const MessageSlice = createSlice({
       state.outbox.data = [...state.outbox.data, action.payload.message]
     },
     removeMessage: (state, action) => {
-      state.outbox.data = state.outbox.data.filter((a) => a.id !== action.payload.messageId)
+      if (action.payload.isInbox) {
+        state.inbox.data = state.inbox.data.filter((a) => a.id !== action.payload.messageId)
+      } else {
+        state.outbox.data = state.outbox.data.filter((a) => a.id !== action.payload.messageId)
+      }
+    },
+    removeMessages: (state, action) => {
+      if (action.payload.isInbox) {
+        state.inbox.data = state.inbox.data.filter((a) => !action.payload.messageIds.includes(a.id))
+      } else {
+        state.outbox.data = state.outbox.data.filter((a) => !action.payload.messageIds.includes(a.id))
+      }
     },
     reloadNotifications: (state, action) => {
       state.fetchNotifications = !state.fetchNotifications
@@ -68,7 +79,8 @@ export const {
   removeMessage,
   readInboxMessages,
   reloadNotifications,
-  setSendingMessage
+  setSendingMessage,
+  removeMessages
 } = MessageSlice.actions
 
 export default MessageSlice.reducer
