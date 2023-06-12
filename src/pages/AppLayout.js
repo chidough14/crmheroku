@@ -432,7 +432,7 @@ export default function AppLayout({socket}) {
 
   const renderOnlineUsres = (users) => {
     if(!open && users.length) {
-      return <Badge color="secondary" variant="dot">
+      return  <Badge color="secondary" variant="dot">
                 <ListItemIcon
                   sx={{
                     minWidth: 0,
@@ -444,15 +444,18 @@ export default function AppLayout({socket}) {
                 </ListItemIcon>
               </Badge>
     } else {
-      return <ListItemIcon
-              sx={{
-                minWidth: 0,
-                mr: open ? 3 : 'auto',
-                justifyContent: 'center',
-              }}
-            >
-              <PeopleOutline />
-            </ListItemIcon>
+      return  <>
+                <ListItemIcon
+                  sx={{
+                    minWidth: 0,
+                    mr: open ? 3 : 'auto',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <PeopleOutline />
+                </ListItemIcon>
+                <ListItemText primary="Online Users" sx={{ opacity: open ? 1 : 0 }}  />
+              </>
     }
   }
 
@@ -475,7 +478,7 @@ export default function AppLayout({socket}) {
       <Box sx={{ display: 'flex' }}>
         <CssBaseline />
 
-        <AppBar position='fixed'  open={open} color="secondary" sx={{ width: "100%" }}>
+        <AppBar position='fixed' open={open} color="secondary" sx={{ width: "100%" }}>
           <Toolbar>
             <Typography variant='h5' component="div" sx={{ flexGrow: 1 }} >
               <DensitySmallOutlined onClick={handleDrawerOpen} style={{cursor: "pointer"}} /> &nbsp;&nbsp;&nbsp;
@@ -626,7 +629,6 @@ export default function AppLayout({socket}) {
                           </>
                         ) : 
                         sideBarItems.map((a, i) => (
-                          <Tooltip title={a.name}>
                             <ListItem 
                               key={i} 
                               disablePadding 
@@ -657,7 +659,6 @@ export default function AppLayout({socket}) {
                                 
                                 </ListItemButton>
                             </ListItem>
-                          </Tooltip>
                         ))
                       }
 
@@ -682,7 +683,7 @@ export default function AppLayout({socket}) {
                                   renderOnlineUsres(onlineUsers.filter((b) => b.userId !== id))
                                 }
 
-                                <ListItemText primary="Online Users" sx={{ opacity: open ? 1 : 0 }}  />
+                                {/* <ListItemText primary="Online Users" sx={{ opacity: open ? 1 : 0 }}  /> */}
 
                                 {open && <span style={{marginTop: "3px"}}>{onlineUsers.filter((b) => b.userId !== id).length}</span>}
 
@@ -695,10 +696,12 @@ export default function AppLayout({socket}) {
       
                                   {
                                     onlineUsers.filter((b) => b.userId !== id).map((a) => (
-                                      <ListItemButton sx={{ pl: 4 }}  onClick={() => navigate(`/profile/${allUsers?.find((c)=> c.id === a.userId)?.id}`)}>
-                                      {getImage(a.userId)}
-                                        <ListItemText primary={allUsers?.find((c) => c.id === a.userId)?.name} />
-                                      </ListItemButton>
+                                      <Tooltip title={allUsers?.find((c) => c.id === a.userId)?.name}>
+                                        <ListItemButton sx={{ pl: 4 }}  onClick={() => navigate(`/profile/${allUsers?.find((c)=> c.id === a.userId)?.id}`)}>
+                                        {getImage(a.userId)}
+                                          <ListItemText primary={allUsers?.find((c) => c.id === a.userId)?.name} />
+                                        </ListItemButton>
+                                      </Tooltip>
                                     ))
                                   }
                                 </List>
