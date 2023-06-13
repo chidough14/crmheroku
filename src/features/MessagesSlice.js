@@ -8,7 +8,9 @@ const initialState = {
   outbox: undefined,
   singleMessage: undefined,
   fetchNotifications: undefined,
-  sendingMessage: false
+  sendingMessage: false,
+  showUpdateNotification: false,
+  showDeleteteNotification: false
 }
 
 export const MessageSlice = createSlice({
@@ -32,7 +34,25 @@ export const MessageSlice = createSlice({
     },
     readInboxMessages: (state, action) => {
       let idx = state.inbox.data.findIndex((a) => a.id === action.payload.messageId)
-      state.inbox.data[idx].isRead = true 
+      state.inbox.data[idx].isRead = action.payload.isRead 
+    },
+    massReadInboxMessages: (state, action) => {
+
+      if(action.payload.readArray.length) {
+        for(let i = 0; i < action.payload.readArray.length; i++) {
+          let idx = state.inbox.data.findIndex((a) => a.id === action.payload.readArray[i])
+          state.inbox.data[idx].isRead = false 
+        }
+      }
+
+      if(action.payload.unreadArray.length) {
+        for(let i = 0; i < action.payload.unreadArray.length; i++) {
+          let idx = state.inbox.data.findIndex((a) => a.id === action.payload.unreadArray[i])
+          state.inbox.data[idx].isRead = true 
+        }
+      }
+    
+   
     },
     setOutboxMessages: (state, action) => {
       state.outbox = action.payload.outbox
@@ -62,6 +82,12 @@ export const MessageSlice = createSlice({
     },
     setSendingMessage: (state, action) => {
       state.sendingMessage = action.payload.isSending
+    },
+    setShowUpdateNotification: (state, action) => {
+      state.showUpdateNotification = action.payload.showUpdateNotification
+    },
+    setShowDeleteNotification: (state, action) => {
+      state.showDeleteteNotification = action.payload.showDeleteteNotification
     }
   },
 })
@@ -80,7 +106,10 @@ export const {
   readInboxMessages,
   reloadNotifications,
   setSendingMessage,
-  removeMessages
+  removeMessages,
+  massReadInboxMessages,
+  setShowUpdateNotification,
+  setShowDeleteNotification
 } = MessageSlice.actions
 
 export default MessageSlice.reducer
