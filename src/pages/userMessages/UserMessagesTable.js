@@ -16,13 +16,13 @@ import KeyboardArrowLeft from '@mui/icons-material/KeyboardArrowLeft';
 import KeyboardArrowRight from '@mui/icons-material/KeyboardArrowRight';
 import LastPageIcon from '@mui/icons-material/LastPage';
 import { Checkbox, Chip, CircularProgress, Pagination, Snackbar, TableHead, Tooltip, Typography } from '@mui/material';
-import { ContentPasteOff, DeleteOutlined, EditOutlined, ReadMoreOutlined } from '@mui/icons-material';
+import { ContentPasteOff, DeleteOutlined, EditOutlined, MarkAsUnreadOutlined, MarkEmailRead, ReadMoreOutlined } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
 import moment from 'moment';
 import { useNavigate } from 'react-router-dom';
 import DeleteDialog from './DeleteDialog';
 import instance from '../../services/fetchApi';
-import { removeMessage, removeMessages } from '../../features/MessagesSlice';
+import { massReadInboxMessages, readInboxMessages, reloadNotifications, removeMessage, removeMessages, setShowDeleteNotification, setShowUpdateNotification } from '../../features/MessagesSlice';
 import MuiAlert from '@mui/material/Alert';
 
 
@@ -95,6 +95,7 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
 
   const [page, setPage] = React.useState(1);
   const {allUsers} = useSelector(state => state.user)
+  const {showUpdateNotification, showDeleteteNotification} = useSelector(state => state.message)
   const navigate = useNavigate()
   const [openDialog, setOpenDialog] = React.useState(false);
   const [messageId, setMessageId] = React.useState();
@@ -150,6 +151,7 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
   };
 
   const handleDelete = async () => {
+    dispatch(setShowDeleteNotification({showDeleteteNotification: true}))
     if (messageIds.length) {
 
       let body = {
@@ -162,6 +164,7 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
        
         showAlert("Messages deleted","success")
         dispatch(removeMessages({messageIds: messageIds, isInbox}))
+        dispatch(setShowDeleteNotification({showDeleteteNotification: false}))
         setOpenDialog(false)
         setMessageIds([])
       })
@@ -174,6 +177,7 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
        
         showAlert("Message deleted","success")
         dispatch(removeMessage({messageId: messageId, isInbox}))
+        dispatch(setShowDeleteNotification({showDeleteteNotification: false}))
         setOpenDialog(false)
       })
       .catch(() => {
@@ -183,6 +187,37 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
     
     
   };
+
+  const markAsRead = async (text) => {
+    dispatch(setShowUpdateNotification({showUpdateNotification: true}))
+    await instance.patch(`messages/${messageId}/read`, {isRead: text === "read" ? false : true})
+    .then((res) => {
+      dispatch(readInboxMessages({messageId, isRead: text === "read" ? false : true}))
+      dispatch(setShowUpdateNotification({showUpdateNotification: false}))
+      dispatch(reloadNotifications())
+    })
+    .catch(() => {
+
+    })
+  }
+
+  const massMarkAsRead = async () => {
+    dispatch(setShowUpdateNotification({showUpdateNotification: true}))
+    const readArray = messageIds.filter(item => item.read)
+    const unreadArray = messageIds.filter(item => !item.read)
+   
+
+    await instance.post(`mass-mark-as-read`, {messageIds})
+    .then((res) => {
+      dispatch(massReadInboxMessages({readArray: readArray.map((a) => a.id), unreadArray: unreadArray.map((a) => a.id)}))
+      dispatch(reloadNotifications())
+      dispatch(setShowUpdateNotification({showUpdateNotification: false}))
+      setMessageIds([])
+    })
+    .catch(() => {
+
+    })
+  }
 
   const getInitials = (string) => {
     let names = string?.split(' '),
@@ -255,16 +290,29 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
       {
         messageIds.length ? (
           <div style={{marginLeft: "30px"}}>
-            <ReadMoreOutlined
-              style={{cursor: "pointer"}}
-            />
+
+            <Tooltip title="Mark as read/unread">
+              <MarkEmailRead
+                style={{cursor: "pointer", marginLeft: "20px"}}
+                onClick={()=> massMarkAsRead()}
+              />
+            </Tooltip>
     
-            <DeleteOutlined
-              style={{cursor: "pointer", marginLeft: "20px"}}
-              onClick={()=> setOpenDialog(true)}
-            />
+            <Tooltip title="Delete">
+              <DeleteOutlined
+                style={{cursor: "pointer", marginLeft: "20px"}}
+                onClick={()=> setOpenDialog(true)}
+              />
+             </Tooltip>
           </div>
         ) : null
+      }
+
+
+      {
+        showUpdateNotification && (
+          <span style={{color: "green", marginLeft: "12px"}}>Updating...</span>
+        )
       }
 
      
@@ -315,13 +363,13 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
                       >
                         <TableCell component="th" scope="row">
                           <Checkbox
-                             checked={messageIds.includes(row.id)}
+                             checked={messageIds.map((a) => a.id).includes(row.id)}
                              onChange={(e,f) => {
                              
                                if(f) {
-                                 setMessageIds([...messageIds, row.id])
+                                 setMessageIds([...messageIds, {id: row.id, read: row.isRead}])
                                } else {
-                                setMessageIds(messageIds.filter((b) => b !== row.id))
+                                setMessageIds(messageIds.filter((b) => b.id !== row.id))
                                }
                              }}
                             inputProps={{ 'aria-label': 'controlled' }}
@@ -368,30 +416,40 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
                             {
                               (showTableActions && messageId === row.id) && (
                                 <>
-                                  <ReadMoreOutlined
-                                    style={{cursor: "pointer"}}
-                                    onClick={()=> navigate(`/messages/${row.id}`, {state: {isInbox, isRead: row.isRead, auto: !row.sender_id ? true : false}})}
-                                  />
+                                  <Tooltip title="View message">
+                                    <ReadMoreOutlined
+                                      style={{cursor: "pointer"}}
+                                      onClick={()=> navigate(`/messages/${row.id}`, {state: {isInbox, isRead: row.isRead, auto: !row.sender_id ? true : false}})}
+                                    />
+                                  </Tooltip>
 
-                                  <DeleteOutlined
-                                    style={{cursor: "pointer"}}
-                                    onClick={()=> deleteMessage(row)}
-                                  />
+                                  {
+                                    row.isRead ? (
+                                      <Tooltip title="Mark as unread">
+                                        <MarkAsUnreadOutlined
+                                          style={{cursor: "pointer"}}
+                                          onClick={()=> markAsRead("read")}
+                                        />
+                                      </Tooltip>
+                                    ) : (
+                                      <Tooltip title="Mark as read">
+                                        <MarkEmailRead
+                                          style={{cursor: "pointer"}}
+                                          onClick={()=> markAsRead("unread")}
+                                        />
+                                      </Tooltip>
+                                    )
+                                  }
+
+                                  <Tooltip title="Delete">
+                                    <DeleteOutlined
+                                      style={{cursor: "pointer"}}
+                                      onClick={()=> deleteMessage(row)}
+                                    />
+                                  </Tooltip>
                                 </>
                               )
                             }
-                            {/* <ReadMoreOutlined
-                              style={{cursor: "pointer"}}
-                              onClick={()=> navigate(`/messages/${row.id}`, {state: {isInbox, isRead: row.isRead, auto: !row.sender_id ? true : false}})}
-                            />
-
-                            {
-                              !isInbox &&
-                              <DeleteOutlined
-                                style={{cursor: "pointer"}}
-                                onClick={()=> deleteMessage(row)}
-                              />
-                            } */}
                           
                           </div>
                         </TableCell>
@@ -424,6 +482,7 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
       open={openDialog}
       setOpen={setOpenDialog}
       handleDelete={handleDelete}
+      showDeleteteNotification={showDeleteteNotification}
     />
 
     <Snackbar open={openAlert} autoHideDuration={6000} onClose={handleCloseAlert}>
