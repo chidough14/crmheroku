@@ -10,7 +10,8 @@ const initialState = {
   fetchNotifications: undefined,
   sendingMessage: false,
   showUpdateNotification: false,
-  showDeleteteNotification: false
+  showDeleteteNotification: false,
+  reloadMessages: false
 }
 
 export const MessageSlice = createSlice({
@@ -88,6 +89,9 @@ export const MessageSlice = createSlice({
     },
     setShowDeleteNotification: (state, action) => {
       state.showDeleteteNotification = action.payload.showDeleteteNotification
+    },
+    setReloadMessages: (state, action) => {
+      state.reloadMessages = action.payload.reloadMessages
     }
   },
 })
@@ -109,7 +113,8 @@ export const {
   removeMessages,
   massReadInboxMessages,
   setShowUpdateNotification,
-  setShowDeleteNotification
+  setShowDeleteNotification,
+  setReloadMessages
 } = MessageSlice.actions
 
 export default MessageSlice.reducer
