@@ -22,7 +22,7 @@ import moment from 'moment';
 import { useNavigate } from 'react-router-dom';
 import DeleteDialog from './DeleteDialog';
 import instance from '../../services/fetchApi';
-import { massReadInboxMessages, readInboxMessages, reloadNotifications, removeMessage, removeMessages, setShowDeleteNotification, setShowUpdateNotification } from '../../features/MessagesSlice';
+import { massReadInboxMessages, readInboxMessages, reloadNotifications, removeMessage, removeMessages, setInboxMessages, setReloadMessages, setShowDeleteNotification, setShowUpdateNotification } from '../../features/MessagesSlice';
 import MuiAlert from '@mui/material/Alert';
 
 
@@ -95,7 +95,7 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
 
   const [page, setPage] = React.useState(1);
   const {allUsers} = useSelector(state => state.user)
-  const {showUpdateNotification, showDeleteteNotification} = useSelector(state => state.message)
+  const {showUpdateNotification, showDeleteteNotification, reloadMessages} = useSelector(state => state.message)
   const navigate = useNavigate()
   const [openDialog, setOpenDialog] = React.useState(false);
   const [messageId, setMessageId] = React.useState();
@@ -106,15 +106,11 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
   const [showTableActions, setShowTableActions] = React.useState(false)
   const [checked, setChecked] = React.useState(false);
   const [messageIds, setMessageIds] = React.useState([]);
+  const [showNewMessageTag, setShowNewMessageTag] = React.useState(false);
 
   const handleChange = (event) => {
     setChecked(event.target.checked);
   };
-  // const [messageId, setMessageId] = React.useState()
-
-  // React.useEffect(() => {
-  //   setPage(messages?.current_page)
-  // }, [messages?.current_page])
 
   React.useEffect(() => {
      if(isInbox){
@@ -122,13 +118,31 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
     } else {
       getOutboxMessages(page)
     }
-    // if(isInbox === "inbox"){
-    //   getInboxMessages(page)
-    // } 
-    // if (isInbox === "outbox") {
-    //   getOutboxMessages(page)
-    // }
   }, [page])
+
+  const reloadInbox = async () => {
+    await instance.get(`inboxmessages?page=1`)
+    .then((res)=> {
+      dispatch(setInboxMessages({inbox: res.data.inbox}))
+      dispatch(setReloadMessages({reloadMessages: false}))
+
+      setShowNewMessageTag(true); // Set the state to true initially
+
+      setTimeout(() => {
+        setShowNewMessageTag(false); // Set the state back to false after 4 seconds
+      }, 4000);
+
+    })
+    .catch(() => {
+      showAlert()
+    })
+  }
+
+  React.useEffect(() => {
+    if (reloadMessages && page === 1) {
+     reloadInbox()
+    }
+  }, [reloadMessages])
 
 
   const handleCloseAlert = () => {
@@ -163,8 +177,9 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
       .then(() => {
        
         showAlert("Messages deleted","success")
-        dispatch(removeMessages({messageIds: messageIds, isInbox}))
+        dispatch(removeMessages({messageIds: messageIds.map((a) => a.id), isInbox}))
         dispatch(setShowDeleteNotification({showDeleteteNotification: false}))
+        dispatch(reloadNotifications())
         setOpenDialog(false)
         setMessageIds([])
       })
@@ -178,6 +193,7 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
         showAlert("Message deleted","success")
         dispatch(removeMessage({messageId: messageId, isInbox}))
         dispatch(setShowDeleteNotification({showDeleteteNotification: false}))
+        dispatch(reloadNotifications())
         setOpenDialog(false)
       })
       .catch(() => {
@@ -227,6 +243,29 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
         initials += names[names.length - 1].substring(0, 1).toUpperCase();
     }
     return initials;
+  }
+
+  const renderMarkAsRead = (row) => {
+    if(isInbox) {
+      if (row.isRead) {
+        return   <Tooltip title="Mark as unread">
+                    <MarkAsUnreadOutlined
+                      style={{cursor: "pointer"}}
+                      onClick={()=> markAsRead("read")}
+                    />
+                  </Tooltip>
+      } else {
+        return   <Tooltip title="Mark as read">
+                    <MarkAsUnreadOutlined
+                      style={{cursor: "pointer"}}
+                      onClick={()=> markAsRead("unread")}
+                    />
+                  </Tooltip>
+      }
+    } else {
+      return null
+    }
+   
   }
 
   const getImage = (row) => {
@@ -291,12 +330,16 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
         messageIds.length ? (
           <div style={{marginLeft: "30px"}}>
 
-            <Tooltip title="Mark as read/unread">
-              <MarkEmailRead
-                style={{cursor: "pointer", marginLeft: "20px"}}
-                onClick={()=> massMarkAsRead()}
-              />
-            </Tooltip>
+            {
+              isInbox && (
+                <Tooltip title="Mark as read/unread">
+                  <MarkEmailRead
+                    style={{cursor: "pointer", marginLeft: "20px"}}
+                    onClick={()=> massMarkAsRead()}
+                  />
+                </Tooltip>
+              )
+            }
     
             <Tooltip title="Delete">
               <DeleteOutlined
@@ -322,7 +365,26 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
       <Table sx={{ minWidth: 650 }} aria-label="custom pagination table">
         <TableHead>
             <TableRow>
-              <TableCell ></TableCell>
+              <TableCell >
+                <Checkbox
+                  checked={messageIds.length}
+                  onChange={(e,f) => {
+                    if (f) {
+                      let ids = messages.data.map((a) => {
+                        return {
+                          id: a.id,
+                          read: a.isRead
+                        }
+                      })
+  
+                      setMessageIds(ids)
+                    } else {
+                      setMessageIds([])
+                    }
+                  }}
+                  inputProps={{ 'aria-label': 'controlled' }}
+                />
+              </TableCell>
               <TableCell >Subject</TableCell>
 
               {isInbox && <TableCell >Sent By</TableCell>}
@@ -424,21 +486,7 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
                                   </Tooltip>
 
                                   {
-                                    row.isRead ? (
-                                      <Tooltip title="Mark as unread">
-                                        <MarkAsUnreadOutlined
-                                          style={{cursor: "pointer"}}
-                                          onClick={()=> markAsRead("read")}
-                                        />
-                                      </Tooltip>
-                                    ) : (
-                                      <Tooltip title="Mark as read">
-                                        <MarkEmailRead
-                                          style={{cursor: "pointer"}}
-                                          onClick={()=> markAsRead("unread")}
-                                        />
-                                      </Tooltip>
-                                    )
+                                    renderMarkAsRead(row)
                                   }
 
                                   <Tooltip title="Delete">
@@ -448,6 +496,12 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
                                     />
                                   </Tooltip>
                                 </>
+                              )
+                            }
+
+                            {
+                              (showNewMessageTag && row.new) && (
+                                <Chip label="New" color="success" />
                               )
                             }
                           

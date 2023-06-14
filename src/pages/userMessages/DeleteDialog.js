@@ -30,7 +30,7 @@ const  DeleteDialog = ({open, setOpen, handleDelete, meeting, showDeleteteNotifi
 
           <DialogContentText id="alert-dialog-description" sx={{textAlign: "center", color: "red"}}>
           {
-            !showDeleteteNotification && "Deleting..."
+            showDeleteteNotification && "Deleting..."
           }
           </DialogContentText>
         </DialogContent>

@@ -37,6 +37,7 @@ import ExpandMore from '@mui/icons-material/ExpandMore';
 import StarBorder from '@mui/icons-material/StarBorder';
 import { setOnlineUsers } from '../features/userSlice';
 import ActivityModal from '../components/activities/ActivityModal';
+import { setReloadMessages } from '../features/MessagesSlice';
 
 
 const Alert = React.forwardRef(function Alert(props, ref) {
@@ -262,6 +263,7 @@ export default function AppLayout({socket}) {
 
   React.useEffect(()=> {
     socket.on('receiveNotification', (message) => {
+      dispatch(setReloadMessages({reloadMessages: true}))
       getNotifications("showNotification")
       
     });
