@@ -46,6 +46,9 @@ export const listSlice = createSlice({
     removeList: (state, action) => {
       state.lists.data = state.lists.data.filter((a) => a.id !== action.payload.listId)
     },
+    removeLists: (state, action) => {
+      state.lists.data = state.lists.data.filter((a) => !action.payload.listIds.includes(a.id))
+    },
     showAlert: (state, action) => {
       state.openAlert = true
       state.alertMessage = action.payload.alertMessage
@@ -74,11 +77,17 @@ export const listSlice = createSlice({
     setShowUploadNotification: (state, action) => {
       state.showUploadNotification = action.payload.showUploadNotification
     },
-    addListIds: (state, action)  => {
+    addListId: (state, action)  => {
       state.listIds = [...state.listIds, action.payload.id]
+    },
+    addListIds: (state, action)  => {
+      state.listIds = action.payload.listIds
     },
     removeListId: (state, action) => {
       state.listIds = state.listIds.filter((a) => a !== action.payload.id)
+    },
+    removeListIds: (state, action) => {
+      state.listIds = state.listIds.filter((a) => !action.payload.listIds.includes(a))
     }
   },
 })
@@ -88,6 +97,7 @@ export const {
   addList, 
   updateList, 
   removeList, 
+  removeLists,
   showAlert, 
   closeAlert, 
   getSingleList, 
@@ -99,8 +109,10 @@ export const {
   setShowSpinner,
   setShowCloningNotification,
   setShowUploadNotification,
+  addListId,
   addListIds,
-  removeListId
+  removeListId,
+  removeListIds
 } = listSlice.actions
 
 export default listSlice.reducer

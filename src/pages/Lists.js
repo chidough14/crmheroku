@@ -5,12 +5,12 @@ import Grid from '@mui/material/Grid';
 import { useDispatch, useSelector } from 'react-redux';
 import { getToken } from '../services/LocalStorageService';
 import { useNavigate } from 'react-router-dom';
-import {  Button, CircularProgress, Snackbar, TextField, Toolbar, Tooltip, Typography } from '@mui/material';
+import {  Button, Checkbox, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Snackbar, TextField, Toolbar, Tooltip, Typography } from '@mui/material';
 import ListCard from '../components/lists/ListCard';
 import ListModal from '../components/lists/ListModal';
 import "./list.css"
 import instance from '../services/fetchApi';
-import { setLists, setSortOptionValue } from '../features/listSlice';
+import { addList, addListIds, removeListIds, removeLists, setLists, setShowCloningNotification, setShowSpinner, setSortOptionValue } from '../features/listSlice';
 import Pagination from '@mui/material/Pagination';
 import SortButton from './orders/SortButton';
 import { Box } from '@mui/system';
@@ -39,7 +39,7 @@ export default function Lists({socket}) {
   const token = getToken()
   const navigate = useNavigate()
   const dispatch = useDispatch()
-  const {lists, sortOption, showSpinner, listIds} = useSelector((state) => state.list)
+  const {lists, sortOption, showSpinner, listIds, showCloningNotification} = useSelector((state) => state.list)
   const [page, setPage] = React.useState(1)
 
   const [open, setOpen] = React.useState(false);
@@ -51,6 +51,7 @@ export default function Lists({socket}) {
   const [severity, setSeverity] = React.useState("");
   const [alertMessage, setAlertMessage] = React.useState("");
   const [openTransferModal, setOpenTransferModal] = React.useState(false);
+  const [openDeleteDialog, setOpenDeleteDialog] = React.useState(false);
 
   const showAlert = (msg, sev) => {
     setOpenAlert(true)
@@ -147,6 +148,44 @@ export default function Lists({socket}) {
     setShowSearch(false)
   }
 
+  const cloneList = async (list) => {
+    dispatch(setShowCloningNotification({showCloningNotification: true}))
+
+    await instance.get(`mylists/${list}/clone`)
+    .then((res)=> {
+       dispatch(addList({list: res.data.clonedList}))
+       dispatch(setShowCloningNotification({showCloningNotification: false}))
+    })
+    .catch(() => {
+      dispatch(setShowCloningNotification({showCloningNotification: false}))
+      dispatch(showAlert({alertMessage: "Ooops an error was encountered", severity: "error"}))
+    })
+    
+  };
+
+  const deleteLists = async (listIds) => {
+    dispatch(setShowSpinner({showSpinner: true}))
+
+    await instance.post(`mylists/bulk-delete`, { listIds })
+    .then((res)=> {
+       dispatch(removeLists({listIds}))
+       dispatch(removeListIds({listIds}))
+       dispatch(setShowSpinner({showSpinner: false}))
+       handleCloseDialog()
+       
+    })
+    .catch(() => {
+      dispatch(setShowSpinner({showSpinner: false}))
+      handleCloseDialog()
+      dispatch(showAlert({alertMessage: "Ooops an error was encountered", severity: "error"}))
+    })
+    
+  };
+
+  const handleCloseDialog = () => {
+    setOpenDeleteDialog(false);
+  };
+
   return (
     <div >
       <Toolbar>
@@ -155,29 +194,75 @@ export default function Lists({socket}) {
         {
           listIds.length ? (
             <div style={{display: "flex", marginRight: "30%"}}>
-              <DeleteOutline  style={{marginLeft: "10px"}} />
+              <Tooltip title="Delete">
+                <DeleteOutline  
+                  style={{marginLeft: "10px",  cursor: "pointer"}}
+                  onClick={() => {
+                    setOpenDeleteDialog(true)
+                  }}
+                />
+              </Tooltip>
+             
     
              
               {
                 listIds.length === 1 ? (
-                  <CopyAllOutlined style={{marginLeft: "10px"}} /> 
+                  <Tooltip title="Clone">
+                    <CopyAllOutlined 
+                      style={{marginLeft: "10px", cursor: "pointer"}} 
+                      onClick={() => {
+                        cloneList(listIds[0])
+                      }}
+                    /> 
+                  </Tooltip>
                 ) : null
               }
 
-              <MoveUpOutlined 
-                style={{marginLeft: "10px", cursor: "pointer"}}
-                onClick={() => {
-                 setOpenTransferModal(true)
-                }}
-              />
+              <Tooltip title="Transfer">
+                <MoveUpOutlined 
+                  style={{marginLeft: "10px", cursor: "pointer"}}
+                  onClick={() => {
+                    setOpenTransferModal(true)
+                  }}
+                />
+              </Tooltip>
     
               <span style={{marginLeft: "10px"}}>
                 {listIds.length} Items Selected
               </span>
+
+              {
+                showCloningNotification ? (
+                  <span style={{marginLeft: "10px", color: "green"}}>
+                    Cloning List...
+                  </span>
+                ) : null
+              }
             </div>
           ) : null
         }
         
+        {
+          lists?.data?.length ? (
+            <Tooltip title="Select all">
+              <Checkbox
+                checked={listIds.length}
+                onChange={(e,f) => {
+                  if (f) {
+                    let listIds = lists?.data?.map((a) => a.id)
+    
+                    dispatch(addListIds({listIds}))
+                  } else {
+                    dispatch(removeListIds({listIds}))
+                  }
+                }}
+                inputProps={{ 'aria-label': 'controlled' }}
+              />
+            </Tooltip>
+          ) : null
+        }
+      
+
         {
           showSearch && (
             <TextField
@@ -229,7 +314,11 @@ export default function Lists({socket}) {
                 ) :
                 lists?.data?.map((list, idx) => (
                   <Grid item key={idx} >
-                    <ListCard list={list} socket={socket} showSpinner={showSpinner}/>
+                    <ListCard 
+                      list={list} 
+                      socket={socket} 
+                      showSpinner={showSpinner}
+                    />
                   </Grid>
                 ))
               }  
@@ -261,6 +350,39 @@ export default function Lists({socket}) {
           showLastButton
         />
       </div>
+
+      <Dialog
+        open={openDeleteDialog}
+        onClose={handleCloseDialog}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">
+          Delete List
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            Are you sure you want to delete these lists ?
+          </DialogContentText>
+
+          <DialogContentText sx={{textAlign: "center", color: "red"}}>
+            {
+              showSpinner ? "Deleting...." : null
+            }
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog}>No</Button>
+          <Button 
+            onClick={(e) => {
+              deleteLists(listIds)
+            }} 
+            autoFocus
+          >
+            Yes
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <ListModal
          open={open}
