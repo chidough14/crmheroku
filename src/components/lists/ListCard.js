@@ -6,14 +6,14 @@ import CardContent from '@mui/material/CardContent';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import moment from 'moment';
-import { CardHeader, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, Menu, MenuItem, Snackbar } from '@mui/material';
+import { Checkbox, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, Menu, MenuItem, Snackbar } from '@mui/material';
 import MuiAlert from '@mui/material/Alert';
 import { CopyAllOutlined, DeleteOutlined, EditOutlined, MoreVert, MoveUpOutlined } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
 import { getToken } from '../../services/LocalStorageService';
 import { useNavigate } from 'react-router-dom';
 import ListModal from './ListModal';
-import { addList, closeAlert, removeList, setShowCloningNotification, setShowSpinner, showAlert } from '../../features/listSlice';
+import { addList, addListIds, closeAlert, removeList, removeListId, setShowCloningNotification, setShowSpinner, showAlert } from '../../features/listSlice';
 import instance from '../../services/fetchApi';
 import ListTransferModal from './ListTransferModal';
 
@@ -37,20 +37,18 @@ const ListCard = ({list, socket, showSpinner}) => {
   const token = getToken()
   const navigate = useNavigate()
   const user = useSelector((state) => state.user)
+  const {openAlert, alertMessage, severity, showCloningNotification, listIds} = useSelector((state) => state.list)
 
   const [openModal, setOpenModal] = React.useState(false);
   const handleOpen = () => setOpenModal(true);
-
-  const [anchorEl, setAnchorEl] = React.useState(null);
-  const open = Boolean(anchorEl);
 
   const [openDialog, setOpenDialog] = React.useState(false);
   const [openTransferModal, setOpenTransferModal] = React.useState(false);
   const [listObj, setListObj] = React.useState();
   const [listId, setListId] = React.useState();
-  //const [openAlert, setOpenAlert] = React.useState(false);
 
-  const {openAlert, alertMessage, severity, showCloningNotification} = useSelector((state) => state.list)
+  const [anchorEl, setAnchorEl] = React.useState(null);
+  const open = Boolean(anchorEl);
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
@@ -125,13 +123,20 @@ const ListCard = ({list, socket, showSpinner}) => {
     <>
       <Card 
         sx={{ width: "90%" }}
+        onMouseEnter={() => {
+          setListId(list.id)
+        }}
+        onMouseLeave={() => {
+          setListId(null)
+        }}
       >
         <CardContent>
           <div style={{display: "flex", justifyContent: "space-between"}}>
             <Typography sx={{ fontSize: 12 }} color="text.secondary" gutterBottom>
               {moment(list.created_at).format("MMMM Do YYYY")}
             </Typography>
-
+            
+            <div>
             <IconButton 
               aria-label="settings"
               id="basic-button"
@@ -177,6 +182,26 @@ const ListCard = ({list, socket, showSpinner}) => {
 
               <MenuItem onClick={handleClickOpen} disabled={(list.user_id !== user.id)}><DeleteOutlined /> Delete</MenuItem>
             </Menu>
+
+           
+            {
+              (listId === list.id || listIds.includes(list.id)) && (
+                <Checkbox
+                  size="small"
+                  checked={listIds.includes(list.id)}
+                  onChange={(e,f) => {
+                  
+                    if(f) {
+                      dispatch(addListIds({id: list.id}))
+                    } else {
+                      dispatch(removeListId({id: list.id}))
+                    }
+                  }}
+                  inputProps={{ 'aria-label': 'controlled' }}
+                />
+              )
+            }
+            </div>
           </div>
           
           <Typography variant="h7" component="div">
@@ -216,6 +241,7 @@ const ListCard = ({list, socket, showSpinner}) => {
         setOpen={setOpenTransferModal}
         socket={socket}
         showSpinner={showSpinner}
+        mode="single"
       />
 
 

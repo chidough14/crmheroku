@@ -14,9 +14,10 @@ import { setLists, setSortOptionValue } from '../features/listSlice';
 import Pagination from '@mui/material/Pagination';
 import SortButton from './orders/SortButton';
 import { Box } from '@mui/system';
-import { AddOutlined, ContentPasteOff, SearchOutlined } from '@mui/icons-material';
+import { AddOutlined, ContentPasteOff, CopyAllOutlined, DeleteOutline, MoveUpOutlined, SearchOutlined } from '@mui/icons-material';
 import UploadFile from '../components/lists/UploadFile';
 import MuiAlert from '@mui/material/Alert';
+import ListTransferModal from '../components/lists/ListTransferModal';
 
 
 const Alert = React.forwardRef(function Alert(props, ref) {
@@ -38,7 +39,7 @@ export default function Lists({socket}) {
   const token = getToken()
   const navigate = useNavigate()
   const dispatch = useDispatch()
-  const {lists, sortOption, showSpinner} = useSelector((state) => state.list)
+  const {lists, sortOption, showSpinner, listIds} = useSelector((state) => state.list)
   const [page, setPage] = React.useState(1)
 
   const [open, setOpen] = React.useState(false);
@@ -49,6 +50,7 @@ export default function Lists({socket}) {
   const [openAlert, setOpenAlert] = React.useState(false);
   const [severity, setSeverity] = React.useState("");
   const [alertMessage, setAlertMessage] = React.useState("");
+  const [openTransferModal, setOpenTransferModal] = React.useState(false);
 
   const showAlert = (msg, sev) => {
     setOpenAlert(true)
@@ -149,6 +151,32 @@ export default function Lists({socket}) {
     <div >
       <Toolbar>
         <Typography variant='h5'  component="div" sx={{ flexGrow: 2 }} >My Lists</Typography>
+
+        {
+          listIds.length ? (
+            <div style={{display: "flex", marginRight: "30%"}}>
+              <DeleteOutline  style={{marginLeft: "10px"}} />
+    
+             
+              {
+                listIds.length === 1 ? (
+                  <CopyAllOutlined style={{marginLeft: "10px"}} /> 
+                ) : null
+              }
+
+              <MoveUpOutlined 
+                style={{marginLeft: "10px", cursor: "pointer"}}
+                onClick={() => {
+                 setOpenTransferModal(true)
+                }}
+              />
+    
+              <span style={{marginLeft: "10px"}}>
+                {listIds.length} Items Selected
+              </span>
+            </div>
+          ) : null
+        }
         
         {
           showSearch && (
@@ -238,6 +266,15 @@ export default function Lists({socket}) {
          open={open}
          setOpen={setOpen}
          showSpinner={showSpinner}
+      />
+
+
+      <ListTransferModal
+        open={openTransferModal}
+        setOpen={setOpenTransferModal}
+        socket={socket}
+        showSpinner={showSpinner}
+        mode="bulk"
       />
 
 

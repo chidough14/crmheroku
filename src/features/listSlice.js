@@ -11,7 +11,8 @@ const initialState = {
   sortOption: "all",
   showSpinner: false,
   showCloningNotification: false,
-  showUploadNotification: false
+  showUploadNotification: false,
+  listIds: []
 }
 
 export const listSlice = createSlice({
@@ -72,6 +73,12 @@ export const listSlice = createSlice({
     },
     setShowUploadNotification: (state, action) => {
       state.showUploadNotification = action.payload.showUploadNotification
+    },
+    addListIds: (state, action)  => {
+      state.listIds = [...state.listIds, action.payload.id]
+    },
+    removeListId: (state, action) => {
+      state.listIds = state.listIds.filter((a) => a !== action.payload.id)
     }
   },
 })
@@ -91,7 +98,9 @@ export const {
   setSortOptionValue,
   setShowSpinner,
   setShowCloningNotification,
-  setShowUploadNotification
+  setShowUploadNotification,
+  addListIds,
+  removeListId
 } = listSlice.actions
 
 export default listSlice.reducer

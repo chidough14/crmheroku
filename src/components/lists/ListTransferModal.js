@@ -29,12 +29,13 @@ const validationSchema = yup.object({
     .required('Email is required'),
 });
 
-const ListTransferModal = ({ open, setOpen, list, socket, showSpinner}) => {
+const ListTransferModal = ({ open, setOpen, list, socket, showSpinner, mode}) => {
   const [openAlert, setOpenAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
   const [severity, setSeverity] = useState("");
   const [showEmailError, setShowEmailError] = useState(false);
   const { allUsers } = useSelector((state) => state.user)
+  const { listIds } = useSelector((state) => state.list)
   const dispatch = useDispatch()
 
   const handleClose = () => {
@@ -63,30 +64,60 @@ const ListTransferModal = ({ open, setOpen, list, socket, showSpinner}) => {
     validationSchema: validationSchema,
     onSubmit: async (values, {resetForm}) => {
       dispatch(setShowSpinner({showSpinner: true}))
+      
+      if (mode === "single") {
 
-      await instance.post(`mylists/${list?.id}/transfer`, values)
-      .then((res)=> {
-        dispatch(setShowSpinner({showSpinner: false}))
-       
-        if (res.data.status === "success") {
-          showAlert("List Transfered", "success")
+        await instance.post(`mylists/${list?.id}/transfer`, values)
+        .then((res)=> {
+          dispatch(setShowSpinner({showSpinner: false}))
+        
+          if (res.data.status === "success") {
+            showAlert("List Transfered", "success")
 
-          let xx = allUsers.find((a) => a.email === values.email)
-          socket.emit('sendNotification', { recipientId: xx.id, message: "List transfer" });
+            let xx = allUsers.find((a) => a.email === values.email)
+            socket.emit('sendNotification', { recipientId: xx.id, message: "List transfer" });
 
 
-          handleClose()
-          resetForm()
-        }
+            handleClose()
+            resetForm()
+          }
 
-        if (res.data.status === "error") {
-          setShowEmailError(true)
-        }
-      })
-      .catch(() => {
-        dispatch(setShowSpinner({showSpinner: false}))
-        showAlert("Ooops an error was encountered", "error")
-      })
+          if (res.data.status === "error") {
+            setShowEmailError(true)
+          }
+        })
+        .catch(() => {
+          dispatch(setShowSpinner({showSpinner: false}))
+          showAlert("Ooops an error was encountered", "error")
+        })
+
+      }
+
+      if (mode === "bulk") {
+        await instance.post(`mylists/bulk-transfer`, {listIds, email: values.email})
+        .then((res)=> {
+          dispatch(setShowSpinner({showSpinner: false}))
+        
+          if (res.data.status === "success") {
+            showAlert("Lists Transfered", "success")
+
+            let xx = allUsers.find((a) => a.email === values.email)
+            socket.emit('sendNotification', { recipientId: xx.id, message: "Lists transfer" });
+
+
+            handleClose()
+            resetForm()
+          }
+
+          if (res.data.status === "error") {
+            setShowEmailError(true)
+          }
+        })
+        .catch(() => {
+          dispatch(setShowSpinner({showSpinner: false}))
+          showAlert("Ooops an error was encountered", "error")
+        })
+      }
     },
   });
 

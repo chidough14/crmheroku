@@ -265,6 +265,8 @@ export default function AppLayout({socket}) {
     socket.on('receiveNotification', (message) => {
       dispatch(setReloadMessages({reloadMessages: true}))
       getNotifications("showNotification")
+
+      // Decide whether to reload lists if the transfer is a list
       
     });
     
