@@ -13,7 +13,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { getToken } from '../../services/LocalStorageService';
 import { useNavigate } from 'react-router-dom';
 import ListModal from './ListModal';
-import { addList, addListIds, closeAlert, removeList, removeListId, setShowCloningNotification, setShowSpinner, showAlert } from '../../features/listSlice';
+import { addList, addListId, closeAlert, removeList, removeListId, setShowCloningNotification, setShowSpinner, showAlert } from '../../features/listSlice';
 import instance from '../../services/fetchApi';
 import ListTransferModal from './ListTransferModal';
 
@@ -91,6 +91,7 @@ const ListCard = ({list, socket, showSpinner}) => {
       setOpenDialog(false);
       dispatch(showAlert({alertMessage: "List deleted", severity: "success"}))
       dispatch(removeList({listId: id}))
+      dispatch(removeListId({id}))
       dispatch(setShowSpinner({showSpinner: false}))
     })
     .catch(() => {
@@ -192,7 +193,7 @@ const ListCard = ({list, socket, showSpinner}) => {
                   onChange={(e,f) => {
                   
                     if(f) {
-                      dispatch(addListIds({id: list.id}))
+                      dispatch(addListId({id: list.id}))
                     } else {
                       dispatch(removeListId({id: list.id}))
                     }
@@ -267,7 +268,12 @@ const ListCard = ({list, socket, showSpinner}) => {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>No</Button>
-          <Button onClick={(e) => deleteList(list.id, e)} autoFocus>
+          <Button 
+            onClick={(e) => {
+              deleteList(list.id, e)
+            }} 
+            autoFocus
+          >
             Yes
           </Button>
         </DialogActions>
