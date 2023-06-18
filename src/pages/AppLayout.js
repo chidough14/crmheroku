@@ -633,6 +633,7 @@ export default function AppLayout({socket}) {
                           </>
                         ) : 
                         sideBarItems.map((a, i) => (
+                          <Tooltip title={a.name}>
                             <ListItem 
                               key={i} 
                               disablePadding 
@@ -663,6 +664,7 @@ export default function AppLayout({socket}) {
                                 
                                 </ListItemButton>
                             </ListItem>
+                          </Tooltip>
                         ))
                       }
 
