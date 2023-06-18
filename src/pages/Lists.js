@@ -166,9 +166,11 @@ export default function Lists({socket}) {
   };
 
   const deleteLists = async (listIds) => {
+    let url
+    url = showTrash ? `mylists-bulk-force-delete` : `mylists/bulk-delete`
     dispatch(setShowSpinner({showSpinner: true}))
 
-    await instance.post(`mylists/bulk-delete`, { listIds })
+    await instance.post(url, { listIds })
     .then((res)=> {
        dispatch(removeLists({listIds}))
        dispatch(removeListIds({listIds}))
@@ -393,7 +395,7 @@ export default function Lists({socket}) {
             <>
               {
                 !lists?.data?.length ? (
-                  <ContentPasteOff sx={{marginTop: "50px", marginLeft: "45%", fontSize: "64px"}}/>
+                  <ContentPasteOff sx={{marginTop: "50px", marginLeft: "175%", fontSize: "64px"}}/>
                 ) : (
                   lists?.data?.map((list, idx) => (
                     <Grid item key={idx} >
