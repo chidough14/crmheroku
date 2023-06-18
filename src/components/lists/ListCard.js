@@ -8,7 +8,7 @@ import Typography from '@mui/material/Typography';
 import moment from 'moment';
 import { Checkbox, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, Menu, MenuItem, Snackbar } from '@mui/material';
 import MuiAlert from '@mui/material/Alert';
-import { CopyAllOutlined, DeleteOutlined, EditOutlined, MoreVert, MoveUpOutlined } from '@mui/icons-material';
+import { CopyAllOutlined, DeleteOutlined, EditOutlined, MoreVert, MoveUpOutlined, Restore } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
 import { getToken } from '../../services/LocalStorageService';
 import { useNavigate } from 'react-router-dom';
@@ -31,7 +31,7 @@ const Alert = React.forwardRef(function Alert(props, ref) {
 });
 
 
-const ListCard = ({list, socket, showSpinner}) => {
+const ListCard = ({list, socket, showSpinner, showTrash}) => {
 
   const dispatch = useDispatch()
   const token = getToken()
@@ -44,6 +44,7 @@ const ListCard = ({list, socket, showSpinner}) => {
 
   const [openDialog, setOpenDialog] = React.useState(false);
   const [openTransferModal, setOpenTransferModal] = React.useState(false);
+  const [restoreMode, setRestoreMode] = React.useState(false);
   const [listObj, setListObj] = React.useState();
   const [listId, setListId] = React.useState();
 
@@ -84,9 +85,12 @@ const ListCard = ({list, socket, showSpinner}) => {
   };
 
   const deleteList = async (id, e) => {
+    let url
+    url = showTrash ? `mylists-force-delete/${id}` : `mylists/${id}`
+    
     dispatch(setShowSpinner({showSpinner: true}))
 
-    await instance.delete(`mylists/${id}`)
+    await instance.delete(url)
     .then(() => {
       setOpenDialog(false);
       dispatch(showAlert({alertMessage: "List deleted", severity: "success"}))
@@ -101,10 +105,12 @@ const ListCard = ({list, socket, showSpinner}) => {
   };
 
   const cloneList = async (list) => {
+    setListId(list.id)  // added to make the cloning notification show
     dispatch(setShowCloningNotification({showCloningNotification: true}))
 
     await instance.get(`mylists/${list.id}/clone`)
     .then((res)=> {
+       setListId(false)
        dispatch(addList({list: res.data.clonedList}))
        dispatch(setShowCloningNotification({showCloningNotification: false}))
     })
@@ -118,6 +124,23 @@ const ListCard = ({list, socket, showSpinner}) => {
   const transferList =  (value) => {
     setOpenTransferModal(true)
     setListObj(value)
+  };
+
+  const restoreList =  async (id) => {
+    dispatch(setShowSpinner({showSpinner: true}))
+
+    await instance.get(`mylists-restore/${id}`)
+    .then(() => {
+      setOpenDialog(false);
+      dispatch(showAlert({alertMessage: "List restored", severity: "success"}))
+      dispatch(removeList({listId: id}))
+      dispatch(removeListId({id}))
+      dispatch(setShowSpinner({showSpinner: false}))
+    })
+    .catch(() => {
+      dispatch(setShowSpinner({showSpinner: false}))
+      dispatch(showAlert({alertMessage: "Ooops an error was encountered", severity: "error"}))
+    })
   };
 
   return (
@@ -158,30 +181,65 @@ const ListCard = ({list, socket, showSpinner}) => {
                 'aria-labelledby': 'basic-button',
               }}
             >
-              <MenuItem onClick={showEditModal} disabled={(list.user_id !== user.id)}><EditOutlined /> Edit</MenuItem>
+              {
+                showTrash ? null : (
+                  <MenuItem 
+                    onClick={showEditModal} 
+                    disabled={(list.user_id !== user.id)}
+                  >
+                      <EditOutlined /> Edit
+                  </MenuItem>
+                )
+              }
+             
+              
+              {
+                showTrash ? null : (
+                  <MenuItem
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      cloneList(list)
+                    }} 
+                    disabled={(list.user_id !== user.id) && (list.type === "private")}
+                  >
+                    <CopyAllOutlined /> 
+                    Clone
+                  </MenuItem>
+                )
+              }
+              
 
-              <MenuItem
-                onClick={(e) => {
-                  e.stopPropagation()
-                  cloneList(list)
-                }} 
-                disabled={(list.user_id !== user.id) && (list.type === "private")}
-              >
-                <CopyAllOutlined /> 
-                 Clone
-              </MenuItem>
+              {
+                showTrash ? null : (
+                  <MenuItem 
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      transferList(list)
+                    }} 
+                    disabled={(list.user_id !== user.id) && (list.type === "private")}
+                  >
+                    <MoveUpOutlined /> Transfer
+                  </MenuItem>
+                )
+              }
+            
 
-              <MenuItem 
-                onClick={(e) => {
-                  e.stopPropagation()
-                  transferList(list)
-                }} 
-                disabled={(list.user_id !== user.id) && (list.type === "private")}
-              >
-                <MoveUpOutlined /> Transfer
-              </MenuItem>
+              {
+                showTrash ? (
+                  <MenuItem 
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setRestoreMode(true)
+                      setOpenDialog(true);
+                    }} 
+                    disabled={(list.user_id !== user.id) && (list.type === "private")}
+                  >
+                    <Restore /> Restore
+                  </MenuItem>
+                ) : null
+              }
 
-              <MenuItem onClick={handleClickOpen} disabled={(list.user_id !== user.id)}><DeleteOutlined /> Delete</MenuItem>
+              <MenuItem onClick={handleClickOpen} disabled={(list.user_id !== user.id)}><DeleteOutlined /> Delete</MenuItem>  
             </Menu>
 
            
@@ -253,16 +311,16 @@ const ListCard = ({list, socket, showSpinner}) => {
         aria-describedby="alert-dialog-description"
       >
         <DialogTitle id="alert-dialog-title">
-          Delete List
+          {restoreMode ? "Restore List ": "Delete List"}
         </DialogTitle>
         <DialogContent>
           <DialogContentText id="alert-dialog-description">
-            Are you sure you want to delete this list ?
+            {restoreMode ? "Are you sure you want to restore this list" : "Are you sure you want to delete this list ?"}
           </DialogContentText>
 
           <DialogContentText sx={{textAlign: "center", color: "red"}}>
             {
-              showSpinner ? "Deleting...." : null
+              showSpinner ? "Please wait...." : null
             }
           </DialogContentText>
         </DialogContent>
@@ -270,7 +328,12 @@ const ListCard = ({list, socket, showSpinner}) => {
           <Button onClick={handleCloseDialog}>No</Button>
           <Button 
             onClick={(e) => {
-              deleteList(list.id, e)
+              if (restoreMode) {
+                 restoreList(list.id)
+              } else {
+                deleteList(list.id, e)
+              }
+           
             }} 
             autoFocus
           >

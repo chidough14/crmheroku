@@ -13,8 +13,7 @@ import instance from '../services/fetchApi';
 import { addList, addListIds, removeListIds, removeLists, setLists, setShowCloningNotification, setShowSpinner, setSortOptionValue } from '../features/listSlice';
 import Pagination from '@mui/material/Pagination';
 import SortButton from './orders/SortButton';
-import { Box } from '@mui/system';
-import { AddOutlined, ContentPasteOff, CopyAllOutlined, DeleteOutline, MoveUpOutlined, SearchOutlined } from '@mui/icons-material';
+import { AddOutlined, ContentPasteOff, CopyAllOutlined, DeleteOutline, FolderDelete, MoveUpOutlined, Restore, RestorePage, SearchOutlined } from '@mui/icons-material';
 import UploadFile from '../components/lists/UploadFile';
 import MuiAlert from '@mui/material/Alert';
 import ListTransferModal from '../components/lists/ListTransferModal';
@@ -52,6 +51,8 @@ export default function Lists({socket}) {
   const [alertMessage, setAlertMessage] = React.useState("");
   const [openTransferModal, setOpenTransferModal] = React.useState(false);
   const [openDeleteDialog, setOpenDeleteDialog] = React.useState(false);
+  const [showTrash, setShowTrash] = React.useState(false);
+  const [restoreMode, setRestoreMode] = React.useState(false);
 
   const showAlert = (msg, sev) => {
     setOpenAlert(true)
@@ -69,6 +70,7 @@ export default function Lists({socket}) {
 
   const getListsResult = async (pageNo = 1) => {
     setLoading(true)
+    setShowTrash(false)
     await instance.get(`mylists?page=${pageNo}`)
     .then((res)=> {
       dispatch(setLists({lists: res.data.lists}))
@@ -182,6 +184,44 @@ export default function Lists({socket}) {
     
   };
 
+  const fetchListsWithTrashed = async (page = 1) => {
+    setLoading(true)
+    setShowTrash(true)
+    await instance.get(`mylists-with-trashed?page=${page}`)
+    .then((res)=> {
+      const convertedObject = {
+        ...res.data.lists,
+        data: Object.values(res.data.lists.data)
+      }
+
+      dispatch(setLists({lists: convertedObject}))
+      setLoading(false)
+    })
+    .catch(() => {
+      showAlert("Oops an error was encountered", "error")
+    })
+  };
+
+  const restoreLists = async (listIds) => {
+    dispatch(setShowSpinner({showSpinner: true}))
+
+    await instance.post(`mylists-bulk-restore`, { listIds })
+    .then((res)=> {
+       dispatch(removeLists({listIds}))
+       dispatch(removeListIds({listIds}))
+       dispatch(setShowSpinner({showSpinner: false}))
+       dispatch(showAlert({alertMessage: "Lists restored", severity: "success"}))
+       handleCloseDialog()
+       
+    })
+    .catch(() => {
+      dispatch(setShowSpinner({showSpinner: false}))
+      handleCloseDialog()
+      dispatch(showAlert({alertMessage: "Ooops an error was encountered", severity: "error"}))
+    })
+    
+  };
+
   const handleCloseDialog = () => {
     setOpenDeleteDialog(false);
   };
@@ -189,7 +229,7 @@ export default function Lists({socket}) {
   return (
     <div >
       <Toolbar>
-        <Typography variant='h5'  component="div" sx={{ flexGrow: 2 }} >My Lists</Typography>
+        <Typography variant='h5'  component="div" sx={{ flexGrow: 2 }} >My Lists{showTrash ? " - Trash" : null}</Typography>
 
         {
           listIds.length ? (
@@ -206,7 +246,7 @@ export default function Lists({socket}) {
     
              
               {
-                listIds.length === 1 ? (
+                (listIds.length === 1 && !showTrash) ? (
                   <Tooltip title="Clone">
                     <CopyAllOutlined 
                       style={{marginLeft: "10px", cursor: "pointer"}} 
@@ -217,15 +257,34 @@ export default function Lists({socket}) {
                   </Tooltip>
                 ) : null
               }
+              
+              {
+                showTrash ? null : (
+                  <Tooltip title="Transfer">
+                    <MoveUpOutlined 
+                      style={{marginLeft: "10px", cursor: "pointer"}}
+                      onClick={() => {
+                        setOpenTransferModal(true)
+                      }}
+                    />
+                  </Tooltip>
+                )
+              }
+            
 
-              <Tooltip title="Transfer">
-                <MoveUpOutlined 
-                  style={{marginLeft: "10px", cursor: "pointer"}}
-                  onClick={() => {
-                    setOpenTransferModal(true)
-                  }}
-                />
-              </Tooltip>
+              {
+                showTrash ? (
+                  <Tooltip title="Restore">
+                    <Restore 
+                      style={{marginLeft: "10px", cursor: "pointer"}}
+                      onClick={() => {
+                        setRestoreMode(true)
+                        setOpenDeleteDialog(true)
+                      }}
+                    />
+                  </Tooltip>
+                ) : null
+              }
     
               <span style={{marginLeft: "10px"}}>
                 {listIds.length} Items Selected
@@ -241,25 +300,48 @@ export default function Lists({socket}) {
             </div>
           ) : null
         }
-        
+
+        <Tooltip title="Select all">
+          <Checkbox
+            checked={listIds.length}
+            onChange={(e,f) => {
+              if (f) {
+                let listIds = lists?.data?.map((a) => a.id)
+
+                dispatch(addListIds({listIds}))
+              } else {
+                dispatch(removeListIds({listIds}))
+              }
+            }}
+            inputProps={{ 'aria-label': 'controlled' }}
+          />
+        </Tooltip>
         {
-          lists?.data?.length ? (
-            <Tooltip title="Select all">
-              <Checkbox
-                checked={listIds.length}
-                onChange={(e,f) => {
-                  if (f) {
-                    let listIds = lists?.data?.map((a) => a.id)
-    
-                    dispatch(addListIds({listIds}))
-                  } else {
-                    dispatch(removeListIds({listIds}))
-                  }
+          showTrash ? (
+            <Tooltip title="Show lists">
+              <RestorePage
+                style={{fontSize: "28px", cursor: "pointer"}}
+                onClick={() => {
+                  dispatch(removeListIds({listIds}))
+                  getListsResult()
                 }}
-                inputProps={{ 'aria-label': 'controlled' }}
               />
             </Tooltip>
-          ) : null
+          ) : (
+            <>
+             {
+              lists?.data?.length ? (
+                <FolderDelete
+                  style={{fontSize: "28px", cursor: "pointer"}}
+                  onClick={() => {
+                    dispatch(removeListIds({listIds}))
+                    fetchListsWithTrashed()
+                  }}
+                />
+              ) : null
+             }
+            </>
+          )
         }
       
 
@@ -301,31 +383,34 @@ export default function Lists({socket}) {
         </Tooltip>
       </Toolbar>
 
-      {
-         !lists?.data?.length ? (
-           <ContentPasteOff sx={{marginTop: "50px", marginLeft: "45%", fontSize: "64px"}}/>
-         ) : (
-            <div className="cards">
-              {
-                loading ? (
-                  <div style={{ width: "300%", marginLeft: "190%" }}>
-                    <CircularProgress />
-                  </div>
-                ) :
-                lists?.data?.map((list, idx) => (
-                  <Grid item key={idx} >
-                    <ListCard 
-                      list={list} 
-                      socket={socket} 
-                      showSpinner={showSpinner}
-                    />
-                  </Grid>
-                ))
-              }  
-            
+      <div className="cards">
+        {
+          loading ? (
+            <div style={{ width: "300%", marginLeft: "190%" }}>
+              <CircularProgress />
             </div>
-         )
-      }
+          ) :  (
+            <>
+              {
+                !lists?.data?.length ? (
+                  <ContentPasteOff sx={{marginTop: "50px", marginLeft: "45%", fontSize: "64px"}}/>
+                ) : (
+                  lists?.data?.map((list, idx) => (
+                    <Grid item key={idx} >
+                      <ListCard 
+                        list={list} 
+                        socket={socket} 
+                        showSpinner={showSpinner}
+                        showTrash={showTrash}
+                      />
+                    </Grid>
+                  ))
+                )
+              }
+            </>
+          )
+        }
+      </div>
       
 
       <div style={{marginTop: "50px", marginLeft: "40%"}}>
@@ -336,6 +421,8 @@ export default function Lists({socket}) {
            
             if (searchQuery.length) {
                getSearchResult(idx)
+            } else if(showTrash) {
+               fetchListsWithTrashed(idx)
             } else {
               if (sortOption === "all") {
                 getListsResult(idx)
@@ -358,16 +445,16 @@ export default function Lists({socket}) {
         aria-describedby="alert-dialog-description"
       >
         <DialogTitle id="alert-dialog-title">
-          Delete List
+          {restoreMode ? "Restore Lists" : "Delete List"}
         </DialogTitle>
         <DialogContent>
           <DialogContentText id="alert-dialog-description">
-            Are you sure you want to delete these lists ?
+            Are you sure you want to {restoreMode ? "restore" : "delete"} these lists ?
           </DialogContentText>
 
           <DialogContentText sx={{textAlign: "center", color: "red"}}>
             {
-              showSpinner ? "Deleting...." : null
+              showSpinner ? "Please wait...." : null
             }
           </DialogContentText>
         </DialogContent>
@@ -375,7 +462,12 @@ export default function Lists({socket}) {
           <Button onClick={handleCloseDialog}>No</Button>
           <Button 
             onClick={(e) => {
-              deleteLists(listIds)
+              if(restoreMode) {
+                restoreLists(listIds)
+              } else {
+                deleteLists(listIds)
+              }
+            
             }} 
             autoFocus
           >
