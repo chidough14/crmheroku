@@ -10,7 +10,8 @@ const initialState = {
   showCloningNotification: false,
   showDeleteNotification: false,
   showTransferNotification: false,
-  showCreatingInvoiceSpinner: false
+  showCreatingInvoiceSpinner: false,
+  activityIds: []
 }
 
 export const ActivitySlice = createSlice({
@@ -95,6 +96,18 @@ export const ActivitySlice = createSlice({
     },
     setShowCreatingInvoiceSpinner: (state, action) => {
       state.showCreatingInvoiceSpinner = action.payload.showCreatingInvoiceSpinner
+    },
+    addActivityId: (state, action)  => {
+      state.activityIds = [...state.activityIds, action.payload.id]
+    },
+    removeActivityId: (state, action) => {
+      state.activityIds = state.activityIds.filter((a) => a !== action.payload.id)
+    },
+    addActivityIds: (state, action)  => {
+      state.activityIds = action.payload.activityIds
+    },
+    removeActivityIds: (state, action) => {
+      state.activityIds = state.activityIds.filter((a) => !action.payload.activityIds.includes(a))
     }
   },
 })
@@ -122,7 +135,11 @@ export const {
   setShowCloningNotification,
   setShowDeleteNotification,
   setShowTransferNotification,
-  setShowCreatingInvoiceSpinner
+  setShowCreatingInvoiceSpinner,
+  addActivityId,
+  removeActivityId,
+  addActivityIds,
+  removeActivityIds
 } = ActivitySlice.actions
 
 export default ActivitySlice.reducer

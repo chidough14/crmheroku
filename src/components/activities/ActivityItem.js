@@ -1,6 +1,6 @@
 import React from 'react'
 import { Draggable } from 'react-beautiful-dnd'
-import { IconButton, Menu, Typography, MenuItem, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button, Snackbar, Tooltip, Chip } from '@mui/material';
+import { IconButton, Menu, Typography, MenuItem, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button, Snackbar, Tooltip, Chip, Checkbox } from '@mui/material';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import moment from 'moment';
@@ -11,7 +11,7 @@ import {  ArrowDownwardOutlined, ArrowUpwardOutlined, CopyAllOutlined, DeleteOut
 import { useState } from 'react';
 import ActivityModal from './ActivityModal';
 import instance from '../../services/fetchApi';
-import { addActivity, removeActivity, setShowCloningNotification, setShowDeleteNotification } from '../../features/ActivitySlice';
+import { addActivity, addActivityId, removeActivity, removeActivityId, setShowCloningNotification, setShowDeleteNotification } from '../../features/ActivitySlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { deleteEvent } from '../../features/EventSlice';
@@ -32,7 +32,7 @@ const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
 });
 
-const ActivityItem = ({activity, index, socket}) => {
+const ActivityItem = ({activity, index, socket, showTrash}) => {
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const [openModal, setOpenModal] = useState(false);
@@ -45,7 +45,7 @@ const ActivityItem = ({activity, index, socket}) => {
   const [activityId, setActivityId] = useState();
   const handleOpen = () => setOpenModal(true);
   const user = useSelector(state => state.user)
-  const { showCloningNotification, showDeleteNotification } = useSelector(state => state.activity)
+  const { showCloningNotification, showDeleteNotification, activityIds } = useSelector(state => state.activity)
 
   const showAlert = (msg, sev) => {
     setOpenAlert(true)
@@ -128,7 +128,7 @@ const ActivityItem = ({activity, index, socket}) => {
 
   return (
     <>
-      <Draggable draggableId={activity.id.toString()} index={index} key={activity.id.toString()} isDragDisabled={activity.probability === "Closed"}>
+      <Draggable draggableId={activity.id.toString()} index={index} key={activity.id.toString()} isDragDisabled={activity.probability === "Closed" || showTrash}>
         {provided => (
           <div
             ref={provided.innerRef}
@@ -136,7 +136,15 @@ const ActivityItem = ({activity, index, socket}) => {
             {...provided.dragHandleProps}
           >
 
-            <Card sx={{  width: "96%", margin: "auto", marginTop: "-15px"}}>
+            <Card 
+              sx={{  width: "96%", margin: "auto", marginTop: "-15px"}}
+              onMouseEnter={() => {
+                setActivityId(activity.id)
+              }}
+              onMouseLeave={() => {
+                setActivityId(null)
+              }}
+            >
               <CardContent>
                 <div style={{display: "flex", justifyContent: "space-between", marginBottom: "-15px", marginTop: "-10px"}}>
                   <Typography sx={{ fontSize: 12 }} color="text.secondary" gutterBottom>
@@ -144,6 +152,7 @@ const ActivityItem = ({activity, index, socket}) => {
                   </Typography>
 
                   <IconButton 
+                    style={{marginLeft: "50%"}}
                     aria-label="settings"
                     id="basic-button"
                     aria-controls={open ? 'basic-menu' : undefined}
@@ -169,6 +178,24 @@ const ActivityItem = ({activity, index, socket}) => {
                     <MenuItem onClick={handleClickOpen}><DeleteOutlined /> Delete</MenuItem>
                     <MenuItem onClick={() => navigate(`/activities/${activity.id}`)}><ViewListOutlined /> View</MenuItem>
                   </Menu>
+
+
+                  {
+                      (activityId === activity.id || activityIds.includes(activity.id)) && (
+                      <Checkbox
+                        size="small"
+                        checked={activityIds.includes(activity.id)}
+                        onChange={(e,f) => {
+                          if(f) {
+                            dispatch(addActivityId({id: activity.id}))
+                          } else {
+                            dispatch(removeActivityId({id: activity.id}))
+                          }
+                        }}
+                        inputProps={{ 'aria-label': 'controlled' }}
+                      />
+                    )
+                  }
                 </div>
               
                 <Typography sx={{ mb: -0.5 }} color="text.primary">
@@ -241,6 +268,7 @@ const ActivityItem = ({activity, index, socket}) => {
         setOpen={setOpenTransferModal}
         activity={activityObj}
         socket={socket} 
+        mode="single"
       />
 
       <Dialog

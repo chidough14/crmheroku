@@ -307,12 +307,12 @@ export default function Lists({socket}) {
           <Checkbox
             checked={listIds.length}
             onChange={(e,f) => {
+              let ids = lists?.data?.map((a) => a.id)
               if (f) {
-                let listIds = lists?.data?.map((a) => a.id)
 
-                dispatch(addListIds({listIds}))
+                dispatch(addListIds({listIds: ids}))
               } else {
-                dispatch(removeListIds({listIds}))
+                dispatch(removeListIds({listIds: ids}))
               }
             }}
             inputProps={{ 'aria-label': 'controlled' }}
@@ -362,24 +362,41 @@ export default function Lists({socket}) {
         }
       
         <Tooltip title="Search lists">
-          <SearchOutlined
-            style={{cursor: "pointer"}}
-            onClick={() => {
+          <Button
+             onClick={() => {
               setShowSearch(prev => !prev)
               setSearchQuery("")
             }}
-          />
+            size="small"
+            style={{borderRadius: "30px"}}
+            disabled={showTrash}
+          >
+            <SearchOutlined />
+          </Button>
         </Tooltip>
        
 
-        <SortButton setSortOption={setSortOption} sortOption={sortOption} title="Sort Lists" closeSearch={closeSearch} />
+        <SortButton 
+          setSortOption={setSortOption} 
+          sortOption={sortOption} 
+          title="Sort Lists" 
+          closeSearch={closeSearch} 
+          showTrash={showTrash}
+        />
 
         <Tooltip title="Upload list">
-          <UploadFile />
+          <UploadFile showTrash={showTrash} />
         </Tooltip>
 
         <Tooltip title="Add List">
-          <Button variant="contained" onClick={handleOpen} className="addButton" size='small' style={{borderRadius: "30px", marginLeft: "20px"}}>
+          <Button 
+            variant="contained" 
+            onClick={handleOpen} 
+            className="addButton" 
+            size='small' 
+            style={{borderRadius: "30px", marginLeft: "20px"}}
+            disabled={showTrash}
+          >
             <AddOutlined />
           </Button>
         </Tooltip>
