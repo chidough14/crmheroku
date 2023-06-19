@@ -30,7 +30,7 @@ const style = {
   borderRadius: "13px"
 }
 
-const SortButton = ({ setSortOption, sortOption, title, closeSearch }) => {
+const SortButton = ({ setSortOption, sortOption, title, closeSearch, showTrash }) => {
   const [anchorEl, setAnchorEl] = React.useState(null);
   const open = Boolean(anchorEl);
   const handleClick = (event) => {
@@ -57,6 +57,7 @@ const SortButton = ({ setSortOption, sortOption, title, closeSearch }) => {
             aria-expanded={open ? 'true' : undefined}
             variant="contained"
             style={{borderRadius: "30px"}}
+            disabled={showTrash}
           >
              <SortOutlined />
           </Button>

@@ -1,16 +1,17 @@
-import { AddOutlined, InfoOutlined, SearchOutlined } from '@mui/icons-material'
-import { Button, CircularProgress, Snackbar, TextField, Toolbar, Tooltip, Typography } from '@mui/material'
+import { AddOutlined, CopyAllOutlined, DeleteOutline, FolderDelete, InfoOutlined, MoveUpOutlined, Restore, RestorePage, SearchOutlined } from '@mui/icons-material'
+import { Button, Checkbox, CircularProgress, Snackbar, TextField, Toolbar, Tooltip, Typography } from '@mui/material'
 import React, { useEffect, useState } from 'react'
 import {DragDropContext} from 'react-beautiful-dnd'
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import ActivityColumn from '../components/activities/ActivityColumn'
 import ActivityModal from '../components/activities/ActivityModal'
-import { editActivity, editActivityProbability, setActivities, setOpenPrompt, setSortOptionValue } from '../features/ActivitySlice'
+import { addActivity, addActivityIds, editActivity, editActivityProbability, removeActivityIds, setActivities, setOpenPrompt, setShowCloningNotification, setSortOptionValue } from '../features/ActivitySlice'
 import instance from '../services/fetchApi'
 import { getToken } from '../services/LocalStorageService'
 import SortButton from './orders/SortButton'
 import MuiAlert from '@mui/material/Alert';
+import ActivityTransferModal from '../components/activities/ActivityTransferModal'
 
 
 const Alert = React.forwardRef(function Alert(props, ref) {
@@ -21,7 +22,7 @@ const Activities = ({socket}) => {
   const [columns, setColumns] = useState([])
   const [activityId, setActivityId] = useState()
   const dispatch = useDispatch()
-  const { activities, sortOption } = useSelector((state) => state.activity) 
+  const { activities, sortOption, activityIds, showCloningNotification } = useSelector((state) => state.activity) 
   const [open, setOpen] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -32,6 +33,9 @@ const Activities = ({socket}) => {
   const [openAlert, setOpenAlert] = useState(false);
   const [severity, setSeverity] = useState("");
   const [alertMessage, setAlertMessage] = useState("");
+  const [showTrash, setShowTrash] = useState(false);
+  const [restoreMode, setRestoreMode] = useState(false);
+  const [openTransferModal, setOpenTransferModal] = useState(false);
 
   const showAlert = (msg, sev) => {
     setOpenAlert(true)
@@ -90,7 +94,6 @@ const Activities = ({socket}) => {
       },
     
     }
-
 
     setColumns(cols)
    
@@ -196,6 +199,7 @@ const Activities = ({socket}) => {
 
   const getSortedActivities = async (option) => {
     setLoading(true)
+    setShowTrash(false)
     let url
     url = option !== "all" ? `filter-activities/${option}` : `activities`
 
@@ -203,6 +207,26 @@ const Activities = ({socket}) => {
     await instance.get(url)
     .then((res) => {
       dispatch(setActivities({activities: res.data.activities}))
+      setLoading(false)
+    })
+    .catch(() => {
+      showAlert("Oops an error was encountered", "error")
+    })
+  }
+
+  const fetchActivitiesWithTrashed = async () => {
+    setLoading(true)
+    setShowTrash(true)
+
+    await instance.get(`activities-with-trashed`)
+    .then((res) => {
+      let data = res.data
+      const convertedData = {
+        ...data,
+        activities: Object.values(data.activities)
+      };
+   
+      dispatch(setActivities({activities: convertedData.activities}))
       setLoading(false)
     })
     .catch(() => {
@@ -252,10 +276,28 @@ const Activities = ({socket}) => {
     setShowSearch(false)
   }
 
+  const cloneActivity = async (value) => {
+    let activity = activities.find((a)=> a.id === value)
+
+    dispatch(setShowCloningNotification({showCloningNotification: true}))
+
+    await instance.get(`activities/${activity.id}/clone`)
+    .then((res)=> {
+      res.data.clonedActivity.decreased_probability = null
+      res.data.clonedActivity.total = activity.total
+      dispatch(addActivity({activity: res.data.clonedActivity}))
+      dispatch(setShowCloningNotification({showCloningNotification: false}))
+   })
+   .catch(() => {
+      showAlert("Ooops an error was encountered", "error")
+      dispatch(setShowCloningNotification({showCloningNotification: false}))
+    })
+  };
+
   return (
     <div>
       <Toolbar>
-        <Typography variant='h6'  component="div" sx={{ flexGrow: 2 }} >My Activities</Typography>
+        <Typography variant='h6'  component="div" sx={{ flexGrow: 2 }} >My Activities {showTrash ? "- Trash" : null}</Typography>
 
         <Typography variant='h6'  component="div" sx={{ flexGrow: 2 }} >
           Total 
@@ -264,7 +306,117 @@ const Activities = ({socket}) => {
           </Tooltip>  
            : <span  style={{color: "green"}}>${isNaN(columns?.Low?.total + columns?.High?.total + columns?.Medium?.total) ? "" : columns?.Low?.total + columns?.High?.total + columns?.Medium?.total}</span>
         </Typography>
+        
+        {
+          activityIds.length ? (
+            <div style={{display: "flex", marginRight: "30%"}}>
+                <Tooltip title="Delete">
+                  <DeleteOutline  
+                    style={{marginLeft: "10px",  cursor: "pointer"}}
+                    onClick={() => {
+                      
+                    }}
+                  />
+                </Tooltip>
 
+                {
+                  (activityIds.length === 1 && !showTrash) ? (
+                    <Tooltip title="Clone">
+                      <CopyAllOutlined 
+                        style={{marginLeft: "10px", cursor: "pointer"}} 
+                        onClick={() => {
+                          cloneActivity(activityIds[0])
+                        }}
+                      /> 
+                    </Tooltip>
+                  ) : null
+                }
+
+              {
+                showTrash ? null : (
+                  <Tooltip title="Transfer">
+                    <MoveUpOutlined 
+                      style={{marginLeft: "10px", cursor: "pointer"}}
+                      onClick={() => {
+                        setOpenTransferModal(true)
+                      }}
+                    />
+                  </Tooltip>
+                )
+              }
+
+              {
+                showTrash ? (
+                  <Tooltip title="Restore">
+                    <Restore 
+                      style={{marginLeft: "10px", cursor: "pointer"}}
+                      onClick={() => {
+                        setRestoreMode(true)
+                        // setOpenDeleteDialog(true)
+                      }}
+                    />
+                  </Tooltip>
+                ) : null
+              }
+
+              <span style={{marginLeft: "10px"}}>
+                {activityIds.length} Items Selected
+              </span>
+
+              {
+                showCloningNotification ? (
+                  <span style={{marginLeft: "10px", color: "green"}}>
+                    Cloning Activity...
+                  </span>
+                ) : null
+              }
+            </div>
+          ) : null
+        }
+
+        <Tooltip title="Select all">
+          <Checkbox
+            checked={activityIds.length}
+            onChange={(e,f) => {
+              let ids = activities?.map((a) => a.id)
+              if (f) {
+
+                dispatch(addActivityIds({activityIds: ids}))
+              } else {
+                dispatch(removeActivityIds({activityIds: ids}))
+              }
+            }}
+            inputProps={{ 'aria-label': 'controlled' }}
+          />
+        </Tooltip>
+
+        {
+          showTrash ? (
+            <Tooltip title="Show activities">
+              <RestorePage
+                style={{fontSize: "28px", cursor: "pointer"}}
+                onClick={() => {
+                  dispatch(removeActivityIds({activityIds}))
+                  getSortedActivities("all")
+                }}
+              />
+            </Tooltip>
+          ) : (
+            <>
+             {
+              activities?.length ? (
+                <FolderDelete
+                  style={{fontSize: "28px", cursor: "pointer"}}
+                  onClick={() => {
+                    dispatch(removeActivityIds({activityIds}))
+                    fetchActivitiesWithTrashed()
+                  }}
+                />
+              ) : null
+             }
+            </>
+          )
+        }
 
         {
           showSearch && (
@@ -281,19 +433,37 @@ const Activities = ({socket}) => {
         }
 
         <Tooltip title="Search Activities">
-          <SearchOutlined
-            style={{cursor: "pointer"}}
+          <Button
             onClick={() => {
               setShowSearch(prev => !prev)
               setSearchQuery("")
             }}
-          />
+            size="small"
+            style={{borderRadius: "30px"}}
+            disabled={showTrash}
+          >
+            <SearchOutlined />
+          </Button>
         </Tooltip>
 
-        <SortButton setSortOption={setSortOption} sortOption={sortOption}  closeSearch={closeSearch} title="Sort Activities" />
+        <SortButton 
+          setSortOption={setSortOption} 
+          sortOption={sortOption}  
+          closeSearch={closeSearch} 
+          title="Sort Activities" 
+          showTrash={showTrash}
+        />
 
         <Tooltip title="Add Activity">
-          <Button variant="contained" size='small' className="addButton" onClick={handleOpen} style={{borderRadius: "30px", marginLeft: "30px"}}>
+          <Button 
+            variant="contained" 
+            size='small' 
+            className="addButton" 
+            onClick={handleOpen} 
+            style={{borderRadius: "30px", 
+            marginLeft: "30px"}}
+            disabled={showTrash}
+          >
             <AddOutlined />
           </Button>
         </Tooltip>
@@ -310,7 +480,13 @@ const Activities = ({socket}) => {
           }}
         >
           {Object.values(columns).map((col, i) => (
-            <ActivityColumn col={col} key={i} loading={loading} socket={socket}   />
+            <ActivityColumn 
+              col={col} 
+              key={i} 
+              loading={loading} 
+              socket={socket}  
+              showTrash={showTrash} 
+            />
           ))}
         </div>
       </DragDropContext>
@@ -319,6 +495,14 @@ const Activities = ({socket}) => {
         open={open}
         setOpen={setOpen}
         mode="activities"
+      />
+
+      <ActivityTransferModal
+        open={openTransferModal}
+        setOpen={setOpenTransferModal}
+        activityIds={activityIds}
+        socket={socket}
+        mode="bulk" 
       />
 
 

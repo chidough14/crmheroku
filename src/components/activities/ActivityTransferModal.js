@@ -30,7 +30,7 @@ const validationSchema = yup.object({
     .required('Email is required'),
 });
 
-const ActivityTransferModal = ({ open, setOpen, activity, socket}) => {
+const ActivityTransferModal = ({ open, setOpen, activity, socket, activityIds, mode}) => {
   const [openAlert, setOpenAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
   const [severity, setSeverity] = useState("");
@@ -64,16 +64,25 @@ const ActivityTransferModal = ({ open, setOpen, activity, socket}) => {
     },
     validationSchema: validationSchema,
     onSubmit: async (values, {resetForm}) => {
-      dispatch(setShowTransferNotification({showTransferNotification: true}))
 
-      await instance.post(`activities/${activity?.id}/transfer`, values)
+      let url, body
+      url = mode === "bulk" ? `activities-bulk-transfer` : `activities/${activity?.id}/transfer`
+      body = mode === "bulk" ? {
+        activityIds,
+        email: values.email
+      } :  { email: values.email }
+
+      dispatch(setShowTransferNotification({showTransferNotification: true}))
+      
+      
+      await instance.post(url, body)
       .then((res)=> {
        
         if (res.data.status === "success") {
-          showAlert("Activity Transfered", "success")
+          showAlert(mode === "single" ? "Activity Transfered" : "Activities Transferd", "success")
 
           let xx = allUsers.find((a) => a.email === values.email)
-          socket.emit('sendNotification', { recipientId: xx.id, message: "Activity transfer" });
+          socket.emit('sendNotification', { recipientId: xx.id, message: mode === "single" ? "Activity Transfer" : "Activities Transfer" });
 
           handleClose()
           resetForm()
@@ -89,6 +98,8 @@ const ActivityTransferModal = ({ open, setOpen, activity, socket}) => {
         showAlert("Ooops an error was encountered", "error")
         dispatch(setShowTransferNotification({showTransferNotification: false}))
       })
+
+    
     },
   });
 

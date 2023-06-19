@@ -3,7 +3,7 @@ import { Button } from '@mui/material'
 import React, { useState } from 'react'
 import UploadModal from './UploadModal'
 
-const UploadFile = () => {
+const UploadFile = ({showTrash}) => {
   const [openUploadModal, setOpenUploadModal] = useState(false)
 
   return (
@@ -13,6 +13,7 @@ const UploadFile = () => {
         size='small' 
         style={{borderRadius: "30px", marginLeft: "20px"}}
         onClick={() => setOpenUploadModal(true)}
+        disabled={showTrash}
       >
          <FileUpload />
       </Button>
