@@ -30,6 +30,10 @@ export const EventSlice = createSlice({
       if (action.payload.activityId) {
         state.events = state.events.filter((a) => a.activity_id !== action.payload.activityId)
       }
+
+      if (action.payload.activityIds) {
+        state.events = state.events.filter((a) => !action.payload.activityIds.includes(a.activity_id))
+      }
     },
     setShowSendingSpinner: (state, action) => {
       state.showSendingSpinner = action.payload.showSendingSpinner

@@ -1,17 +1,18 @@
 import { AddOutlined, CopyAllOutlined, DeleteOutline, FolderDelete, InfoOutlined, MoveUpOutlined, Restore, RestorePage, SearchOutlined } from '@mui/icons-material'
-import { Button, Checkbox, CircularProgress, Snackbar, TextField, Toolbar, Tooltip, Typography } from '@mui/material'
+import { Button, Checkbox, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Snackbar, TextField, Toolbar, Tooltip, Typography } from '@mui/material'
 import React, { useEffect, useState } from 'react'
 import {DragDropContext} from 'react-beautiful-dnd'
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import ActivityColumn from '../components/activities/ActivityColumn'
 import ActivityModal from '../components/activities/ActivityModal'
-import { addActivity, addActivityIds, editActivity, editActivityProbability, removeActivityIds, setActivities, setOpenPrompt, setShowCloningNotification, setSortOptionValue } from '../features/ActivitySlice'
+import { addActivity, addActivityIds, editActivity, editActivityProbability, removeActivities, removeActivity, removeActivityIds, setActivities, setOpenPrompt, setShowCloningNotification, setShowDeleteNotification, setSortOptionValue } from '../features/ActivitySlice'
 import instance from '../services/fetchApi'
 import { getToken } from '../services/LocalStorageService'
 import SortButton from './orders/SortButton'
 import MuiAlert from '@mui/material/Alert';
 import ActivityTransferModal from '../components/activities/ActivityTransferModal'
+import { deleteEvent } from '../features/EventSlice'
 
 
 const Alert = React.forwardRef(function Alert(props, ref) {
@@ -22,7 +23,7 @@ const Activities = ({socket}) => {
   const [columns, setColumns] = useState([])
   const [activityId, setActivityId] = useState()
   const dispatch = useDispatch()
-  const { activities, sortOption, activityIds, showCloningNotification } = useSelector((state) => state.activity) 
+  const { activities, sortOption, activityIds, showCloningNotification, showDeleteNotification } = useSelector((state) => state.activity) 
   const [open, setOpen] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -36,6 +37,7 @@ const Activities = ({socket}) => {
   const [showTrash, setShowTrash] = useState(false);
   const [restoreMode, setRestoreMode] = useState(false);
   const [openTransferModal, setOpenTransferModal] = useState(false);
+  const [openDialog, setOpenDialog] = useState(false);
 
   const showAlert = (msg, sev) => {
     setOpenAlert(true)
@@ -50,6 +52,10 @@ const Activities = ({socket}) => {
 
     setOpenAlert(false);
   };
+
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+  }
 
   const token = getToken()
 
@@ -294,6 +300,23 @@ const Activities = ({socket}) => {
     })
   };
 
+  const deleteActivities = async (ids) => {
+    dispatch(setShowDeleteNotification({showDeleteNotification: true}))
+
+    await instance.post(`activities-bulk-delete`, {activityIds})
+    .then(() => {
+      showAlert("Activities deleted", "success")
+      handleCloseDialog()
+      dispatch(removeActivities({activityIds}))
+      dispatch(deleteEvent({activityIds}))
+      dispatch(setShowDeleteNotification({showDeleteNotification: false}))
+    })
+    .catch(() => {
+      showAlert("Ooops an error was encountered", "error")
+      dispatch(setShowDeleteNotification({showDeleteNotification: false}))
+    })
+  };
+
   return (
     <div>
       <Toolbar>
@@ -314,7 +337,7 @@ const Activities = ({socket}) => {
                   <DeleteOutline  
                     style={{marginLeft: "10px",  cursor: "pointer"}}
                     onClick={() => {
-                      
+                      setOpenDialog(true)
                     }}
                   />
                 </Tooltip>
@@ -504,6 +527,34 @@ const Activities = ({socket}) => {
         socket={socket}
         mode="bulk" 
       />
+
+      <Dialog
+        open={openDialog}
+        onClose={handleCloseDialog}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">
+          Delete Activity
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            Are you sure you want to delete this activity ?
+          </DialogContentText>
+
+          <DialogContentText id="alert-dialog-description" sx={{textAlign: "center", color: "red"}}>
+            {
+              showDeleteNotification ? "Deleting...." : null
+            }
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog}>No</Button>
+          <Button onClick={(e) => deleteActivities(activityIds)} autoFocus>
+            Yes
+          </Button>
+        </DialogActions>
+      </Dialog>
 
 
       <Snackbar open={openAlert} autoHideDuration={6000} onClose={handleCloseAlert}>
