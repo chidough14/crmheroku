@@ -7,11 +7,11 @@ import moment from 'moment';
 import PhoneIcon from '@mui/icons-material/Phone';
 import EmailIcon from '@mui/icons-material/Email';
 import ChatIcon from '@mui/icons-material/Chat';
-import {  ArrowDownwardOutlined, ArrowUpwardOutlined, CopyAllOutlined, DeleteOutlined, EditOutlined, MoreVert, MoveUpOutlined, ViewListOutlined } from '@mui/icons-material';
+import {  ArrowDownwardOutlined, ArrowUpwardOutlined, CopyAllOutlined, DeleteOutlined, EditOutlined, MoreVert, MoveUpOutlined, RestoreFromTrash, ViewListOutlined } from '@mui/icons-material';
 import { useState } from 'react';
 import ActivityModal from './ActivityModal';
 import instance from '../../services/fetchApi';
-import { addActivity, addActivityId, removeActivity, removeActivityId, setShowCloningNotification, setShowDeleteNotification } from '../../features/ActivitySlice';
+import { addActivity, addActivityId, removeActivity, removeActivityId, setShowCloningNotification, setShowDeleteNotification, setShowSendingSpinner } from '../../features/ActivitySlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { deleteEvent } from '../../features/EventSlice';
@@ -43,6 +43,7 @@ const ActivityItem = ({activity, index, socket, showTrash}) => {
   const [openTransferModal, setOpenTransferModal] = useState(false);
   const [activityObj, setActivityObj] = useState();
   const [activityId, setActivityId] = useState();
+  const [restoreMode, setRestoreMode] = useState(false);
   const handleOpen = () => setOpenModal(true);
   const user = useSelector(state => state.user)
   const { showCloningNotification, showDeleteNotification, activityIds } = useSelector(state => state.activity)
@@ -78,6 +79,7 @@ const ActivityItem = ({activity, index, socket, showTrash}) => {
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
+    setRestoreMode(false)
   };
 
   const handleCloseAlert = (event, reason) => {
@@ -89,13 +91,17 @@ const ActivityItem = ({activity, index, socket, showTrash}) => {
   };
 
   const deleteActivity = async (id, e) => {
+    let url
+    url = showTrash ? `activities-force-delete/${id}` : `activities/${id}`
+
     dispatch(setShowDeleteNotification({showDeleteNotification: true}))
 
-    await instance.delete(`activities/${id}`)
+    await instance.delete(url)
     .then(() => {
       showAlert("Activity deleted", "success")
       handleCloseDialog()
       dispatch(removeActivity({activityId: id}))
+      dispatch(removeActivityId({id}))
       dispatch(deleteEvent({activityId: id}))
       dispatch(setShowDeleteNotification({showDeleteNotification: false}))
     })
@@ -125,6 +131,24 @@ const ActivityItem = ({activity, index, socket, showTrash}) => {
     setOpenTransferModal(true)
     setActivityObj(value)
   };
+
+
+  const restoreActivity = async (id) => {
+    dispatch(setShowDeleteNotification({showDeleteNotification: true}))
+
+    await instance.get(`activity-restore/${id}`)
+    .then(() => {
+      handleCloseDialog()
+      showAlert("Activity restored", "success")
+      dispatch(removeActivity({activityId: id}))
+      dispatch(removeActivityId({id}))
+      dispatch(setShowDeleteNotification({showDeleteNotification: false}))
+    })
+    .catch(() => {
+      dispatch(setShowDeleteNotification({showDeleteNotification: false}))
+      showAlert("Ooops an error was encountered", "error")
+    })
+  }
 
   return (
     <>
@@ -172,11 +196,37 @@ const ActivityItem = ({activity, index, socket, showTrash}) => {
                       'aria-labelledby': 'basic-button',
                     }}
                   >
-                    <MenuItem onClick={showEditModal}> <EditOutlined /> Edit</MenuItem>
-                    <MenuItem onClick={()=>cloneActivity(activity)} disabled={(activity.user_id !== user.id) && (activity.status === "private") }><CopyAllOutlined /> Clone</MenuItem>
-                    <MenuItem onClick={()=>transferActivity(activity)} ><MoveUpOutlined /> Transfer</MenuItem>
+                    {
+                      showTrash ? null : (
+                        <>
+                          <MenuItem onClick={showEditModal}> <EditOutlined /> Edit</MenuItem>
+                          <MenuItem onClick={()=>cloneActivity(activity)} disabled={(activity.user_id !== user.id) && (activity.status === "private") }><CopyAllOutlined /> Clone</MenuItem>
+                          <MenuItem onClick={()=>transferActivity(activity)} ><MoveUpOutlined /> Transfer</MenuItem>
+                        </>
+                      )
+                    }
+
+                    {
+                      showTrash ? (
+                        <MenuItem 
+                          onClick={() => {
+                            setRestoreMode(true)
+                            setOpenDialog(true)
+                          }}
+                        >
+                          <RestoreFromTrash /> Restore
+                        </MenuItem>
+                      ) : null
+                    }
+                  
                     <MenuItem onClick={handleClickOpen}><DeleteOutlined /> Delete</MenuItem>
-                    <MenuItem onClick={() => navigate(`/activities/${activity.id}`)}><ViewListOutlined /> View</MenuItem>
+
+                    {
+                      showTrash ? null : (
+                       <MenuItem onClick={() => navigate(`/activities/${activity.id}`)}><ViewListOutlined /> View</MenuItem>
+                      )
+                    }
+                    
                   </Menu>
 
 
@@ -278,22 +328,32 @@ const ActivityItem = ({activity, index, socket, showTrash}) => {
         aria-describedby="alert-dialog-description"
       >
         <DialogTitle id="alert-dialog-title">
-          Delete Activity
+          {restoreMode ? "Restore" : "Delete"} Activity
         </DialogTitle>
         <DialogContent>
           <DialogContentText id="alert-dialog-description">
-            Are you sure you want to delete this activity ?
+            Are you sure you want to {restoreMode ? "restore" : "delete"} this activity ?
           </DialogContentText>
 
           <DialogContentText id="alert-dialog-description" sx={{textAlign: "center", color: "red"}}>
             {
-              showDeleteNotification ? "Deleting...." : null
+              showDeleteNotification ? "Please wait...." : null
             }
           </DialogContentText>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>No</Button>
-          <Button onClick={(e) => deleteActivity(activity.id, e)} autoFocus>
+          <Button 
+            onClick={(e) => {
+              if(restoreMode) {
+                restoreActivity(activity.id)
+              } else {
+                deleteActivity(activity.id, e)
+              }
+            
+            }} 
+            autoFocus
+          >
             Yes
           </Button>
         </DialogActions>

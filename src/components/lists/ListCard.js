@@ -53,6 +53,7 @@ const ListCard = ({list, socket, showSpinner, showTrash}) => {
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
+    setRestoreMode(false)
   };
 
   const handleClick = (event) => {
@@ -131,7 +132,7 @@ const ListCard = ({list, socket, showSpinner, showTrash}) => {
 
     await instance.get(`mylists-restore/${id}`)
     .then(() => {
-      setOpenDialog(false);
+      handleCloseDialog()
       dispatch(showAlert({alertMessage: "List restored", severity: "success"}))
       dispatch(removeList({listId: id}))
       dispatch(removeListId({id}))

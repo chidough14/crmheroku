@@ -300,15 +300,37 @@ const Activities = ({socket}) => {
     })
   };
 
-  const deleteActivities = async (ids) => {
+  const deleteActivities = async (activityIds) => {
+    let url
+    url = showTrash ? `activities-bulk-force-delete` : `activities-bulk-delete`
+
     dispatch(setShowDeleteNotification({showDeleteNotification: true}))
 
-    await instance.post(`activities-bulk-delete`, {activityIds})
+    await instance.post(url, {activityIds})
     .then(() => {
       showAlert("Activities deleted", "success")
       handleCloseDialog()
       dispatch(removeActivities({activityIds}))
-      dispatch(deleteEvent({activityIds}))
+      // dispatch(deleteEvent({activityIds}))
+      dispatch(removeActivityIds({activityIds}))
+      dispatch(setShowDeleteNotification({showDeleteNotification: false}))
+    })
+    .catch(() => {
+      showAlert("Ooops an error was encountered", "error")
+      dispatch(setShowDeleteNotification({showDeleteNotification: false}))
+    })
+  };
+
+  const restoreActivities = async (activityIds) => {
+    dispatch(setShowDeleteNotification({showDeleteNotification: true}))
+
+    await instance.post(`activities-bulk-restore`, {activityIds})
+    .then(() => {
+      showAlert("Activities restored", "success")
+      handleCloseDialog()
+      dispatch(removeActivities({activityIds}))
+      dispatch(removeActivityIds({activityIds}))
+     // dispatch(deleteEvent({activityIds}))
       dispatch(setShowDeleteNotification({showDeleteNotification: false}))
     })
     .catch(() => {
@@ -375,7 +397,7 @@ const Activities = ({socket}) => {
                       style={{marginLeft: "10px", cursor: "pointer"}}
                       onClick={() => {
                         setRestoreMode(true)
-                        // setOpenDeleteDialog(true)
+                        setOpenDialog(true)
                       }}
                     />
                   </Tooltip>
@@ -535,22 +557,31 @@ const Activities = ({socket}) => {
         aria-describedby="alert-dialog-description"
       >
         <DialogTitle id="alert-dialog-title">
-          Delete Activity
+           {restoreMode ? "Restore" : "Delete"} Activity
         </DialogTitle>
         <DialogContent>
           <DialogContentText id="alert-dialog-description">
-            Are you sure you want to delete this activity ?
+            Are you sure you want to {restoreMode ? "restore" : "delete"} this activity ?
           </DialogContentText>
 
           <DialogContentText id="alert-dialog-description" sx={{textAlign: "center", color: "red"}}>
             {
-              showDeleteNotification ? "Deleting...." : null
+              showDeleteNotification ? "Please wait...." : null
             }
           </DialogContentText>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>No</Button>
-          <Button onClick={(e) => deleteActivities(activityIds)} autoFocus>
+          <Button 
+            onClick={(e) => {
+              if(restoreMode) {
+                restoreActivities(activityIds)
+              } else {
+                deleteActivities(activityIds)
+              }
+            }} 
+            autoFocus
+          >
             Yes
           </Button>
         </DialogActions>
