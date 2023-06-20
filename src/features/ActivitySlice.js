@@ -41,6 +41,9 @@ export const ActivitySlice = createSlice({
     removeActivity: (state, action) => {
       state.activities = state.activities.filter((a) => a.id !== action.payload.activityId)
     },
+    removeActivities: (state, action) => {
+      state.activities = state.activities.filter((a) => !action.payload.activityIds.includes(a.id))
+    },
     setSingleActivity: (state, action) => {
       state.activity = {...state.activity, ...action.payload.activity}
     },
@@ -139,7 +142,8 @@ export const {
   addActivityId,
   removeActivityId,
   addActivityIds,
-  removeActivityIds
+  removeActivityIds,
+  removeActivities
 } = ActivitySlice.actions
 
 export default ActivitySlice.reducer
