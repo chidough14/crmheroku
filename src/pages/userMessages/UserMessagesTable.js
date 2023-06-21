@@ -15,8 +15,8 @@ import FirstPageIcon from '@mui/icons-material/FirstPage';
 import KeyboardArrowLeft from '@mui/icons-material/KeyboardArrowLeft';
 import KeyboardArrowRight from '@mui/icons-material/KeyboardArrowRight';
 import LastPageIcon from '@mui/icons-material/LastPage';
-import { Checkbox, Chip, CircularProgress, Pagination, Snackbar, TableHead, Tooltip, Typography } from '@mui/material';
-import { ContentPasteOff, DeleteOutlined, EditOutlined, MarkAsUnreadOutlined, MarkEmailRead, ReadMoreOutlined } from '@mui/icons-material';
+import { Button, Checkbox, Chip, CircularProgress, Menu, MenuItem, Pagination, Snackbar, TableHead, Tooltip, Typography } from '@mui/material';
+import { ArrowDropDown, ContentPasteOff, DeleteOutlined, EditOutlined, MarkAsUnreadOutlined, MarkEmailRead, ReadMoreOutlined } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
 import moment from 'moment';
 import { useNavigate } from 'react-router-dom';
@@ -107,6 +107,15 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
   const [checked, setChecked] = React.useState(false);
   const [messageIds, setMessageIds] = React.useState([]);
   const [showNewMessageTag, setShowNewMessageTag] = React.useState(false);
+
+  const [anchorEl, setAnchorEl] = React.useState(null);
+  const openMenu = Boolean(anchorEl);
+  const handleClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+  const handleCloseMenu = () => {
+    setAnchorEl(null);
+  };
 
   const handleChange = (event) => {
     setChecked(event.target.checked);
@@ -319,6 +328,26 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
     }
   }
 
+  const arraysHaveSameContents = (array1, array2) => {
+    // Check if the arrays have the same length
+    if (array1?.length !== array2?.length) {
+      return false;
+    }
+  
+    // Sort the arrays to ensure consistent ordering for comparison
+    const sortedArray1 = array1?.slice().sort();
+    const sortedArray2 = array2?.slice().sort();
+  
+    // Compare each element in the arrays
+    for (let i = 0; i < sortedArray1.length; i++) {
+      if (sortedArray1[i] !== sortedArray2[i]) {
+        return false;
+      }
+    }
+  
+    return true;
+  }
+
 
 
   return (
@@ -347,6 +376,10 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
                 onClick={()=> setOpenDialog(true)}
               />
              </Tooltip>
+
+             <span style={{marginLeft: "10px"}}>
+              {messageIds.length} Items Selected
+            </span>
           </div>
         ) : null
       }
@@ -367,7 +400,8 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
             <TableRow>
               <TableCell >
                 <Checkbox
-                  checked={messageIds.length}
+                  checked={arraysHaveSameContents(messages?.data?.map((a) => a.id), messageIds.map((a) => a.id))}
+                  indeterminate={messageIds.length > 0 && messageIds.length < messages?.data?.length}
                   onChange={(e,f) => {
                     if (f) {
                       let ids = messages.data.map((a) => {
@@ -384,6 +418,85 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
                   }}
                   inputProps={{ 'aria-label': 'controlled' }}
                 />
+
+                <span>
+                  <Button
+                    id="basic-button"
+                    aria-controls={openMenu ? 'basic-menu' : undefined}
+                    aria-haspopup="true"
+                    aria-expanded={openMenu ? 'true' : undefined}
+                    onClick={handleClick}
+                  >
+                    <ArrowDropDown />
+                  </Button>
+                  <Menu
+                    id="basic-menu"
+                    anchorEl={anchorEl}
+                    open={openMenu}
+                    onClose={handleCloseMenu}
+                    MenuListProps={{
+                      'aria-labelledby': 'basic-button',
+                    }}
+                  >
+                    {isInbox &&
+                      <>
+                        <MenuItem 
+                          onClick={() => {
+                            let readIds = messages?.data?.filter((a) => a.isRead).map((b) => {
+                              return {
+                                id: b.id,
+                                read: b.isRead
+                              }
+                            })
+                        
+                            setMessageIds(readIds)
+                          }}
+                        >
+                          Read
+                        </MenuItem>
+                        
+                        <MenuItem 
+                          onClick={() => {
+                            let readIds = messages?.data?.filter((a) => !a.isRead).map((b) => {
+                              return {
+                                id: b.id,
+                                read: b.isRead
+                              }
+                            })
+                        
+                            setMessageIds(readIds)
+                          }}
+                        >
+                          Unread
+                        </MenuItem>
+                      </>
+                    }
+                   
+                    <MenuItem 
+                      onClick={() => {
+                        let ids = messages.data.map((a) => {
+                          return {
+                            id: a.id,
+                            read: a.isRead
+                          }
+                        })
+    
+                        setMessageIds(ids)
+                      }}
+                    >
+                      All
+                    </MenuItem>
+                    
+                    <MenuItem 
+                      onClick={() => {
+    
+                        setMessageIds([])
+                      }}
+                    >
+                      None
+                    </MenuItem>
+                  </Menu>
+                </span>
               </TableCell>
               <TableCell >Subject</TableCell>
 

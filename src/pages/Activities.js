@@ -1,5 +1,5 @@
-import { AddOutlined, CopyAllOutlined, DeleteOutline, FolderDelete, InfoOutlined, MoveUpOutlined, Restore, RestorePage, SearchOutlined } from '@mui/icons-material'
-import { Button, Checkbox, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Snackbar, TextField, Toolbar, Tooltip, Typography } from '@mui/material'
+import { AddOutlined, ArrowDropDown, CopyAllOutlined, DeleteOutline, FolderDelete, InfoOutlined, MoveUpOutlined, Restore, RestorePage, SearchOutlined } from '@mui/icons-material'
+import { Button, Checkbox, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Menu, MenuItem, Snackbar, TextField, Toolbar, Tooltip, Typography } from '@mui/material'
 import React, { useEffect, useState } from 'react'
 import {DragDropContext} from 'react-beautiful-dnd'
 import { useDispatch, useSelector } from 'react-redux'
@@ -38,6 +38,15 @@ const Activities = ({socket}) => {
   const [restoreMode, setRestoreMode] = useState(false);
   const [openTransferModal, setOpenTransferModal] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
+
+  const [anchorEl, setAnchorEl] = useState(null);
+  const openMenu = Boolean(anchorEl);
+  const handleClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+  const handleCloseMenu = () => {
+    setAnchorEl(null);
+  };
 
   const showAlert = (msg, sev) => {
     setOpenAlert(true)
@@ -339,6 +348,26 @@ const Activities = ({socket}) => {
     })
   };
 
+  const arraysHaveSameContents = (array1, array2) => {
+    // Check if the arrays have the same length
+    if (array1.length !== array2.length) {
+      return false;
+    }
+  
+    // Sort the arrays to ensure consistent ordering for comparison
+    const sortedArray1 = array1.slice().sort();
+    const sortedArray2 = array2.slice().sort();
+  
+    // Compare each element in the arrays
+    for (let i = 0; i < sortedArray1.length; i++) {
+      if (sortedArray1[i] !== sortedArray2[i]) {
+        return false;
+      }
+    }
+  
+    return true;
+  }
+
   return (
     <div>
       <Toolbar>
@@ -419,21 +448,72 @@ const Activities = ({socket}) => {
           ) : null
         }
 
-        <Tooltip title="Select all">
-          <Checkbox
-            checked={activityIds.length}
-            onChange={(e,f) => {
-              let ids = activities?.map((a) => a.id)
-              if (f) {
+        <div style={{display: "flex"}}>
+          <Tooltip title="Select all">
+            <Checkbox
+              checked={arraysHaveSameContents(activities?.map((a) => a.id), activityIds)}
+              indeterminate={activityIds.length > 0 && activityIds.length < activities.length}
+              onChange={(e,f) => {
+                let ids = activities?.map((a) => a.id)
+                if (f) {
 
-                dispatch(addActivityIds({activityIds: ids}))
-              } else {
-                dispatch(removeActivityIds({activityIds: ids}))
-              }
+                  dispatch(addActivityIds({activityIds: ids}))
+                } else {
+                  dispatch(removeActivityIds({activityIds: ids}))
+                }
+              }}
+              inputProps={{ 'aria-label': 'controlled' }}
+              style={{marginRight: "-24px"}}
+            />
+          </Tooltip>
+
+          <Button
+            id="basic-button"
+            aria-controls={openMenu ? 'basic-menu' : undefined}
+            aria-haspopup="true"
+            aria-expanded={openMenu ? 'true' : undefined}
+            onClick={handleClick}
+          >
+            <ArrowDropDown />
+          </Button>
+          <Menu
+            id="basic-menu"
+            anchorEl={anchorEl}
+            open={openMenu}
+            onClose={handleCloseMenu}
+            MenuListProps={{
+              'aria-labelledby': 'basic-button',
             }}
-            inputProps={{ 'aria-label': 'controlled' }}
-          />
-        </Tooltip>
+          >
+          
+            
+            <MenuItem onClick={() => dispatch(addActivityIds({activityIds: activities?.map((a) => a.id)}))}>
+              All
+            </MenuItem>
+
+            <MenuItem onClick={() => dispatch(removeActivityIds({activityIds: activities?.map((a) => a.id)}))}>
+              None
+            </MenuItem>
+
+            <MenuItem onClick={() => dispatch(addActivityIds({activityIds: activities?.filter((b) => b.probability === "High").map((a) => a.id)}))}>
+              High
+            </MenuItem>
+
+            <MenuItem onClick={() => dispatch(addActivityIds({activityIds: activities?.filter((b) => b.probability === "Medium").map((a) => a.id)}))}>
+              Medium
+            </MenuItem>
+
+            <MenuItem onClick={() => dispatch(addActivityIds({activityIds: activities?.filter((b) => b.probability === "Low").map((a) => a.id)}))}>
+              Low
+            </MenuItem>
+
+            <MenuItem onClick={() => dispatch(addActivityIds({activityIds: activities?.filter((b) => b.probability === "Closed").map((a) => a.id)}))}>
+              Closed
+            </MenuItem>
+          </Menu>
+
+        </div>
+       
 
         {
           showTrash ? (
