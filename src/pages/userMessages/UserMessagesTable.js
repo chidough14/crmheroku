@@ -333,6 +333,10 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
     if (array1?.length !== array2?.length) {
       return false;
     }
+
+    if (!array1.length && !array2.length) {
+      return false;
+    }
   
     // Sort the arrays to ensure consistent ordering for comparison
     const sortedArray1 = array1?.slice().sort();
@@ -404,7 +408,7 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
                   indeterminate={messageIds.length > 0 && messageIds.length < messages?.data?.length}
                   onChange={(e,f) => {
                     if (f) {
-                      let ids = messages.data.map((a) => {
+                      let ids = messages?.data?.map((a) => {
                         return {
                           id: a.id,
                           read: a.isRead

@@ -30,12 +30,18 @@ export const companySlice = createSlice({
     addCompany: (state, action) => {
       state.companies.data = [...state.companies.data, action.payload.company]
     },
+    addCompanies: (state, action) => {
+      state.companies.data = [...state.companies.data, ...action.payload.companies]
+    },
     updateCompany: (state, action) => {
       let idx = state.companies.data.findIndex((a) => a.id === action.payload.company.id)
       state.companies.data[idx] = action.payload.company
     },
     removeCompany: (state, action) => {
       state.companies.data = state.companies.data.filter((a) => a.id !== action.payload.companyId)
+    },
+    removeCompanies: (state, action) => {
+      state.companies.data = state.companies.data.filter((a) => !action.payload.companyIds.includes(a.id))
     },
     setShowAddSpinner: (state, action) => {
       state.showAddSpinner = action.payload.showAddSpinner
@@ -56,7 +62,9 @@ export const {
   removeCompany,
   setSearchResults,
   setShowAddSpinner,
-  setShowDeleteNotification
+  setShowDeleteNotification,
+  removeCompanies,
+  addCompanies
 } = companySlice.actions
 
 export default companySlice.reducer

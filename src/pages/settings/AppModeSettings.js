@@ -43,7 +43,6 @@ const AppModeSettings = ({user}) => {
 
   useEffect(() => {
     if (user?.setting) {
-      console.log(user?.setting);
       updateData({
         dashboard_mode: user?.setting?.dashboard_mode,
         calendar_mode: user?.setting?.calendar_mode,

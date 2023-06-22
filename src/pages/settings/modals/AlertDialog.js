@@ -6,10 +6,11 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 
-const AlertDialog = ({open, setOpen, deleteItem, companyMode, showDeleteNotification, header}) => {
+const AlertDialog = ({open, setOpen, deleteItem, companyMode, showDeleteNotification, header, setBulkMode}) => {
 
   const handleClose = () => {
     setOpen(false);
+    setBulkMode(false)
   };
 
   return (

@@ -15,12 +15,12 @@ import FirstPageIcon from '@mui/icons-material/FirstPage';
 import KeyboardArrowLeft from '@mui/icons-material/KeyboardArrowLeft';
 import KeyboardArrowRight from '@mui/icons-material/KeyboardArrowRight';
 import LastPageIcon from '@mui/icons-material/LastPage';
-import {  Button, CircularProgress, Pagination, Snackbar, TableHead } from '@mui/material';
+import {  Button, Checkbox, CircularProgress, Pagination, Snackbar, TableHead, Tooltip, Typography } from '@mui/material';
 import { AddOutlined, DeleteOutlined, EditOutlined } from '@mui/icons-material';
 import AddCompanyModal from './modals/AddCompanyModal';
 import AlertDialog from './modals/AlertDialog';
 import instance from '../../services/fetchApi';
-import { removeCompany, setShowDeleteNotification } from '../../features/companySlice';
+import { removeCompanies, removeCompany, setShowDeleteNotification } from '../../features/companySlice';
 import { useDispatch, useSelector } from 'react-redux';
 import MuiAlert from '@mui/material/Alert';
 
@@ -101,6 +101,10 @@ const CompaniesTable = ({rows, getCompanies, loading, user}) => {
   const [companyObj, setCompanyObj] = React.useState();
   const [openAlert, setOpenAlert] = React.useState(false);
   const [severity, setSeverity] = React.useState("");
+  const [companyIds, setCompanyIds] = React.useState([]);
+  const [bulkMode, setBulkMode] = React.useState(false);
+  const [header, setHeader] = React.useState("");
+  const [companyId, setCompanyId] = React.useState();
   const { showDeleteNotification } = useSelector(state => state.company)
 
   const dispatch = useDispatch()
@@ -109,6 +113,16 @@ const CompaniesTable = ({rows, getCompanies, loading, user}) => {
     setPage(rows?.current_page)
 
   }, [rows?.current_page])
+
+  React.useEffect(() => {
+
+    if(bulkMode) {
+      setHeader("Companies")
+    } else {
+      setHeader("Company")
+    }
+
+  }, [bulkMode])
   
 
 
@@ -122,22 +136,40 @@ const CompaniesTable = ({rows, getCompanies, loading, user}) => {
 
   const deleteCompany = async () => {
     dispatch(setShowDeleteNotification({showDeleteNotification: true}))
-    await instance.delete(`companies/${companyObj.id}`)
-    .then(() => {
-      dispatch(setShowDeleteNotification({showDeleteNotification: false}))
-      dispatch(removeCompany({companyId: companyObj.id}))
-      setOpenAlert(false)
-      setOpenSnackAlert(true)
-      setSeverity("success")
-      setAlertMessage("Company Deleted")
-    })
-    .catch(()=> {
-      dispatch(setShowDeleteNotification({showDeleteNotification: false}))
-      setOpenSnackAlert(true)
-      setSeverity("error")
-      setAlertMessage("Ooops an error was encountered")
-    })
-  
+    if (bulkMode) {
+      await instance.post(`companies-bulk-delete`, {companyIds})
+      .then(() => {
+        dispatch(setShowDeleteNotification({showDeleteNotification: false}))
+        dispatch(removeCompanies({companyIds}))
+        setCompanyIds([])
+        setOpenAlert(false)
+        setOpenSnackAlert(true)
+        setSeverity("success")
+        setAlertMessage("Companies Deleted")
+      })
+      .catch(()=> {
+        dispatch(setShowDeleteNotification({showDeleteNotification: false}))
+        setOpenSnackAlert(true)
+        setSeverity("error")
+        setAlertMessage("Ooops an error was encountered")
+      })
+    } else {
+      await instance.delete(`companies/${companyObj.id}`)
+      .then(() => {
+        dispatch(setShowDeleteNotification({showDeleteNotification: false}))
+        dispatch(removeCompany({companyId: companyObj.id}))
+        setOpenAlert(false)
+        setOpenSnackAlert(true)
+        setSeverity("success")
+        setAlertMessage("Company Deleted")
+      })
+      .catch(()=> {
+        dispatch(setShowDeleteNotification({showDeleteNotification: false}))
+        setOpenSnackAlert(true)
+        setSeverity("error")
+        setAlertMessage("Ooops an error was encountered")
+      })
+    }
     //after delete set productobj to empty
   };
 
@@ -149,24 +181,92 @@ const CompaniesTable = ({rows, getCompanies, loading, user}) => {
     }
   }
 
+  const arraysHaveSameContents = (array1, array2) => {
+    // Check if the arrays have the same length
+    if (array1?.length !== array2?.length) {
+      return false;
+    }
+
+    if (!array1.length && !array2.length) {
+      return false;
+    }
+  
+    // Sort the arrays to ensure consistent ordering for comparison
+    const sortedArray1 = array1?.slice().sort();
+    const sortedArray2 = array2?.slice().sort();
+  
+    // Compare each element in the arrays
+    for (let i = 0; i < sortedArray1.length; i++) {
+      if (sortedArray1[i] !== sortedArray2[i]) {
+        return false;
+      }
+    }
+  
+    return true;
+  }
+
   return (
     <>
-    <Button  
-      variant="contained" 
-      size='small' 
-      style={{borderRadius: "30px", float: "right"}} 
-      onClick={()=> {
-        setOpenModal(true)
-        setEditMode(false)
-      }}
-      disabled={renderDisabled(user)}
-    >
-      <AddOutlined />
-    </Button>
+    <div style={{display: "flex", justifyContent: "space-between"}}>
+      <Typography variant='h6'></Typography>
+      {
+        companyIds.length ? (
+        <div>
+          <Tooltip title="Delete">
+            <DeleteOutlined 
+              style={{marginBottom: "-5px", cursor: "pointer", marginRight: "5px"}} 
+              onClick={() => {
+                setOpenAlert(true)
+                setBulkMode(true)
+              }}
+            />
+          </Tooltip>
+
+          <span>
+            { companyIds.length } Items Selected
+          </span>
+        </div>
+        ) : null
+      }
+
+      <Button  
+        variant="contained" 
+        size='small' 
+        style={{borderRadius: "30px", float: "right"}} 
+        onClick={()=> {
+          setOpenModal(true)
+          setEditMode(false)
+        }}
+        disabled={renderDisabled(user)}
+      >
+        <AddOutlined />
+      </Button>
+    </div>
+   
     <TableContainer component={Paper}>
       <Table sx={{ minWidth: 500 }} aria-label="custom pagination table">
       <TableHead>
           <TableRow>
+            <TableCell >
+              <Tooltip title="Select all">
+                <Checkbox
+                  checked={arraysHaveSameContents(rows?.data?.map((a) => a.id), companyIds)}
+                  indeterminate={companyIds.length > 0 && companyIds.length < rows?.data?.length}
+                  onChange={(e,f) => {
+                    if (f) {
+                      let ids = rows?.data?.map((a) => a.id)
+  
+                      setCompanyIds(ids)
+                    } else {
+                      setCompanyIds([])
+                    }
+                  }}
+                  inputProps={{ 'aria-label': 'controlled' }}
+                  style={{marginRight: "-24px"}}
+                />
+              </Tooltip>
+            </TableCell>
+
             <TableCell >Name</TableCell>
             <TableCell >Address</TableCell>
             <TableCell >Phone</TableCell>
@@ -187,8 +287,31 @@ const CompaniesTable = ({rows, getCompanies, loading, user}) => {
               </TableRow>
             ) :
           rows?.data?.map((row) => (
-            <TableRow key={row.name}>
-              <TableCell component="th" scope="row">
+            <TableRow 
+              key={row.name}
+              onMouseEnter={() => {
+                setCompanyId(row.id)
+                // setShowTableActions(true)
+              }}
+              onMouseLeave={()=> {
+                setCompanyId(null)
+              }}
+            >
+              <TableCell style={{ width: 160 }}>
+                <Checkbox
+                  checked={companyIds.map((a) => a).includes(row.id)}
+                  onChange={(e,f) => {
+                    if(f) {
+                      setCompanyIds([...companyIds, row.id])
+                    } else {
+                      setCompanyIds(companyIds.filter((b) => b !== row.id))
+                    }
+                  }}
+                  inputProps={{ 'aria-label': 'controlled' }}
+                  style={{marginRight: "-24px"}}
+                />
+              </TableCell>
+              <TableCell style={{ width: 160 }}>
                 {row.name}
               </TableCell>
               <TableCell style={{ width: 160 }}>
@@ -204,33 +327,44 @@ const CompaniesTable = ({rows, getCompanies, loading, user}) => {
                 {row.email}
               </TableCell>
               <TableCell style={{ width: 160 }}>
-                <Button
-                  size='small'
-                  disabled={renderDisabled(user)}
-                  // disabled={user?.role !== "admin" || user?.role !== "super admin"}
-                >
-                  <EditOutlined
-                    style={{cursor: "pointer"}}
-                    onClick={() => {
-                      setEditMode(true)
-                      setOpenModal(true)
-                      setCompanyObj(row)
-                    }}
-                  />
-                </Button>
+
+                {
+                  companyId === row?.id ? (
+                    <>
+                      <Tooltip title="Edit">
+                        <Button
+                          size='small'
+                          disabled={renderDisabled(user)}
+                        >
+                          <EditOutlined
+                            style={{cursor: "pointer"}}
+                            onClick={() => {
+                              setEditMode(true)
+                              setOpenModal(true)
+                              setCompanyObj(row)
+                            }}
+                          />
+                        </Button>
+                      </Tooltip>
+
+                      <Tooltip title="Delete">
+                        <Button
+                          size='small'
+                          disabled={renderDisabled(user)}
+                        >
+                          <DeleteOutlined 
+                            style={{cursor: "pointer"}}
+                            onClick={() => {
+                              setOpenAlert(true)
+                              setCompanyObj(row)
+                            }}
+                          />
+                        </Button>
+                      </Tooltip>
+                    </>
+                  ) : null
+                }
                
-                <Button
-                  size='small'
-                  disabled={renderDisabled(user)}
-                >
-                  <DeleteOutlined 
-                    style={{cursor: "pointer"}}
-                    onClick={() => {
-                      setOpenAlert(true)
-                      setCompanyObj(row)
-                    }}
-                  />
-                </Button>
                 
               </TableCell>
             </TableRow>
@@ -275,7 +409,8 @@ const CompaniesTable = ({rows, getCompanies, loading, user}) => {
       deleteItem={deleteCompany}
       companyMode={true}
       showDeleteNotification={showDeleteNotification}
-      header="Company"
+      header={header}
+      setBulkMode={setBulkMode}
     />
     </>
   );
