@@ -15,14 +15,15 @@ import FirstPageIcon from '@mui/icons-material/FirstPage';
 import KeyboardArrowLeft from '@mui/icons-material/KeyboardArrowLeft';
 import KeyboardArrowRight from '@mui/icons-material/KeyboardArrowRight';
 import LastPageIcon from '@mui/icons-material/LastPage';
-import {  Button, CircularProgress, Pagination, Snackbar, TableHead } from '@mui/material';
+import {  Button, Checkbox, CircularProgress, Pagination, Snackbar, TableHead, Tooltip, Typography } from '@mui/material';
 import { Add, AddOutlined, DeleteOutlined, EditOutlined } from '@mui/icons-material';
 import AddProductModal from './modals/AddProductModal';
 import AlertDialog from './modals/AlertDialog';
 import instance from '../../services/fetchApi';
 import { useDispatch, useSelector } from 'react-redux';
-import { removeProduct, setShowDeleteNotification } from '../../features/ProductSlice';
+import { removeProduct, removeProducts, setShowDeleteNotification } from '../../features/ProductSlice';
 import MuiAlert from '@mui/material/Alert';
+import { arraysHaveSameContents } from '../../services/checkers';
 
 const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
@@ -98,8 +99,12 @@ const ProductsTable = ({rows, getProducts, loading, user}) => {
   const [openAlert, setOpenAlert] = React.useState(false);
   const [openSnackAlert, setOpenSnackAlert] = React.useState(false);
   const [alertMessage, setAlertMessage] = React.useState("");
-  const dispatch = useDispatch()
+  const [productIds, setProductIds] = React.useState([]);
+  const [bulkMode, setBulkMode] = React.useState(false);
+  const [header, setHeader] = React.useState("");
   const [severity, setSeverity] = React.useState("");
+
+  const dispatch = useDispatch()
   const { showDeleteNotification } = useSelector(state => state.product)
 
   React.useEffect(() => {
@@ -108,25 +113,54 @@ const ProductsTable = ({rows, getProducts, loading, user}) => {
 
   }, [rows?.current_page])
 
+  React.useEffect(() => {
+
+    if(bulkMode) {
+      setHeader("Products")
+    } else {
+      setHeader("Product")
+    }
+
+  }, [bulkMode])
+
 
   const deleteProduct = async () => {
     dispatch(setShowDeleteNotification({showDeleteNotification: true}))
 
-    await instance.delete(`products/${productObj.id}`)
-    .then(() => {
-      dispatch(setShowDeleteNotification({showDeleteNotification: false}))
-      dispatch(removeProduct({productId: productObj.id}))
-      setOpenAlert(false)
-      setSeverity("success")
-      setOpenSnackAlert(true)
-      setAlertMessage("Product Deleted")
-    })
-    .catch(() => {
-      dispatch(setShowDeleteNotification({showDeleteNotification: false}))
-      setSeverity("error")
-      setOpenSnackAlert(true)
-      setAlertMessage("Ooops An error was encountered")
-    })
+    if(bulkMode) {
+      await instance.post(`products-bulk-delete`, {productIds})
+      .then(() => {
+        dispatch(setShowDeleteNotification({showDeleteNotification: false}))
+        dispatch(removeProducts({productIds}))
+        setProductIds([])
+        setOpenAlert(false)
+        setSeverity("success")
+        setOpenSnackAlert(true)
+        setAlertMessage("Products Deleted")
+      })
+      .catch(() => {
+        dispatch(setShowDeleteNotification({showDeleteNotification: false}))
+        setSeverity("error")
+        setOpenSnackAlert(true)
+        setAlertMessage("Ooops An error was encountered")
+      })
+    } else {
+      await instance.delete(`products/${productObj.id}`)
+      .then(() => {
+        dispatch(setShowDeleteNotification({showDeleteNotification: false}))
+        dispatch(removeProduct({productId: productObj.id}))
+        setOpenAlert(false)
+        setSeverity("success")
+        setOpenSnackAlert(true)
+        setAlertMessage("Product Deleted")
+      })
+      .catch(() => {
+        dispatch(setShowDeleteNotification({showDeleteNotification: false}))
+        setSeverity("error")
+        setOpenSnackAlert(true)
+        setAlertMessage("Ooops An error was encountered")
+      })
+    }
   
     //after delete set productobj to empty
   };
@@ -149,22 +183,65 @@ const ProductsTable = ({rows, getProducts, loading, user}) => {
 
   return (
     <>
-    <Button
-      variant="contained" 
-      size='small' 
-      style={{borderRadius: "30px", float: "right"}} 
-      onClick={()=> {
-        setOpenModal(true)
-        setEditMode(false)
-      }}
-      disabled={renderDisabled(user)}
-    >
-      <AddOutlined />
-    </Button>
+    <div style={{display: "flex", justifyContent: "space-between"}}>
+    <Typography variant='h6'></Typography>
+
+    {
+      productIds.length ? (
+      <div>
+          <Tooltip title="Delete">
+            <DeleteOutlined 
+              style={{marginBottom: "-5px", cursor: "pointer", marginRight: "5px"}} 
+              onClick={() => {
+                setOpenAlert(true)
+                setBulkMode(true)
+              }}
+            />
+          </Tooltip>
+
+          <span>
+            { productIds.length } Items Selected
+          </span>
+        </div>
+        ) : null
+      }
+
+      <Button
+        variant="contained" 
+        size='small' 
+        style={{borderRadius: "30px", float: "right"}} 
+        onClick={()=> {
+          setOpenModal(true)
+          setEditMode(false)
+        }}
+        disabled={renderDisabled(user)}
+      >
+        <AddOutlined />
+      </Button>
+    </div>
     <TableContainer component={Paper}>
       <Table sx={{ minWidth: 500 }} aria-label="custom pagination table">
       <TableHead>
           <TableRow>
+            <TableCell >
+              <Tooltip title="Select all">
+                <Checkbox
+                  checked={arraysHaveSameContents(rows?.data?.map((a) => a.id), productIds)}
+                  indeterminate={productIds.length > 0 && productIds.length < rows?.data?.length}
+                  onChange={(e,f) => {
+                    if (f) {
+                      let ids = rows?.data?.map((a) => a.id)
+  
+                      setProductIds(ids)
+                    } else {
+                      setProductIds([])
+                    }
+                  }}
+                  inputProps={{ 'aria-label': 'controlled' }}
+                  style={{marginRight: "-24px"}}
+                />
+              </Tooltip>
+            </TableCell>
             <TableCell >Name</TableCell>
             <TableCell >Description</TableCell>
             <TableCell >Price</TableCell>
@@ -186,7 +263,21 @@ const ProductsTable = ({rows, getProducts, loading, user}) => {
             ) :
             rows?.data.map((row) => (
             <TableRow key={row.name}>
-              <TableCell component="th" scope="row">
+              <TableCell>
+                <Checkbox
+                  checked={productIds.map((a) => a).includes(row.id)}
+                  onChange={(e,f) => {
+                    if(f) {
+                      setProductIds([...productIds, row.id])
+                    } else {
+                      setProductIds(productIds.filter((b) => b !== row.id))
+                    }
+                  }}
+                  inputProps={{ 'aria-label': 'controlled' }}
+                  style={{marginRight: "-24px"}}
+                />
+              </TableCell>
+              <TableCell >
                 {row.name}
               </TableCell>
               <TableCell style={{ width: 160 }}>
@@ -264,7 +355,8 @@ const ProductsTable = ({rows, getProducts, loading, user}) => {
       deleteItem={deleteProduct}
       companyMode={false}
       showDeleteNotification={showDeleteNotification}
-      header="Product"
+      header={header}
+      setBulkMode={setBulkMode}
     />
 
     <Snackbar open={openSnackAlert} autoHideDuration={6000} onClose={handleCloseAlert}>
