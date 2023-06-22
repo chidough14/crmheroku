@@ -353,6 +353,10 @@ const Activities = ({socket}) => {
     if (array1.length !== array2.length) {
       return false;
     }
+
+    if (!array1.length && !array2.length) {
+      return false;
+    }
   
     // Sort the arrays to ensure consistent ordering for comparison
     const sortedArray1 = array1.slice().sort();

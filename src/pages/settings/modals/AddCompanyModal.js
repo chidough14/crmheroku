@@ -1,11 +1,12 @@
 import { Box, Button, CircularProgress, Modal, TextField, Typography} from '@mui/material'
 import MuiAlert from '@mui/material/Alert';
 import { useFormik } from 'formik';
-import React, { useEffect } from 'react'
+import React, { useEffect, useReducer, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import * as yup from 'yup';
-import { addCompany, setShowAddSpinner, updateCompany } from '../../../features/companySlice';
+import { addCompanies, addCompany, setShowAddSpinner, updateCompany } from '../../../features/companySlice';
 import instance from '../../../services/fetchApi';
+import { AddOutlined } from '@mui/icons-material';
 
 const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
@@ -42,9 +43,27 @@ const validationSchema = yup.object({
 });
 
 const AddCompanyModal = ({open, setOpen, setOpenAlert, setAlertMessage, editMode, company, setSeverity}) => {
-  const handleClose = () => setOpen(false);
+  const handleClose = () => {
+    setOpen(false)
+    setBulkAdd(false)
+  };
   const dispatch = useDispatch()
   const { showAddSpinner } = useSelector(state => state.company)
+  const [bulkAdd, setBulkAdd] = useState(false)
+  const [companiesPayload, setCompaniesPayload] = useState([])
+
+  const initialState = {
+    name: '',
+    address: '',
+    phone: '',
+    email: '',
+    contactPerson: ''
+  };
+
+  const [data, updateData] = useReducer(
+    (state, updates) => ({ ...state, ...updates }),
+    initialState
+  );
 
   useEffect(() => {
     if (editMode && company) {
@@ -117,6 +136,18 @@ const AddCompanyModal = ({open, setOpen, setOpenAlert, setAlertMessage, editMode
     },
   });
 
+  const showCompanyCount = (count) => {
+    if (count) {
+      if(bulkAdd) {
+        return `${count} added` 
+      } else {
+        return null
+      }
+    } else {
+      return null
+    }
+  }
+
   const showButtonText = (text) => {
     if (showAddSpinner) {
       return (
@@ -129,106 +160,286 @@ const AddCompanyModal = ({open, setOpen, setOpenAlert, setAlertMessage, editMode
     }
   }
 
+  const checkEmptyString = (obj) => {
+    for (let prop in obj) {
+      if (obj[prop] === "") {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  const addBulkCompanies = async () => {
+    dispatch(setShowAddSpinner({showAddSpinner: true}))
+
+    await instance.post(`companies-add-bulk`, {companiesPayload})
+    .then((res) => {
+      dispatch(setShowAddSpinner({showAddSpinner: false}))
+      setOpenAlert(true)
+      setSeverity("success")
+      setAlertMessage("Companies Added")
+      setCompaniesPayload([])
+      updateData(initialState)
+      dispatch(addCompanies({companies: res.data.companies}))
+      handleClose()
+    })
+    .catch((err) => {
+      setOpenAlert(true)
+      setSeverity("error")
+      setAlertMessage("Ooops an error was encountered")
+      handleClose()
+      dispatch(setShowAddSpinner({showAddSpinner: false}))
+    })
+  }
+
   return (
     <>
-        <Modal
-          open={open}
-          onClose={handleClose}
-          aria-labelledby="modal-modal-title"
-          aria-describedby="modal-modal-description"
-          >
-          <Box sx={style}>
-            <form onSubmit={formik.handleSubmit}>
+      <Modal
+        open={open}
+        onClose={handleClose}
+        aria-labelledby="modal-modal-title"
+        aria-describedby="modal-modal-description"
+        >
+        <Box sx={style}>
+          <form onSubmit={formik.handleSubmit}>
+            <div style={{display: "flex", justifyContent: "space-between"}}>
               <Typography variant='h6' style={{marginBottom: "10px"}}>
-                {editMode ? "Edit": "Add"} Company
+                {editMode ? "Edit": "Add"} {bulkAdd ? "Companies" : "Company"}
               </Typography>
-              <TextField
-                required
-                size='small'
-                fullWidth
-                id="name"
-                name="name"
-                label="Name"
-                value={formik.values.name}
-                onChange={formik.handleChange}
-                error={formik.touched.name && Boolean(formik.errors.name)}
-                helperText={formik.touched.name && formik.errors.name}
-              />
-              <p></p>
-              <TextField
-                required
-                size='small'
-                fullWidth
-                id="address"
-                name="address"
-                label="Address"
-                value={formik.values.address}
-                onChange={formik.handleChange}
-                error={formik.touched.address && Boolean(formik.errors.address)}
-                helperText={formik.touched.address && formik.errors.address}
-              />
-              <p></p>
-              <TextField
-                required
-                size='small'
-                fullWidth
-                id="phone"
-                name="phone"
-                label="Phone"
-                value={formik.values.phone}
-                onChange={formik.handleChange}
-                error={formik.touched.phone && Boolean(formik.errors.phone)}
-                helperText={formik.touched.phone && formik.errors.phone}
-              />
-              <p></p>
-              <TextField
-                required
-                size='small'
-                fullWidth
-                id="email"
-                name="email"
-                label="Email"
-                value={formik.values.email}
-                onChange={formik.handleChange}
-                error={formik.touched.email && Boolean(formik.errors.email)}
-                helperText={formik.touched.email && formik.errors.email}
-              />
-              <p></p>
-              <TextField
-                required
-                size='small'
-                fullWidth
-                id="contactPerson"
-                name="contactPerson"
-                label="Contact Person"
-                value={formik.values.contactPerson}
-                onChange={formik.handleChange}
-                error={formik.touched.contactPerson && Boolean(formik.errors.contactPerson)}
-                helperText={formik.touched.contactPerson && formik.errors.contactPerson}
-              />
-              <p></p>
-              <div style={{display: "flex", justifyContent: "space-between"}}>
-                <Button size='small' color="primary" variant="contained"  type="submit" style={{borderRadius: "30px"}}>
-                 {editMode ? showButtonText("Save") : showButtonText("Add")}
-                </Button>
+              <span>
+                {
+                  showCompanyCount(companiesPayload.length)
+                }
+              </span>
 
-                <Button 
-                  size='small' 
-                  color="error" 
-                  variant="contained" 
-                  onClick={() => {
-                    handleClose()
-                    formik.resetForm()
-                  }}
-                  style={{borderRadius: "30px"}}
-                >
-                  Cancel
-                </Button>
-              </div>
+              {
+                !editMode &&  
+                <span>
+                  <Button
+                    onClick={()=> {
+                      if(bulkAdd) {
+                        setBulkAdd(false)
+                      }
+
+                      if(!bulkAdd) {
+                        setBulkAdd(true)
+                        setCompaniesPayload([])
+                      }
+                    }}
+                  >
+                    {bulkAdd ? "Add Single" : "Add Bulk"}
+                  </Button>
+                </span>
+              }
+            </div>
+
+
+            {
+              bulkAdd ? (
+                  <>
+                    <TextField
+                      required
+                      size='small'
+                      fullWidth
+                      id="name"
+                      name="name"
+                      label="Name"
+                      value={data.name}
+                      onChange={(e) => {
+                        updateData({name: e.target.value})
+                      }}
+                      // error={formik.touched.name && Boolean(formik.errors.name)}
+                      // helperText={formik.touched.name && formik.errors.name}
+                    />
+                    <p></p>
+                    <TextField
+                      required
+                      size='small'
+                      fullWidth
+                      id="address"
+                      name="address"
+                      label="Address"
+                      value={data.address}
+                      onChange={(e) => {
+                        updateData({address: e.target.value})
+                      }}
+                    />
+                    <p></p>
+                    <TextField
+                      required
+                      size='small'
+                      fullWidth
+                      id="phone"
+                      name="phone"
+                      label="Phone"
+                      value={data.phone}
+                      onChange={(e) => {
+                        updateData({phone: e.target.value})
+                      }}
+                    />
+                    <p></p>
+                    <TextField
+                      required
+                      size='small'
+                      fullWidth
+                      id="email"
+                      name="email"
+                      label="Email"
+                      value={data.email}
+                      onChange={(e) => {
+                        updateData({email: e.target.value})
+                      }}
+                    />
+                    <p></p>
+                    <TextField
+                      required
+                      size='small'
+                      fullWidth
+                      id="contactPerson"
+                      name="contactPerson"
+                      label="Contact Person"
+                      value={data.contactPerson}
+                      onChange={(e) => {
+                        updateData({contactPerson: e.target.value})
+                      }}
+                    />
+                    <p></p>
+                    <div style={{display: "flex", justifyContent: "space-between"}}>
+                      <Button 
+                        size='small' 
+                        color="primary" 
+                        variant="contained" 
+                        style={{borderRadius: "30px"}}
+                        onClick={() => {
+                          setCompaniesPayload([...companiesPayload, data])
+                          updateData(initialState)
+                        }}
+                        disabled={checkEmptyString(data)}
+                      >
+                        <AddOutlined />
+                      </Button>
+
+                      <Button 
+                        size='small' 
+                        color="primary" 
+                        variant="contained" 
+                        style={{borderRadius: "30px"}}
+                        onClick={() => addBulkCompanies()}
+                        // disabled={checkEmptyString(data)}
+                      >
+                        Save
+                      </Button>
+
+                      <Button 
+                        size='small' 
+                        color="error" 
+                        variant="contained" 
+                        onClick={() => {
+                          handleClose()
+                          updateData(initialState)
+                          formik.resetForm()
+                        }}
+                        style={{borderRadius: "30px"}}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </>
+              ) : (
+                <>
+                
+              
+                  <TextField
+                    required
+                    size='small'
+                    fullWidth
+                    id="name"
+                    name="name"
+                    label="Name"
+                    value={formik.values.name}
+                    onChange={formik.handleChange}
+                    error={formik.touched.name && Boolean(formik.errors.name)}
+                    helperText={formik.touched.name && formik.errors.name}
+                  />
+                  <p></p>
+                  <TextField
+                    required
+                    size='small'
+                    fullWidth
+                    id="address"
+                    name="address"
+                    label="Address"
+                    value={formik.values.address}
+                    onChange={formik.handleChange}
+                    error={formik.touched.address && Boolean(formik.errors.address)}
+                    helperText={formik.touched.address && formik.errors.address}
+                  />
+                  <p></p>
+                  <TextField
+                    required
+                    size='small'
+                    fullWidth
+                    id="phone"
+                    name="phone"
+                    label="Phone"
+                    value={formik.values.phone}
+                    onChange={formik.handleChange}
+                    error={formik.touched.phone && Boolean(formik.errors.phone)}
+                    helperText={formik.touched.phone && formik.errors.phone}
+                  />
+                  <p></p>
+                  <TextField
+                    required
+                    size='small'
+                    fullWidth
+                    id="email"
+                    name="email"
+                    label="Email"
+                    value={formik.values.email}
+                    onChange={formik.handleChange}
+                    error={formik.touched.email && Boolean(formik.errors.email)}
+                    helperText={formik.touched.email && formik.errors.email}
+                  />
+                  <p></p>
+                  <TextField
+                    required
+                    size='small'
+                    fullWidth
+                    id="contactPerson"
+                    name="contactPerson"
+                    label="Contact Person"
+                    value={formik.values.contactPerson}
+                    onChange={formik.handleChange}
+                    error={formik.touched.contactPerson && Boolean(formik.errors.contactPerson)}
+                    helperText={formik.touched.contactPerson && formik.errors.contactPerson}
+                  />
+                  <p></p>
+                  <div style={{display: "flex", justifyContent: "space-between"}}>
+                    <Button size='small' color="primary" variant="contained"  type="submit" style={{borderRadius: "30px"}}>
+                    {editMode ? showButtonText("Save") : showButtonText("Add")}
+                    </Button>
+
+                    <Button 
+                      size='small' 
+                      color="error" 
+                      variant="contained" 
+                      onClick={() => {
+                        handleClose()
+                        formik.resetForm()
+                      }}
+                      style={{borderRadius: "30px"}}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </>
+              )
+            }
             
-            </form>
-          </Box>
-        </Modal>
+          
+          </form>
+        </Box>
+      </Modal>
 
     </>
   )
