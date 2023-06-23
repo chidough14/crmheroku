@@ -319,9 +319,9 @@ const AddCompanyModal = ({open, setOpen, setOpenAlert, setAlertMessage, editMode
                         variant="contained" 
                         style={{borderRadius: "30px"}}
                         onClick={() => addBulkCompanies()}
-                        // disabled={checkEmptyString(data)}
+                        disabled={!companiesPayload.length}
                       >
-                        Save
+                        { showButtonText("Save") }
                       </Button>
 
                       <Button 

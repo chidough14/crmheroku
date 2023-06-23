@@ -4,7 +4,7 @@ const arraysHaveSameContents = (array1, array2) => {
     return false;
   }
 
-  if (!array1.length && !array2.length) {
+  if (!array1?.length && !array2?.length) {
     return false;
   }
 
@@ -13,7 +13,7 @@ const arraysHaveSameContents = (array1, array2) => {
   const sortedArray2 = array2?.slice().sort();
 
   // Compare each element in the arrays
-  for (let i = 0; i < sortedArray1.length; i++) {
+  for (let i = 0; i < sortedArray1?.length; i++) {
     if (sortedArray1[i] !== sortedArray2[i]) {
       return false;
     }
@@ -32,3 +32,4 @@ const checkEmptyString = (obj) => {
 }
 
 export { arraysHaveSameContents, checkEmptyString }
+

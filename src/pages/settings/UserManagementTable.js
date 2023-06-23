@@ -15,14 +15,15 @@ import FirstPageIcon from '@mui/icons-material/FirstPage';
 import KeyboardArrowLeft from '@mui/icons-material/KeyboardArrowLeft';
 import KeyboardArrowRight from '@mui/icons-material/KeyboardArrowRight';
 import LastPageIcon from '@mui/icons-material/LastPage';
-import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Snackbar, TableHead, Tooltip } from '@mui/material';
+import { Button, Checkbox, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Snackbar, TableHead, Tooltip, Typography } from '@mui/material';
 import moment from 'moment';
 import { useNavigate } from 'react-router-dom';
 import { ChangeCircleRounded, DeleteOutline } from '@mui/icons-material';
 import instance from '../../services/fetchApi';
 import { useDispatch, useSelector } from 'react-redux';
 import MuiAlert from '@mui/material/Alert';
-import { removeUser, setShowDeleteNotification, setShowSpinner, setUserInfo, updateAllUsers } from '../../features/userSlice';
+import { removeUser, removeUsers, setShowDeleteNotification, setShowSpinner, setUserInfo, updateAllUsers } from '../../features/userSlice';
+import { arraysHaveSameContents } from '../../services/checkers';
 
 const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
@@ -111,6 +112,9 @@ export default function UserManagementTable({rows}) {
   const dispatch = useDispatch()
   const [openDialog, setOpenDialog] = React.useState(false);
   const [userId, setUserId] = React.useState();
+  const [userIds, setUserIds] = React.useState([]);
+  const [userIdx, setUserIdx] = React.useState();
+  const [bulkMode, setBulkMode] = React.useState(false);
   const { showSpinner, showDeleteNotification } = useSelector(state => state.user)
 
   const handleCloseDialog = () => {
@@ -162,31 +166,136 @@ export default function UserManagementTable({rows}) {
 
   const deleteUser = async () => {
     dispatch(setShowDeleteNotification({showDeleteNotification: true}))
-    await instance.delete(`admin-users/${userId}`)
-    .then(() => {
-      dispatch(setShowDeleteNotification({showDeleteNotification: false}))
-      dispatch(removeUser({id: userId}))
-      setUserId(null)
-      setOpenDialog(false)
+    if(bulkMode) {
+      await instance.post(`admin-users-bulk-delete`, {userIds})
+      .then(() => {
+        dispatch(setShowDeleteNotification({showDeleteNotification: false}))
+        dispatch(removeUsers({userIds}))
+        setUserId(null)
+        setOpenDialog(false)
+        setOpenAlert(true)
+        setAlertMessage("Users deleted")
+        setSeverity("success")
+      })
+      .catch(() => {
+        dispatch(setShowDeleteNotification({showDeleteNotification: false}))
+        setUserId(null)
+        setOpenAlert(true)
+        setAlertMessage("Ooops an error was encountered")
+        setSeverity("error")
+      })
+    } else {
+      await instance.delete(`admin-users/${userId}`)
+      .then(() => {
+        dispatch(setShowDeleteNotification({showDeleteNotification: false}))
+        dispatch(removeUser({id: userId}))
+        setUserId(null)
+        setOpenDialog(false)
+        setOpenAlert(true)
+        setAlertMessage("User deleted")
+        setSeverity("success")
+      })
+      .catch(() => {
+        dispatch(setShowDeleteNotification({showDeleteNotification: false}))
+        setUserId(null)
+        setOpenAlert(true)
+        setAlertMessage("Ooops an error was encountered")
+        setSeverity("error")
+      })
+    }
+  
+  }
+
+  const bulkUpdateRoles = async () => {
+    dispatch(setShowSpinner({showSpinner: true}))
+   
+    await instance.post(`admin-users-bulk-update`, {userIds})
+    .then((res) => {
+      dispatch(setShowSpinner({showSpinner: false}))
+      dispatch(updateAllUsers({users: res.data.users}))
       setOpenAlert(true)
-      setAlertMessage("User deleted")
+      setAlertMessage("Users roles changed")
       setSeverity("success")
     })
     .catch(() => {
-      dispatch(setShowDeleteNotification({showDeleteNotification: false}))
-      setUserId(null)
+      dispatch(setShowSpinner({showSpinner: false}))
       setOpenAlert(true)
       setAlertMessage("Ooops an error was encountered")
       setSeverity("error")
     })
-  };
+  }
 
   return (
     <>
+    <div style={{display: "flex", justifyContent: "space-between"}}>
+      <Typography variant='h6'></Typography>
+
+      {
+        userIds.length ? (
+          <div>
+            <Tooltip title="Delete">
+              <DeleteOutline 
+                style={{marginBottom: "-5px", cursor: "pointer", marginRight: "5px"}} 
+                onClick={() => {
+                   setOpenDialog(true)
+                   setBulkMode(true)
+                }}
+              />
+            </Tooltip>
+
+            <Tooltip title='Change Role'>
+              <ChangeCircleRounded 
+                style={{cursor: "pointer", marginBottom: "-5px"}}
+                onClick={() => {
+                  bulkUpdateRoles()
+                }}
+              />
+            </Tooltip>
+
+            <span style={{marginLeft: "8px"}}>
+              { userIds.length } Users Selected
+            </span>
+
+            {
+              showSpinner ? (
+                <span style={{marginLeft: "8px", color: "green"}}>Updating....</span>
+              ) : null
+            }
+          </div>
+        ) : null
+      }
+
+      <Typography variant='h6'></Typography>
+    </div>
+
     <TableContainer component={Paper}>
       <Table sx={{ minWidth: 500 }} aria-label="custom pagination table">
       <TableHead>
           <TableRow>
+            <TableCell >
+              <Tooltip title="Select all">
+                <Checkbox
+                  checked={arraysHaveSameContents(rows?.map((a) => a.id), userIds.map((a) => a.id))}
+                  indeterminate={userIds?.length > 0 && userIds?.length < rows?.length}
+                  onChange={(e,f) => {
+                    if (f) {
+                      let ids = rows?.map((a) => {
+                        return {
+                          id: a.id,
+                          role: a.role
+                        }
+                      })
+  
+                      setUserIds(ids)
+                    } else {
+                      setUserIds([])
+                    }
+                  }}
+                  inputProps={{ 'aria-label': 'controlled' }}
+                  style={{marginRight: "-24px"}}
+                />
+              </Tooltip>
+            </TableCell>
             <TableCell >Name</TableCell>
             <TableCell >Picture</TableCell>
             <TableCell >Email</TableCell>
@@ -200,7 +309,30 @@ export default function UserManagementTable({rows}) {
             ? rows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
             : rows
           ).map((row) => (
-            <TableRow key={row.name}>
+            <TableRow 
+              key={row.name}
+              onMouseEnter={() => {
+                setUserIdx(row.id)
+              }}
+              onMouseLeave={()=> {
+                setUserIdx(null)
+              }}
+            >
+              <TableCell >
+                <Checkbox
+                  checked={userIds?.map((a) => a.id).includes(row.id)}
+                  onChange={(e,f) => {
+                    if(f) {
+                      setUserIds([...userIds, {id: row.id, role: row.role}])
+                    } else {
+                      setUserIds(userIds.filter((b) => b.id !== row.id))
+                    }
+                  }}
+                  inputProps={{ 'aria-label': 'controlled' }}
+                  style={{marginRight: "-24px"}}
+                />
+              </TableCell>
+
               <TableCell >
                 {row.name}
               </TableCell>
@@ -259,28 +391,40 @@ export default function UserManagementTable({rows}) {
               </TableCell>
 
               <TableCell style={{ width: 160 }} >
-                <Tooltip title='Change Role'>
-                  <ChangeCircleRounded 
-                    style={{cursor: "pointer"}}
-                    onClick={() => {
-                      if(row.role === "admin") {
-                        updateUserRole(row, "user")
-                      } else {
-                        updateUserRole(row, "admin")
-                      }
-                    }}
-                  />
-                </Tooltip>
+                {
+                  userIdx === row.id ? (
+                    <>
+                      <Tooltip title='Change Role'>
+                        <ChangeCircleRounded 
+                          style={{cursor: "pointer"}}
+                          onClick={() => {
+                            if(row.role === "super admin") {
 
-                <Tooltip title='Delete user'>
-                  <DeleteOutline
-                    style={{cursor: "pointer"}}
-                    onClick={() => {
-                      setOpenDialog(true)
-                      setUserId(row.id)
-                    }}
-                  />
-                </Tooltip>
+                            } else {
+                              if(row.role === "admin") {
+                                updateUserRole(row, "user")
+                              } else {
+                                updateUserRole(row, "admin")
+                              }
+                            }
+                           
+                          }}
+                        />
+                      </Tooltip>
+
+                      <Tooltip title='Delete user'>
+                        <DeleteOutline
+                          style={{cursor: "pointer"}}
+                          onClick={() => {
+                            setOpenDialog(true)
+                            setUserId(row.id)
+                          }}
+                        />
+                      </Tooltip>
+                    </>
+                  ) : null
+                }
+               
                
               </TableCell>
             </TableRow>
@@ -331,7 +475,7 @@ export default function UserManagementTable({rows}) {
         aria-describedby="alert-dialog-description"
       >
         <DialogTitle id="alert-dialog-title">
-          {"Use Google's location service?"}
+          Delete User
         </DialogTitle>
         <DialogContent>
           <DialogContentText id="alert-dialog-description">

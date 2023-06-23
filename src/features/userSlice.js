@@ -53,14 +53,31 @@ export const userSlice = createSlice({
       state.loadingDashboard = action.payload.value
     }, 
     updateAllUsers: (state, action) => {
-      let idx = state.allUsers.findIndex((a) => a.id === action.payload.user.id)
-      let arr = [...state.allUsers]
-      arr[idx].profile_pic = action.payload.user.profile_pic
-      arr[idx].role = action.payload.user.role
-      state.allUsers = arr
+      if (action.payload.user) {
+        let idx = state.allUsers.findIndex((a) => a.id === action.payload.user.id)
+        let arr = [...state.allUsers]
+        arr[idx].profile_pic = action.payload.user.profile_pic
+        arr[idx].role = action.payload.user.role
+        state.allUsers = arr
+      }
+
+      if (action.payload.users) {
+        for(let i = 0; i< action.payload.users.length; i++) {
+          let idx = state.allUsers.findIndex((a) => a.id === action.payload.users[i].id)
+          let arr = [...state.allUsers]
+          arr[idx].profile_pic = action.payload.users[i].profile_pic
+          arr[idx].role = action.payload.users[i].role
+          state.allUsers = arr
+        }
+      
+      }
+  
     },
     removeUser: (state, action) => {
       state.allUsers = state.allUsers.filter((a) => a.id !== action.payload.id)
+    },
+    removeUsers: (state, action) => {
+      state.allUsers = state.allUsers.filter((a) => !action.payload.userIds.includes(a.id))
     },
     setOnlineUsers: (state, action) => {
       state.onlineUsers = action.payload.onlineUsers
@@ -108,7 +125,8 @@ export const {
   setShowDoughnutGraphLoadingNotification,
   setShowLogoutNotification,
   setShowLoginSpinner,
-  setShowAnnouncementsLoading 
+  setShowAnnouncementsLoading,
+  removeUsers
 } = userSlice.actions
 
 export default userSlice.reducer

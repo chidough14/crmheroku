@@ -302,8 +302,9 @@ const AddProductModal = ({open, setOpen, editMode, product, setOpenAlert, setAle
                         variant="contained" 
                         style={{borderRadius: "30px"}}
                         onClick={() => addBulkProducts()}
+                        disabled={!productsPayload.length}
                       >
-                        Save
+                        { showButtonText("Save") }
                       </Button>
 
                       <Button 

@@ -100,6 +100,7 @@ const ProductsTable = ({rows, getProducts, loading, user}) => {
   const [openSnackAlert, setOpenSnackAlert] = React.useState(false);
   const [alertMessage, setAlertMessage] = React.useState("");
   const [productIds, setProductIds] = React.useState([]);
+  const [productId, setProductId] = React.useState();
   const [bulkMode, setBulkMode] = React.useState(false);
   const [header, setHeader] = React.useState("");
   const [severity, setSeverity] = React.useState("");
@@ -262,7 +263,15 @@ const ProductsTable = ({rows, getProducts, loading, user}) => {
               </TableRow>
             ) :
             rows?.data.map((row) => (
-            <TableRow key={row.name}>
+            <TableRow 
+              key={row.name}
+              onMouseEnter={() => {
+                setProductId(row.id)
+              }}
+              onMouseLeave={()=> {
+                setProductId(null)
+              }}
+            >
               <TableCell>
                 <Checkbox
                   checked={productIds.map((a) => a).includes(row.id)}
@@ -293,32 +302,43 @@ const ProductsTable = ({rows, getProducts, loading, user}) => {
                 {row.active}
               </TableCell>
               <TableCell style={{ width: 160 }}>
-                <Button
-                  size='small'
-                  disabled={renderDisabled(user)}
-                >
-                  <EditOutlined
-                    style={{cursor: "pointer"}}
-                    onClick={() => {
-                      setEditMode(true)
-                      setOpenModal(true)
-                      setProductObj(row)
-                    }}
-                  />
-                </Button>
-               
-                <Button
-                  size='small'
-                  disabled={renderDisabled(user)}
-                >
-                  <DeleteOutlined 
-                    style={{cursor: "pointer"}}
-                    onClick={() => {
-                      setOpenAlert(true)
-                      setProductObj(row)
-                    }}
-                  />
-                </Button>
+
+                {
+                  productId === row.id ? (
+                    <>
+                      <Tooltip title="Edit">
+                        <Button
+                          size='small'
+                          disabled={renderDisabled(user)}
+                        >
+                          <EditOutlined
+                            style={{cursor: "pointer"}}
+                            onClick={() => {
+                              setEditMode(true)
+                              setOpenModal(true)
+                              setProductObj(row)
+                            }}
+                          />
+                        </Button>
+                      </Tooltip>
+
+                      <Tooltip title="Edit">
+                        <Button
+                          size='small'
+                          disabled={renderDisabled(user)}
+                        >
+                          <DeleteOutlined 
+                            style={{cursor: "pointer"}}
+                            onClick={() => {
+                              setOpenAlert(true)
+                              setProductObj(row)
+                            }}
+                          />
+                        </Button>
+                      </Tooltip>
+                    </>
+                  ) : null
+                }  
               </TableCell>
             </TableRow>
           ))}
