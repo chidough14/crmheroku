@@ -7,6 +7,7 @@ import * as yup from 'yup';
 import { addCompanies, addCompany, setShowAddSpinner, updateCompany } from '../../../features/companySlice';
 import instance from '../../../services/fetchApi';
 import { AddOutlined } from '@mui/icons-material';
+import { checkEmptyString } from '../../../services/checkers';
 
 const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
@@ -43,14 +44,16 @@ const validationSchema = yup.object({
 });
 
 const AddCompanyModal = ({open, setOpen, setOpenAlert, setAlertMessage, editMode, company, setSeverity}) => {
-  const handleClose = () => {
-    setOpen(false)
-    setBulkAdd(false)
-  };
+  
   const dispatch = useDispatch()
   const { showAddSpinner } = useSelector(state => state.company)
   const [bulkAdd, setBulkAdd] = useState(false)
   const [companiesPayload, setCompaniesPayload] = useState([])
+
+  const handleClose = () => {
+    setOpen(false)
+    setBulkAdd(false)
+  };
 
   const initialState = {
     name: '',
@@ -158,15 +161,6 @@ const AddCompanyModal = ({open, setOpen, setOpenAlert, setAlertMessage, editMode
     } else {
       return text
     }
-  }
-
-  const checkEmptyString = (obj) => {
-    for (let prop in obj) {
-      if (obj[prop] === "") {
-        return true;
-      }
-    }
-    return false;
   }
 
   const addBulkCompanies = async () => {
@@ -325,9 +319,9 @@ const AddCompanyModal = ({open, setOpen, setOpenAlert, setAlertMessage, editMode
                         variant="contained" 
                         style={{borderRadius: "30px"}}
                         onClick={() => addBulkCompanies()}
-                        // disabled={checkEmptyString(data)}
+                        disabled={!companiesPayload.length}
                       >
-                        Save
+                        { showButtonText("Save") }
                       </Button>
 
                       <Button 

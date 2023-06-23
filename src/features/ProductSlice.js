@@ -33,6 +33,12 @@ export const ProductSlice = createSlice({
     setShowDeleteNotification: (state, action) => {
       state.showDeleteNotification = action.payload.showDeleteNotification
     },
+    removeProducts: (state, action) => {
+      state.products.data = state.products.data.filter((a) => !action.payload.productIds.includes(a.id))
+    },
+    addProducts: (state, action) => {
+      state.products.data = [...state.products.data, ...action.payload.products]
+    },
   },
 })
 
@@ -43,7 +49,9 @@ export const {
   removeProduct,
   setProductsAll,
   setProductAdding,
-  setShowDeleteNotification
+  setShowDeleteNotification,
+  removeProducts,
+  addProducts
 } = ProductSlice.actions
 
 export default ProductSlice.reducer
