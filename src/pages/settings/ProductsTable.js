@@ -185,25 +185,25 @@ const ProductsTable = ({rows, getProducts, loading, user}) => {
   return (
     <>
     <div style={{display: "flex", justifyContent: "space-between"}}>
-    <Typography variant='h6'></Typography>
+      <Typography variant='h6'></Typography>
 
-    {
-      productIds.length ? (
-      <div>
-          <Tooltip title="Delete">
-            <DeleteOutlined 
-              style={{marginBottom: "-5px", cursor: "pointer", marginRight: "5px"}} 
-              onClick={() => {
-                setOpenAlert(true)
-                setBulkMode(true)
-              }}
-            />
-          </Tooltip>
+      {
+        productIds.length ? (
+          <div>
+            <Tooltip title="Delete">
+              <DeleteOutlined 
+                style={{marginBottom: "-5px", cursor: "pointer", marginRight: "5px"}} 
+                onClick={() => {
+                  setOpenAlert(true)
+                  setBulkMode(true)
+                }}
+              />
+            </Tooltip>
 
-          <span>
-            { productIds.length } Items Selected
-          </span>
-        </div>
+            <span>
+              { productIds.length } Items Selected
+            </span>
+          </div>
         ) : null
       }
 
