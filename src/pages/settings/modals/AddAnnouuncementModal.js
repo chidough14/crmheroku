@@ -8,6 +8,7 @@ import instance from '../../../services/fetchApi';
 import { addAnnouncement, addAnnouncements, setCategories, setShowAddSpinner, updateAnnouncement } from '../../../features/AnnouncementsSlice';
 import { checkEmptyString } from '../../../services/checkers';
 import { AddOutlined } from '@mui/icons-material';
+import AnnouncementsForm from '../forms/AnnouncementsForm';
 
 const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
@@ -225,165 +226,34 @@ const AddAnnouuncementModal = ({open, setOpen, setOpenAlert, setAlertMessage, se
 
             {
               bulkAdd ? (
-                  <>
-                    <TextField
-                      required
-                      size='small'
-                      fullWidth
-                      id="message"
-                      name="message"
-                      label="Message"
-                      value={data.message}
-                      onChange={(e) => {
-                        updateData({message: e.target.value})
-                      }}
-                    />
-                    <p></p>
-                    <TextField
-                      size='small'
-                      fullWidth
-                      id="link"
-                      name="link"
-                      label="Link"
-                      value={data.link}
-                      onChange={(e) => {
-                        updateData({link: e.target.value})
-                      }}
-                    />
-                    <p></p>
-
-                    <Typography variant='h7'>Categories</Typography>
-                    <FormControl fullWidth>
-                      <Select
-                        labelId="demo-simple-select-label"
-                        id="demo-simple-select"
-                        value={data.category_id}
-                        onChange={(e) => {
-                          updateData({category_id: e.target.value})
-                        }}
-                        size="small"
-                        sx={{borderRadius: "30px"}}
-                      >
-                        {
-                          categories.map((a) => (
-                            <MenuItem value={a.id}>
-                              {a.name}
-                            </MenuItem>
-                          ))
-                        }
-                      </Select>
-                    </FormControl>
-                    <p></p>
-                    <div style={{display: "flex", justifyContent: "space-between"}}>
-                      <Button 
-                        size='small' 
-                        color="primary" 
-                        variant="contained" 
-                        style={{borderRadius: "30px"}}
-                        onClick={() => {
-                          setAnnouncementsPayload([...announcementsPayload, data])
-                          updateData(initialState)
-                        }}
-                        disabled={checkEmptyString(data)}
-                      >
-                        <AddOutlined />
-                      </Button>
-
-                      <Button
-                        size='small' 
-                        color="primary" 
-                        variant="contained"  
-                        style={{borderRadius: "30px"}}
-                        onClick={() => addBulkAnnouncements()}
-                        disabled={!announcementsPayload.length}
-                      >
-                       { showButtonText("Save") }
-                      </Button> 
-
-                      <Button 
-                        size='small' 
-                        color="error" 
-                        variant="contained" 
-                        onClick={() => {
-                          handleClose()
-                          formik.resetForm()
-                        }}
-                        style={{borderRadius: "30px"}}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </>
+                <AnnouncementsForm
+                  updateData={updateData}
+                  data={data}
+                  announcementsPayload={announcementsPayload}
+                  setAnnouncementsPayload={setAnnouncementsPayload}
+                  checkEmptyString={checkEmptyString}
+                  addBulkAnnouncements={addBulkAnnouncements}
+                  formik={formik}
+                  showButtonText={showButtonText}
+                  handleClose={handleClose}
+                  mode="bulk"
+                  categories={categories}
+                  initialState={initialState}
+                />
               ) : (
-               <>
-                  <TextField
-                    required
-                    size='small'
-                    fullWidth
-                    id="message"
-                    name="message"
-                    label="Message"
-                    value={formik.values.message}
-                    onChange={formik.handleChange}
-                    error={formik.touched.message && Boolean(formik.errors.message)}
-                    helperText={formik.touched.message && formik.errors.message}
-                  />
-                  <p></p>
-                  <TextField
-                    size='small'
-                    fullWidth
-                    id="link"
-                    name="link"
-                    label="Link"
-                    value={formik.values.link}
-                    onChange={formik.handleChange}
-                  />
-                  <p></p>
-
-                  <Typography variant='h7'>Categories</Typography>
-                  <FormControl fullWidth>
-                    <Select
-                      labelId="demo-simple-select-label"
-                      id="demo-simple-select"
-                      value={categoryId}
-                      onChange={handleChange}
-                      size="small"
-                      sx={{borderRadius: "30px"}}
-                    >
-                      {
-                        categories.map((a) => (
-                          <MenuItem value={a.id}>
-                            {a.name}
-                          </MenuItem>
-                        ))
-                      }
-                    </Select>
-                  </FormControl>
-                  <p></p>
-                  <div style={{display: "flex", justifyContent: "space-between"}}>
-                    <Button size='small' color="primary" variant="contained"  type="submit" style={{borderRadius: "30px"}}>
-                    {editMode ? showButtonText("Save") : showButtonText("Add")}
-                    </Button> 
-
-                    <Button 
-                      size='small' 
-                      color="error" 
-                      variant="contained" 
-                      onClick={() => {
-                        handleClose()
-                        formik.resetForm()
-                      }}
-                      style={{borderRadius: "30px"}}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-               </>
+                <AnnouncementsForm
+                  formik={formik}
+                  handleClose={handleClose}
+                  showButtonText={showButtonText}
+                  mode="single"
+                  initialState={initialState}
+                  editMode={editMode}
+                  handleChange={handleChange}
+                  categories={categories}
+                  categoryId={categoryId}
+                />
               )
             }
-           
-          
-          
           </form>
         </Box>
       </Modal>
