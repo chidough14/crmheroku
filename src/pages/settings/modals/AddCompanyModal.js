@@ -8,6 +8,7 @@ import { addCompanies, addCompany, setShowAddSpinner, updateCompany } from '../.
 import instance from '../../../services/fetchApi';
 import { AddOutlined } from '@mui/icons-material';
 import { checkEmptyString } from '../../../services/checkers';
+import CompanyForm from '../forms/CompanyForm';
 
 const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
@@ -213,6 +214,7 @@ const AddCompanyModal = ({open, setOpen, setOpenAlert, setAlertMessage, editMode
                     onClick={()=> {
                       if(bulkAdd) {
                         setBulkAdd(false)
+                        formik.resetForm()
                       }
 
                       if(!bulkAdd) {
@@ -227,210 +229,32 @@ const AddCompanyModal = ({open, setOpen, setOpenAlert, setAlertMessage, editMode
               }
             </div>
 
-
             {
               bulkAdd ? (
-                  <>
-                    <TextField
-                      required
-                      size='small'
-                      fullWidth
-                      id="name"
-                      name="name"
-                      label="Name"
-                      value={data.name}
-                      onChange={(e) => {
-                        updateData({name: e.target.value})
-                      }}
-                      // error={formik.touched.name && Boolean(formik.errors.name)}
-                      // helperText={formik.touched.name && formik.errors.name}
-                    />
-                    <p></p>
-                    <TextField
-                      required
-                      size='small'
-                      fullWidth
-                      id="address"
-                      name="address"
-                      label="Address"
-                      value={data.address}
-                      onChange={(e) => {
-                        updateData({address: e.target.value})
-                      }}
-                    />
-                    <p></p>
-                    <TextField
-                      required
-                      size='small'
-                      fullWidth
-                      id="phone"
-                      name="phone"
-                      label="Phone"
-                      value={data.phone}
-                      onChange={(e) => {
-                        updateData({phone: e.target.value})
-                      }}
-                    />
-                    <p></p>
-                    <TextField
-                      required
-                      size='small'
-                      fullWidth
-                      id="email"
-                      name="email"
-                      label="Email"
-                      value={data.email}
-                      onChange={(e) => {
-                        updateData({email: e.target.value})
-                      }}
-                    />
-                    <p></p>
-                    <TextField
-                      required
-                      size='small'
-                      fullWidth
-                      id="contactPerson"
-                      name="contactPerson"
-                      label="Contact Person"
-                      value={data.contactPerson}
-                      onChange={(e) => {
-                        updateData({contactPerson: e.target.value})
-                      }}
-                    />
-                    <p></p>
-                    <div style={{display: "flex", justifyContent: "space-between"}}>
-                      <Button 
-                        size='small' 
-                        color="primary" 
-                        variant="contained" 
-                        style={{borderRadius: "30px"}}
-                        onClick={() => {
-                          setCompaniesPayload([...companiesPayload, data])
-                          updateData(initialState)
-                        }}
-                        disabled={checkEmptyString(data)}
-                      >
-                        <AddOutlined />
-                      </Button>
-
-                      <Button 
-                        size='small' 
-                        color="primary" 
-                        variant="contained" 
-                        style={{borderRadius: "30px"}}
-                        onClick={() => addBulkCompanies()}
-                        disabled={!companiesPayload.length}
-                      >
-                        { showButtonText("Save") }
-                      </Button>
-
-                      <Button 
-                        size='small' 
-                        color="error" 
-                        variant="contained" 
-                        onClick={() => {
-                          handleClose()
-                          updateData(initialState)
-                          formik.resetForm()
-                        }}
-                        style={{borderRadius: "30px"}}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </>
+                <CompanyForm
+                  updateData={updateData}
+                  data={data}
+                  companiesPayload={companiesPayload}
+                  setCompaniesPayload={setCompaniesPayload}
+                  checkEmptyString={checkEmptyString}
+                  addBulkCompanies={addBulkCompanies}
+                  formik={formik}
+                  showButtonText={showButtonText}
+                  handleClose={handleClose}
+                  mode="bulk"
+                  initialState={initialState}
+                />
               ) : (
-                <>
-                
-              
-                  <TextField
-                    required
-                    size='small'
-                    fullWidth
-                    id="name"
-                    name="name"
-                    label="Name"
-                    value={formik.values.name}
-                    onChange={formik.handleChange}
-                    error={formik.touched.name && Boolean(formik.errors.name)}
-                    helperText={formik.touched.name && formik.errors.name}
-                  />
-                  <p></p>
-                  <TextField
-                    required
-                    size='small'
-                    fullWidth
-                    id="address"
-                    name="address"
-                    label="Address"
-                    value={formik.values.address}
-                    onChange={formik.handleChange}
-                    error={formik.touched.address && Boolean(formik.errors.address)}
-                    helperText={formik.touched.address && formik.errors.address}
-                  />
-                  <p></p>
-                  <TextField
-                    required
-                    size='small'
-                    fullWidth
-                    id="phone"
-                    name="phone"
-                    label="Phone"
-                    value={formik.values.phone}
-                    onChange={formik.handleChange}
-                    error={formik.touched.phone && Boolean(formik.errors.phone)}
-                    helperText={formik.touched.phone && formik.errors.phone}
-                  />
-                  <p></p>
-                  <TextField
-                    required
-                    size='small'
-                    fullWidth
-                    id="email"
-                    name="email"
-                    label="Email"
-                    value={formik.values.email}
-                    onChange={formik.handleChange}
-                    error={formik.touched.email && Boolean(formik.errors.email)}
-                    helperText={formik.touched.email && formik.errors.email}
-                  />
-                  <p></p>
-                  <TextField
-                    required
-                    size='small'
-                    fullWidth
-                    id="contactPerson"
-                    name="contactPerson"
-                    label="Contact Person"
-                    value={formik.values.contactPerson}
-                    onChange={formik.handleChange}
-                    error={formik.touched.contactPerson && Boolean(formik.errors.contactPerson)}
-                    helperText={formik.touched.contactPerson && formik.errors.contactPerson}
-                  />
-                  <p></p>
-                  <div style={{display: "flex", justifyContent: "space-between"}}>
-                    <Button size='small' color="primary" variant="contained"  type="submit" style={{borderRadius: "30px"}}>
-                    {editMode ? showButtonText("Save") : showButtonText("Add")}
-                    </Button>
-
-                    <Button 
-                      size='small' 
-                      color="error" 
-                      variant="contained" 
-                      onClick={() => {
-                        handleClose()
-                        formik.resetForm()
-                      }}
-                      style={{borderRadius: "30px"}}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </>
+                <CompanyForm
+                  formik={formik}
+                  handleClose={handleClose}
+                  showButtonText={showButtonText}
+                  mode="single"
+                  initialState={initialState}
+                  editMode={editMode}
+                />
               )
             }
-            
-          
           </form>
         </Box>
       </Modal>

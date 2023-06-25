@@ -105,7 +105,7 @@ const CompaniesTable = ({rows, getCompanies, loading, user}) => {
   const [companyIds, setCompanyIds] = React.useState([]);
   const [bulkMode, setBulkMode] = React.useState(false);
   const [header, setHeader] = React.useState("");
-  const [companyId, setCompanyId] = React.useState();
+  const [companyId, setCompanyId] = React.useState(null);
   const { showDeleteNotification } = useSelector(state => state.company)
 
   const dispatch = useDispatch()
@@ -249,7 +249,9 @@ const CompaniesTable = ({rows, getCompanies, loading, user}) => {
             <TableCell >Phone</TableCell>
             <TableCell >Contact</TableCell>
             <TableCell >Email</TableCell>
-            <TableCell  >Actions</TableCell>
+            <TableCell>
+              {companyId ? "Actions" : null}
+            </TableCell>
           </TableRow>
         </TableHead>
         <TableBody>

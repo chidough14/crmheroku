@@ -100,7 +100,7 @@ const ProductsTable = ({rows, getProducts, loading, user}) => {
   const [openSnackAlert, setOpenSnackAlert] = React.useState(false);
   const [alertMessage, setAlertMessage] = React.useState("");
   const [productIds, setProductIds] = React.useState([]);
-  const [productId, setProductId] = React.useState();
+  const [productId, setProductId] = React.useState(null);
   const [bulkMode, setBulkMode] = React.useState(false);
   const [header, setHeader] = React.useState("");
   const [severity, setSeverity] = React.useState("");
@@ -248,7 +248,9 @@ const ProductsTable = ({rows, getProducts, loading, user}) => {
             <TableCell >Price</TableCell>
             <TableCell >Tax %</TableCell>
             <TableCell >Status</TableCell>
-            <TableCell  >Actions</TableCell>
+            <TableCell>
+            {productId ? "Actions" : null}
+            </TableCell>
           </TableRow>
         </TableHead>
         <TableBody>

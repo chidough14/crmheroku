@@ -31,7 +31,7 @@ const AnnouncementsTable = ({rows, announcementsLoading, socket, getAnnouncement
   const [announcementObj, setAnnouncementObj] = React.useState();
   const [editMode, setEditMode] = React.useState(false);
   const [announcementsIds, setAnnouncementsIds] = React.useState([]);
-  const [announcementId, setAnnouncementId] = React.useState();
+  const [announcementId, setAnnouncementId] = React.useState(null);
   const [bulkMode, setBulkMode] = React.useState(false);
   const [header, setHeader] = React.useState("");
   const { showDeleteNotification } = useSelector(state => state.announcement)
@@ -162,7 +162,9 @@ const AnnouncementsTable = ({rows, announcementsLoading, socket, getAnnouncement
               </TableCell>
               <TableCell>Message</TableCell>
               <TableCell >Link</TableCell>
-              <TableCell >Actions</TableCell>
+              <TableCell >
+                {announcementId ? "Actions" : null}
+              </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>

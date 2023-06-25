@@ -8,6 +8,7 @@ import { addProduct, addProducts, setProductAdding, updateProduct } from '../../
 import instance from '../../../services/fetchApi';
 import { AddOutlined } from '@mui/icons-material';
 import { checkEmptyString } from '../../../services/checkers';
+import ProductForm from '../forms/ProductForm';
 
 // const Alert = React.forwardRef(function Alert(props, ref) {
 //   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
@@ -221,184 +222,33 @@ const AddProductModal = ({open, setOpen, editMode, product, setOpenAlert, setAle
                   </span>
                 }
               </div>
-
-
+              
               {
                 bulkAdd ? (
-                  <>
-                    <TextField
-                      required
-                      size='small'
-                      fullWidth
-                      id="name"
-                      name="name"
-                      label="Name"
-                      value={data.name}
-                      onChange={(e) => {
-                        updateData({name: e.target.value})
-                      }}
-                    />
-                    <p></p>
-                    <TextField
-                      size='small'
-                      fullWidth
-                      id="description"
-                      name="description"
-                      label="description"
-                      value={data.description}
-                      onChange={(e) => {
-                        updateData({description: e.target.value})
-                      }}
-                    />
-                    <p></p>
-                    <TextField
-                      required
-                      size='small'
-                      fullWidth
-                      id="price"
-                      name="price"
-                      label="Price"
-                      value={data.price}
-                      onChange={(e) => {
-                        updateData({price: e.target.value})
-                      }}
-                    />
-                    <p></p>
-                    <InputLabel id="demo-select-small">Tax %</InputLabel>
-                    <Select
-                      id='tax_percentage'
-                      name="tax_percentage"
-                      label="Tax %"
-                      size='small'
-                      fullWidth
-                      value={data.tax_percentage}
-                      onChange={(e) => {
-                        updateData({tax_percentage: e.target.value})
-                      }}
-                    >
-                      <MenuItem value={3}>3</MenuItem>
-                      <MenuItem value={12}>12</MenuItem>
-                      <MenuItem value={25}>25</MenuItem>
-                    </Select>
-                    <p></p>
-                    <div style={{display: "flex", justifyContent: "space-between"}}>
-                      <Button 
-                        size='small' 
-                        color="primary" 
-                        variant="contained" 
-                        style={{borderRadius: "30px"}}
-                        onClick={() => {
-                          setProductsPayload([...productsPayload, data])
-                          updateData(initialState)
-                        }}
-                        disabled={checkEmptyString(data)}
-                      >
-                        <AddOutlined />
-                      </Button>
-
-                      <Button 
-                        size='small' 
-                        color="primary" 
-                        variant="contained" 
-                        style={{borderRadius: "30px"}}
-                        onClick={() => addBulkProducts()}
-                        disabled={!productsPayload.length}
-                      >
-                        { showButtonText("Save") }
-                      </Button>
-
-                      <Button 
-                        size='small' 
-                        color="error" 
-                        variant="contained" 
-                        onClick={() => {
-                          handleClose()
-                          updateData(initialState)
-                          formik.resetForm()
-                        }}
-                        style={{borderRadius: "30px"}}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </>
+                  <ProductForm 
+                    updateData={updateData}
+                    data={data}
+                    productsPayload={productsPayload}
+                    setProductsPayload={setProductsPayload}
+                    checkEmptyString={checkEmptyString}
+                    addBulkProducts={addBulkProducts}
+                    formik={formik}
+                    showButtonText={showButtonText}
+                    handleClose={handleClose}
+                    mode="bulk"
+                    initialState={initialState}
+                  />
                 ) : (
-                <>
-                  <TextField
-                    required
-                    size='small'
-                    fullWidth
-                    id="name"
-                    name="name"
-                    label="Name"
-                    value={formik.values.name}
-                    onChange={formik.handleChange}
-                    error={formik.touched.name && Boolean(formik.errors.name)}
-                    helperText={formik.touched.name && formik.errors.name}
+                  <ProductForm
+                    formik={formik}
+                    handleClose={handleClose}
+                    showButtonText={showButtonText}
+                    mode="single"
+                    initialState={initialState}
+                    editMode={editMode}
                   />
-                  <p></p>
-                  <TextField
-                    size='small'
-                    fullWidth
-                    id="description"
-                    name="description"
-                    label="description"
-                    value={formik.values.description}
-                    onChange={formik.handleChange}
-                    error={formik.touched.description && Boolean(formik.errors.description)}
-                    helperText={formik.touched.description && formik.errors.description}
-                  />
-                  <p></p>
-                  <TextField
-                    required
-                    size='small'
-                    fullWidth
-                    id="price"
-                    name="price"
-                    label="Price"
-                    value={formik.values.price}
-                    onChange={formik.handleChange}
-                    error={formik.touched.price && Boolean(formik.errors.price)}
-                    helperText={formik.touched.price && formik.errors.price}
-                  />
-                  <p></p>
-                  <InputLabel id="demo-select-small">Tax %</InputLabel>
-                  <Select
-                    id='tax_percentage'
-                    name="tax_percentage"
-                    label="Tax %"
-                    size='small'
-                    fullWidth
-                    value={formik.values.tax_percentage}
-                    onChange={formik.handleChange}
-                  >
-                    <MenuItem value={3}>3</MenuItem>
-                    <MenuItem value={12}>12</MenuItem>
-                    <MenuItem value={25}>25</MenuItem>
-                  </Select>
-                  <p></p>
-                  <div style={{display: "flex", justifyContent: "space-between"}}>
-                    <Button size='small' color="primary" variant="contained"  type="submit" style={{borderRadius: "30px"}}>
-                    {editMode ? showButtonText("Save"): showButtonText("Add")}
-                    </Button>
-    
-                    <Button 
-                      size='small' 
-                      color="error" 
-                      variant="contained" 
-                      onClick={() => {
-                        handleClose()
-                        formik.resetForm()
-                      }}
-                      style={{borderRadius: "30px"}}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </>
                 )
               }
-            
             </form>
           </Box>
         </Modal>
