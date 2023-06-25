@@ -113,7 +113,7 @@ export default function UserManagementTable({rows}) {
   const [openDialog, setOpenDialog] = React.useState(false);
   const [userId, setUserId] = React.useState();
   const [userIds, setUserIds] = React.useState([]);
-  const [userIdx, setUserIdx] = React.useState();
+  const [userIdx, setUserIdx] = React.useState(null);
   const [bulkMode, setBulkMode] = React.useState(false);
   const { showSpinner, showDeleteNotification } = useSelector(state => state.user)
 
@@ -301,7 +301,9 @@ export default function UserManagementTable({rows}) {
             <TableCell >Email</TableCell>
             <TableCell >Role</TableCell>
             <TableCell >Date Joined</TableCell>
-            <TableCell  >Actions</TableCell>
+            <TableCell  >
+            {userIdx ? "Actions" : null}
+            </TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
