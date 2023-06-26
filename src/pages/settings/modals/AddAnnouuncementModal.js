@@ -32,13 +32,14 @@ const validationSchema = yup.object({
     .required('Message is required')
 });
 
-const AddAnnouuncementModal = ({open, setOpen, setOpenAlert, setAlertMessage, setSeverity, announcement, editMode, socket}) => {
+const AddAnnouuncementModal = ({open, setOpen, setOpenAlert, setAlertMessage, setSeverity, announcement, editMode, socket, categories}) => {
   const handleClose = () => {
     setOpen(false);
     setCategoryId('')
+    setBulkAdd(false)
   }
   const dispatch = useDispatch()
-  const { showAddSpinner, categories } = useSelector(state => state.announcement)
+  const { showAddSpinner } = useSelector(state => state.announcement)
   const [categoryId, setCategoryId] = useState()
   const [announcementsPayload, setAnnouncementsPayload] = useState([])
   const [bulkAdd, setBulkAdd] = useState(false)
@@ -61,19 +62,19 @@ const AddAnnouuncementModal = ({open, setOpen, setOpenAlert, setAlertMessage, se
 
   }, [editMode, announcement])
 
-  const getCategories = async () => {
-    await instance.get(`categories`)
-    .then((res) => {
-      dispatch(setCategories({categories: res.data.categories}))
-    })
-    .catch(() => {
+  // const getCategories = async () => {
+  //   await instance.get(`categories`)
+  //   .then((res) => {
+  //     dispatch(setCategories({categories: res.data.categories}))
+  //   })
+  //   .catch(() => {
 
-    })
-  }
+  //   })
+  // }
 
-  useEffect(() => {
-    getCategories()
-  }, [])
+  // useEffect(() => {
+  //   getCategories()
+  // }, [])
 
   const formik = useFormik({
     initialValues: initialState,
@@ -258,7 +259,7 @@ const AddAnnouuncementModal = ({open, setOpen, setOpenAlert, setAlertMessage, se
         </Box>
       </Modal>
 
-  </>
+    </>
   )
 }
 

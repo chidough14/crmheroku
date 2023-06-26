@@ -44,6 +44,15 @@ export const AnnouncementsSlice = createSlice({
     setCategories: (state, action) => {
       state.categories = action.payload.categories
     },
+    addCategory: (state, action) => {
+      state.categories = [...state.categories, action.payload.category]
+    },
+    removeCategory: (state, action) => {
+      state.categories = state.categories.filter((a) => a.id !== action.payload.id)
+    },
+    addCategories: (state, action) => {
+      state.categories = [...state.categories, ...action.payload.categories]
+    },
     setSortOptionValue: (state, action) => {
       state.sortOption = action.payload.option
     },
@@ -61,7 +70,10 @@ export const {
   setCategories,
   setSortOptionValue,
   removeAnnouncements,
-  addAnnouncements
+  addAnnouncements,
+  addCategory,
+  addCategories,
+  removeCategory
 } = AnnouncementsSlice.actions
 
 export default AnnouncementsSlice.reducer

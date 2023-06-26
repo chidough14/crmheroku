@@ -6,7 +6,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import ActivityColumn from '../components/activities/ActivityColumn'
 import ActivityModal from '../components/activities/ActivityModal'
-import { addActivity, addActivityIds, editActivity, editActivityProbability, removeActivities, removeActivity, removeActivityIds, setActivities, setOpenPrompt, setShowCloningNotification, setShowDeleteNotification, setSortOptionValue } from '../features/ActivitySlice'
+import { addActivity, addActivityIds, editActivity, editActivityProbability, removeActivities, removeActivity, removeActivityIds, setActivities, setOpenPrompt, setShowCloningNotification, setShowDeleteNotification, setSortOptionValue, setTrashActivities } from '../features/ActivitySlice'
 import instance from '../services/fetchApi'
 import { getToken } from '../services/LocalStorageService'
 import SortButton from './orders/SortButton'
@@ -23,7 +23,7 @@ const Activities = ({socket}) => {
   const [columns, setColumns] = useState([])
   const [activityId, setActivityId] = useState()
   const dispatch = useDispatch()
-  const { activities, sortOption, activityIds, showCloningNotification, showDeleteNotification } = useSelector((state) => state.activity) 
+  const { activities, sortOption, activityIds, showCloningNotification, showDeleteNotification, trashActivities } = useSelector((state) => state.activity) 
   const [open, setOpen] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -64,6 +64,8 @@ const Activities = ({socket}) => {
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
+    setRestoreMode(false)
+
   }
 
   const token = getToken()
@@ -86,33 +88,45 @@ const Activities = ({socket}) => {
   // }, [])
 
   useEffect(() => {
-    let cols  = {
-      Low: {
-        id: 'Low',
-        list: activities.filter((a) => a.probability === "Low"),
-        total: activities.filter((a) => a.probability === "Low").reduce((n, {total}) => n + total, 0) * 0.2,
-      },
-      Medium: {
-        id: 'Medium',
-        list: activities.filter((a) => a.probability === "Medium"),
-        total: activities.filter((a) => a.probability === "Medium").reduce((n, {total}) => n + total, 0) * 0.4,
-      },
-      High: {
-        id: 'High',
-        list: activities.filter((a) => a.probability === "High"),
-        total: activities.filter((a) => a.probability === "High").reduce((n, {total}) => n + total, 0) * 0.8,
-      },
-      Closed: {
-        id: 'Closed',
-        list: activities.filter((a) => a.probability === "Closed"),
-        total: activities.filter((a) => a.probability === "Closed").reduce((n, {total}) => n + total, 0),
-      },
-    
+
+    const obj = (act) => {
+      let cols  = {
+        Low: {
+          id: 'Low',
+          list: act.filter((a) => a.probability === "Low"),
+          total: act.filter((a) => a.probability === "Low").reduce((n, {total}) => n + total, 0) * 0.2,
+        },
+        Medium: {
+          id: 'Medium',
+          list: act.filter((a) => a.probability === "Medium"),
+          total: act.filter((a) => a.probability === "Medium").reduce((n, {total}) => n + total, 0) * 0.4,
+        },
+        High: {
+          id: 'High',
+          list: act.filter((a) => a.probability === "High"),
+          total: act.filter((a) => a.probability === "High").reduce((n, {total}) => n + total, 0) * 0.8,
+        },
+        Closed: {
+          id: 'Closed',
+          list: act.filter((a) => a.probability === "Closed"),
+          total: act.filter((a) => a.probability === "Closed").reduce((n, {total}) => n + total, 0),
+        },
+      
+      }
+      
+      return cols
     }
 
-    setColumns(cols)
+    if (showTrash) {
+      setColumns(obj(trashActivities))
+    } else {
+      setColumns(obj(activities))
+    }
    
-  }, [activities])
+
+   
+   
+  }, [activities, trashActivities, showTrash])
 
   const onDragStart  = (e, f) => {
     setActivityId(parseInt(e.draggableId))
@@ -241,7 +255,7 @@ const Activities = ({socket}) => {
         activities: Object.values(data.activities)
       };
    
-      dispatch(setActivities({activities: convertedData.activities}))
+      dispatch(setTrashActivities({activities: convertedData.activities}))
       setLoading(false)
     })
     .catch(() => {
@@ -319,7 +333,7 @@ const Activities = ({socket}) => {
     .then(() => {
       showAlert("Activities deleted", "success")
       handleCloseDialog()
-      dispatch(removeActivities({activityIds}))
+      dispatch(removeActivities({activityIds, showTrash}))
       // dispatch(deleteEvent({activityIds}))
       dispatch(removeActivityIds({activityIds}))
       dispatch(setShowDeleteNotification({showDeleteNotification: false}))
@@ -337,7 +351,7 @@ const Activities = ({socket}) => {
     .then(() => {
       showAlert("Activities restored", "success")
       handleCloseDialog()
-      dispatch(removeActivities({activityIds}))
+      dispatch(removeActivities({activityIds, showTrash}))
       dispatch(removeActivityIds({activityIds}))
      // dispatch(deleteEvent({activityIds}))
       dispatch(setShowDeleteNotification({showDeleteNotification: false}))
@@ -370,6 +384,22 @@ const Activities = ({socket}) => {
     }
   
     return true;
+  }
+
+  const renderIndeterminate = (activityIds) => {
+    if (showTrash) {
+      if (activityIds.length > 0 && activityIds.length < trashActivities.length) {
+        return true
+      } else {
+        return false
+      }
+    } else {
+      if (activityIds.length > 0 && activityIds.length < activities.length) {
+        return true
+      } else {
+        return false
+      }
+    }
   }
 
   return (
@@ -455,10 +485,11 @@ const Activities = ({socket}) => {
         <div style={{display: "flex"}}>
           <Tooltip title="Select all">
             <Checkbox
-              checked={arraysHaveSameContents(activities?.map((a) => a.id), activityIds)}
-              indeterminate={activityIds.length > 0 && activityIds.length < activities.length}
+              checked={arraysHaveSameContents(showTrash ? trashActivities?.map((a) => a.id) : activities?.map((a) => a.id) , activityIds)}
+              // indeterminate={activityIds.length > 0 && activityIds.length < activities.length}
+              indeterminate={renderIndeterminate(activityIds)}
               onChange={(e,f) => {
-                let ids = activities?.map((a) => a.id)
+                let ids = showTrash ? trashActivities?.map((a) => a.id) : activities?.map((a) => a.id) 
                 if (f) {
 
                   dispatch(addActivityIds({activityIds: ids}))
