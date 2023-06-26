@@ -2,6 +2,7 @@ import { createSlice } from '@reduxjs/toolkit'
 
 const initialState = {
   activities: [],
+  trashActivities: [],
   activity: undefined,
   openPrompt: false,
   sortOption: "all",
@@ -39,10 +40,18 @@ export const ActivitySlice = createSlice({
       state.activities[idx].decreased_probability = action.payload.activity.decreased_probability
     },
     removeActivity: (state, action) => {
-      state.activities = state.activities.filter((a) => a.id !== action.payload.activityId)
+      if (action.payload.showTrash) {
+        state.trashActivities = state.trashActivities.filter((a) => a.id !== action.payload.activityId)
+      } else {
+        state.activities = state.activities.filter((a) => a.id !== action.payload.activityId)
+      }
     },
     removeActivities: (state, action) => {
-      state.activities = state.activities.filter((a) => !action.payload.activityIds.includes(a.id))
+      if (action.payload.showTrash) {
+        state.trashActivities = state.trashActivities.filter((a) => !action.payload.activityIds.includes(a.id))
+      } else {
+        state.activities = state.activities.filter((a) => !action.payload.activityIds.includes(a.id))
+      }
     },
     setSingleActivity: (state, action) => {
       state.activity = {...state.activity, ...action.payload.activity}
@@ -111,7 +120,10 @@ export const ActivitySlice = createSlice({
     },
     removeActivityIds: (state, action) => {
       state.activityIds = state.activityIds.filter((a) => !action.payload.activityIds.includes(a))
-    }
+    },
+    setTrashActivities: (state, action) => {
+      state.trashActivities = action.payload.activities
+    },
   },
 })
 
@@ -143,7 +155,8 @@ export const {
   removeActivityId,
   addActivityIds,
   removeActivityIds,
-  removeActivities
+  removeActivities,
+  setTrashActivities
 } = ActivitySlice.actions
 
 export default ActivitySlice.reducer

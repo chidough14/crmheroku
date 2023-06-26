@@ -100,7 +100,7 @@ const ActivityItem = ({activity, index, socket, showTrash}) => {
     .then(() => {
       showAlert("Activity deleted", "success")
       handleCloseDialog()
-      dispatch(removeActivity({activityId: id}))
+      dispatch(removeActivity({activityId: id, showTrash}))
       dispatch(removeActivityId({id}))
       dispatch(deleteEvent({activityId: id}))
       dispatch(setShowDeleteNotification({showDeleteNotification: false}))
@@ -140,7 +140,7 @@ const ActivityItem = ({activity, index, socket, showTrash}) => {
     .then(() => {
       handleCloseDialog()
       showAlert("Activity restored", "success")
-      dispatch(removeActivity({activityId: id}))
+      dispatch(removeActivity({activityId: id, showTrash}))
       dispatch(removeActivityId({id}))
       dispatch(setShowDeleteNotification({showDeleteNotification: false}))
     })

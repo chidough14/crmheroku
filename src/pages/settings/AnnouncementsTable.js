@@ -12,9 +12,11 @@ import AddAnnouuncementModal from './modals/AddAnnouuncementModal';
 import MuiAlert from '@mui/material/Alert';
 import AlertDialog from './modals/AlertDialog';
 import { useDispatch, useSelector } from 'react-redux';
-import { removeAnnouncement, removeAnnouncements, setShowDeleteNotification } from '../../features/AnnouncementsSlice';
+import { removeAnnouncement, removeAnnouncements, setCategories, setShowDeleteNotification } from '../../features/AnnouncementsSlice';
 import instance from '../../services/fetchApi';
 import { arraysHaveSameContents } from '../../services/checkers';
+import AddCategoryModal from './modals/AddCategoryModal';
+import DeleteCategoryModal from './modals/DeleteCategoryModal';
 
 const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
@@ -34,7 +36,9 @@ const AnnouncementsTable = ({rows, announcementsLoading, socket, getAnnouncement
   const [announcementId, setAnnouncementId] = React.useState(null);
   const [bulkMode, setBulkMode] = React.useState(false);
   const [header, setHeader] = React.useState("");
-  const { showDeleteNotification } = useSelector(state => state.announcement)
+  const [openCategoryModal, setOpenCategoryModal] = React.useState(false);
+  const [openDeleteCategoryModal, setOpenDeleteCategoryModal] = React.useState(false);
+  const { showDeleteNotification, categories } = useSelector(state => state.announcement)
   const dispatch = useDispatch()
 
   React.useEffect(() => {
@@ -42,6 +46,20 @@ const AnnouncementsTable = ({rows, announcementsLoading, socket, getAnnouncement
     setPage(rows?.current_page)
 
   }, [rows?.current_page])
+
+  const getCategories = async () => {
+    await instance.get(`categories`)
+    .then((res) => {
+      dispatch(setCategories({categories: res.data.categories}))
+    })
+    .catch(() => {
+
+    })
+  }
+
+  React.useEffect(() => {
+    getCategories()
+  }, [])
 
   React.useEffect(() => {
 
@@ -124,7 +142,6 @@ const AnnouncementsTable = ({rows, announcementsLoading, socket, getAnnouncement
           ) : null
         }
 
-     
         <Button  
           variant="contained" 
           size='small' 
@@ -162,6 +179,7 @@ const AnnouncementsTable = ({rows, announcementsLoading, socket, getAnnouncement
               </TableCell>
               <TableCell>Message</TableCell>
               <TableCell >Link</TableCell>
+              <TableCell >Category</TableCell>
               <TableCell >
                 {announcementId ? "Actions" : null}
               </TableCell>
@@ -197,6 +215,11 @@ const AnnouncementsTable = ({rows, announcementsLoading, socket, getAnnouncement
                   {row?.message}
                 </TableCell>
                 <TableCell style={{ width: 160 }} >{row?.link}</TableCell>
+                <TableCell style={{ width: 160 }} >
+                  {
+                    categories?.find((a) => a.id === row?.category_id)?.name
+                  }
+                </TableCell>
                 <TableCell style={{ width: 160 }}>
                   {
                     announcementId === row?.id ? (
@@ -238,6 +261,30 @@ const AnnouncementsTable = ({rows, announcementsLoading, socket, getAnnouncement
         </Table>
       </TableContainer>
 
+      <div style={{float: "right", marginTop: "10px"}}>
+        <Button  
+          variant="contained" 
+          size='small' 
+          style={{borderRadius: "30px", marginRight: "10px"}} 
+          onClick={()=> {
+            setOpenCategoryModal(true)
+          }}
+        >
+          Add Category
+        </Button>
+      
+        <Button  
+          variant="contained" 
+          size='small' 
+          style={{borderRadius: "30px"}} 
+          onClick={()=> {
+            setOpenDeleteCategoryModal(true)
+          }}
+        >
+          Delete Category
+        </Button>
+      </div>
+
       <div style={{marginTop: "50px", marginLeft: "40%"}}>
         <Pagination
           count={ Math.ceil(rows?.total / rows?.per_page)}
@@ -260,6 +307,18 @@ const AnnouncementsTable = ({rows, announcementsLoading, socket, getAnnouncement
         announcement={announcementObj}
         editMode={editMode}
         socket={socket}
+        categories={categories}
+      />
+
+      <AddCategoryModal
+        open={openCategoryModal}
+        setOpen={setOpenCategoryModal}
+      />
+
+      <DeleteCategoryModal
+        open={openDeleteCategoryModal}
+        setOpen={setOpenDeleteCategoryModal}
+        categories={categories}
       />
 
       <AlertDialog
