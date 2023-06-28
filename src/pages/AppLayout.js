@@ -645,7 +645,7 @@ export default function AppLayout({socket}) {
                                 height: open ? null : "50px",
                                 marginLeft: open ? null : "6px"
                               }}
-                              onClick={()=> navigate(`${a.link}`)}
+                              onClick={()=> navigate(`${a.link}`, {state: {isInbox: true}})}
                             >
                                <ListItemButton
                                   sx={{

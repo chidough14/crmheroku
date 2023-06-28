@@ -281,7 +281,7 @@ const MyAccount = () => {
           {
             (params.id !== "mine") && (
               <Tooltip title="Send Message">
-                <Button onClick={() => navigate(`/messages`, { state: {id: params?.id, populateEmail: true}})}>
+                <Button onClick={() => navigate(`/messages`, { state: {id: params?.id, populateEmail: true, sendMessage: true}})}>
                   <MessageOutlined />
                 </Button>
               </Tooltip>

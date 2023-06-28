@@ -9,6 +9,7 @@ import instance from '../../services/fetchApi'
 import { getToken } from '../../services/LocalStorageService'
 import ComposeMessage from './ComposeMessage'
 import MuiAlert from '@mui/material/Alert';
+import { QuillDeltaToHtmlConverter } from 'quill-delta-to-html';
 
 const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
@@ -26,6 +27,7 @@ const SingleMessage = ({socket}) => {
   const navigate = useNavigate()
   const [openAlert, setOpenAlert] = useState(false)
   const [severity, setSeverity] = useState("")
+  const [content, setContent] = useState("")
   const [text, setText] = useState("")
 
   const token = getToken()
@@ -75,6 +77,12 @@ const SingleMessage = ({socket}) => {
 
   }, [params?.id])
 
+  useEffect(() => {
+
+    console.log(location);
+
+  }, [location])
+
   useEffect(()=> {
     if(location.state?.auto) {
       let mySubString = singleMessage?.message?.substring(
@@ -84,7 +92,16 @@ const SingleMessage = ({socket}) => {
 
       setActivityId(parseInt(mySubString))
     }
-   
+
+    if(singleMessage?.quill_message) {
+      var converter = new QuillDeltaToHtmlConverter(JSON.parse(singleMessage?.quill_message).ops, {});
+
+      var html = converter.convert(); 
+
+      setContent(html)
+    } else {
+      setContent("")
+    }
 
   
   }, [singleMessage])
@@ -171,7 +188,7 @@ const SingleMessage = ({socket}) => {
           {
             !replyMode &&
             <Tooltip title="Back to Messages" placement="top">
-              <Button onClick={() => navigate("/messages")}>
+              <Button onClick={() => navigate("/messages", {state: {isInbox: location?.state?.isInbox}})}>
                 <ArrowBack />
               </Button>
             </Tooltip>
@@ -216,19 +233,22 @@ const SingleMessage = ({socket}) => {
                 <Typography variant='h7'>
                   <b>Message</b> : 
                 </Typography>
+
                 <div style={{border: "1px solid black", width: "50%", height: "250px", borderRadius: "10px"}}>
-                  {!singleMessage?.sender_id ? singleMessage?.message.replace(/ *\([^)]*\) */g, "") : singleMessage?.message}
-                  {
-                    activityId ? (
-                      <>
-                      <p></p>
-                      <Button onClick={()=> singleMessage?.subject.includes("List") ? navigate(`/listsview/${activityId}`) : navigate(`/activities/${activityId}`) }>
-                        View {singleMessage?.subject.includes("List") ? "List" : "Activity"}
-                      </Button>
-                      </>
-                    ) : null
-                  }
-                
+                   <div dangerouslySetInnerHTML={{ __html: content }} />
+                   {
+                    // !singleMessage?.sender_id ? singleMessage?.message.replace(/ *\([^)]*\) */g, "") : singleMessage?.message
+                   }
+                   {
+                      activityId ? (
+                        <>
+                        <p></p>
+                        <Button onClick={()=> singleMessage?.subject.includes("List") ? navigate(`/listsview/${activityId}`) : navigate(`/activities/${activityId}`) }>
+                          View {singleMessage?.subject.includes("List") ? "List" : "Activity"}
+                        </Button>
+                        </>
+                      ) : null
+                   }
                 </div>
                 <p></p>
                 
