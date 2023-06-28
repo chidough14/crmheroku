@@ -15,6 +15,8 @@ import { getToken } from '../../services/LocalStorageService';
 import { CreateOutlined, InboxOutlined, OutboxOutlined, PhoneOutlined, SendOutlined } from '@mui/icons-material';
 import { Snackbar, Tooltip } from '@mui/material';
 import MuiAlert from '@mui/material/Alert';
+import { Quill } from 'react-quill';
+
 
 const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
@@ -83,8 +85,16 @@ const UserMessages = ({socket}) => {
 
 
   useEffect(() => {
-    if (state) {
+    if (state?.sendMessage) {
       setValue(2)
+    }
+
+    if (!state?.isInbox) {
+      setValue(1)
+    }
+
+    if (state?.isInbox) {
+      setValue(0)
     }
   }, [state])
 
@@ -109,10 +119,23 @@ const UserMessages = ({socket}) => {
 
     await instance.get(`inboxmessages?page=${page}`)
     .then((res)=> {
+      // let msg = res.data.inbox.data.map((a)=> {
+      //   const content = new Quill.import('delta').import(a.quill_message)
+        
+      //   return {
+      //     ...a,
+      //     quill_message: content
+      //   }
+      // })
+
+      // res.data.inbox.data = msg
+    
+      
       dispatch(setInboxMessages({inbox: res.data.inbox}))
       setInboxLoading(false)
     })
-    .catch(() => {
+    .catch((e) => {
+      console.log(e);
       showAlert()
     })
   }
@@ -121,10 +144,21 @@ const UserMessages = ({socket}) => {
     setOutboxLoading(true)
     await instance.get(`outboxmessages?page=${page}`)
     .then((res)=> {
+      // let msg = res.data.outbox.data.map((a)=> {
+      //   const content = new Quill.import('delta').import(a.quill_message)
+        
+      //   return {
+      //     ...a,
+      //     quill_message: content
+      //   }
+      // })
+
+      // res.data.outbox.data = msg
       dispatch(setOutboxMessages({outbox: res.data.outbox}))
       setOutboxLoading(false)
     })
-    .catch(() => {
+    .catch((e) => {
+      console.log(e);
       showAlert()
     })
   }

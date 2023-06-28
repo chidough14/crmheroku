@@ -8,6 +8,8 @@ import { useState } from 'react';
 import { addNewMessage, setSendingMessage } from '../../features/MessagesSlice';
 import { useEffect } from 'react';
 import MuiAlert from '@mui/material/Alert';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 
 
 const Alert = React.forwardRef(function Alert(props, ref) {
@@ -38,9 +40,9 @@ const validationSchema = yup.object({
   subject: yup
     .string('Enter your subject')
     .required('Subject is required'),
-  message: yup
-    .string('Enter your message')
-    .required('Message is required'),
+  // message: yup
+  //   .string('Enter your message')
+  //   .required('Message is required'),
 });
 
 
@@ -51,6 +53,7 @@ const ComposeMessage = ({replyMode, singleMessage, socket, state, sendingMessage
   const [alertType, setAlertType] = useState("")
   const [checked, setChecked] = useState(false)
   const [usersValue, setUsersValue] = useState([]);
+  const [value, setValue] = useState('')
   const dispatch = useDispatch()
  
   const handleCloseAlert = () => {
@@ -88,7 +91,8 @@ const ComposeMessage = ({replyMode, singleMessage, socket, state, sendingMessage
           subject: values.subject,
           message: values.message,
           sender_id: user.id,
-          receiver_id: ids
+          receiver_id: ids,
+          quill_message: value
         }
   
         await instance.post(`messages`, body)
@@ -100,6 +104,7 @@ const ComposeMessage = ({replyMode, singleMessage, socket, state, sendingMessage
              socket.emit('sendNotification', { recipientId: res.data.createdMessages[i].receiver_id, message: values.message });
           }
           showAlert("Messages sent", "success")
+          setValue("")
           resetForm()
           setUsersValue([])
 
@@ -117,15 +122,17 @@ const ComposeMessage = ({replyMode, singleMessage, socket, state, sendingMessage
         if (receiverId) {
           let body = {
             subject: values.subject,
-            message: values.message,
+            message: "testing",
             sender_id: user.id,
-            receiver_id: receiverId
+            receiver_id: receiverId,
+            quill_message: value
           }
     
           await instance.post(`messages`, body)
           .then((res) => {
             dispatch(setSendingMessage({isSending: false}))
             //dispatch(addNewMessage({message: res.data.createdMessage}))
+            setValue("")
             showAlert("Message sent", "success")
             resetForm()
 
@@ -173,6 +180,10 @@ const ComposeMessage = ({replyMode, singleMessage, socket, state, sendingMessage
     }
     
   }, [state?.populateEmail])
+
+  const saveData = (e) => {
+    setValue(e.getContents())
+  }
 
   return (
     <div>
@@ -263,7 +274,7 @@ const ComposeMessage = ({replyMode, singleMessage, socket, state, sendingMessage
             helperText={formik.touched.subject && formik.errors.subject}
           />
           <p></p>
-          <TextField
+          {/* <TextField
             required
             size='small'
             fullWidth
@@ -276,9 +287,17 @@ const ComposeMessage = ({replyMode, singleMessage, socket, state, sendingMessage
             onChange={formik.handleChange}
             error={formik.touched.message && Boolean(formik.errors.message)}
             helperText={formik.touched.message && formik.errors.message}
+          /> */}
+
+          <ReactQuill 
+            theme="snow" 
+            value={value} 
+            onChange={(e,f,g,h) => saveData(h)}
+            style={{height: "300px"}} 
           />
+
           <p></p>
-          <div style={{display: "flex", justifyContent: "space-between"}}>
+          <div style={{display: "flex", justifyContent: "space-between", marginTop: "50px"}}>
             <Button size='small' color="primary" variant="contained"  type="submit" style={{borderRadius: "30px"}}>
               {
                 sendingMessage ? (
