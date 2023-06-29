@@ -7,15 +7,16 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 import { ContentPasteOff, DeleteOutlined, EditOutlined, ViewListOutlined } from '@mui/icons-material';
-import {  Box, Button, Chip, Popover, Snackbar, Tab, Tabs, Tooltip, Typography } from '@mui/material';
+import {  Box, Button, Checkbox, Chip, Popover, Snackbar, Tab, Tabs, Tooltip, Typography } from '@mui/material';
 import moment from 'moment';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import DeleteDialog from '../userMessages/DeleteDialog';
 import instance from '../../services/fetchApi';
-import { removeMeeting } from '../../features/MeetingSlice';
+import { removeMeeting, removeMeetings } from '../../features/MeetingSlice';
 import MuiAlert from '@mui/material/Alert';
+import { arraysHaveSameContents } from '../../services/checkers';
 
 
 const Alert = React.forwardRef(function Alert(props, ref) {
@@ -32,6 +33,9 @@ const MeetingsTable = ({meetings, showModal, user, own}) => {
   const [openAlert, setOpenAlert] = React.useState(false)
   const [severity, setSeverity] = React.useState("");
   const [alertMessage, setAlertMessage] = React.useState("");
+  const [meetingId, setMeetingId] = React.useState();
+  const [meetingIds, setMeetingIds] = React.useState([]);
+  const [bulkMode, setBulkMode] = React.useState(false)
   const navigate = useNavigate()
 
   //popover//////
@@ -85,19 +89,37 @@ const MeetingsTable = ({meetings, showModal, user, own}) => {
   };
 
   const handleDelete = async () => {
-    await instance.delete(`meetings/${recordId}`)
-    .then(() => {
-      setOpenAlert(true)
-      setSeverity("success")
-      setAlertMessage("Meeting Deleted")
-      dispatch(removeMeeting({meetingId: recordId}))
-      setOpenDialog(false)
-    })
-    .catch(()=> {
-      setOpenAlert(true)
-      setSeverity("error")
-      setAlertMessage("Ooops an error was encountered")
-    })
+    if(bulkMode) {
+      await instance.post(`meetings-bulk-delete`, {meetingIds})
+      .then(() => {
+        setOpenAlert(true)
+        setSeverity("success")
+        setAlertMessage("Meetings Deleted")
+        dispatch(removeMeetings({meetingIds}))
+        setMeetingIds([])
+        setOpenDialog(false)
+      })
+      .catch(()=> {
+        setOpenAlert(true)
+        setSeverity("error")
+        setAlertMessage("Ooops an error was encountered")
+      })
+    } else {
+      await instance.delete(`meetings/${recordId}`)
+      .then(() => {
+        setOpenAlert(true)
+        setSeverity("success")
+        setAlertMessage("Meeting Deleted")
+        dispatch(removeMeeting({meetingId: recordId}))
+        setOpenDialog(false)
+      })
+      .catch(()=> {
+        setOpenAlert(true)
+        setSeverity("error")
+        setAlertMessage("Ooops an error was encountered")
+      })
+    }
+
   };
 
   const getInitials = (string) => {
@@ -185,11 +207,61 @@ const MeetingsTable = ({meetings, showModal, user, own}) => {
 
   return (
     <>
+      <div style={{display: "flex", justifyContent: "space-between"}}>
+        <Typography variant='h6'></Typography>
+
+        {
+          meetingIds.length ? (
+            <div>
+              <Tooltip title="Delete">
+                <DeleteOutlined 
+                  style={{marginBottom: "-5px", cursor: "pointer", marginRight: "5px"}} 
+                  onClick={() => {
+                    setOpenDialog(true)
+                    setBulkMode(true)
+                  }}
+                />
+              </Tooltip>
+
+              <span>
+                { meetingIds.length } Items Selected
+              </span>
+            </div>
+          ) : null
+        }
+
+       <Typography variant='h6'></Typography>
+      </div>
+
       <TableContainer component={Paper}>
-        <Table sx={{ minWidth: 650 }} aria-label="simple table">
+        <Table sx={{ minWidth: 500 }} aria-label="custom pagination table">
           <TableHead>
             <TableRow>
-              {/* <TableCell>Title</TableCell> */}
+              <TableCell>
+                {
+                  own && (
+                    <Tooltip title="Select all">
+                      <Checkbox
+                        checked={arraysHaveSameContents(meetings?.map((a) => a.id), meetingIds)}
+                        indeterminate={meetingIds.length > 0 && meetingIds.length < meetings?.length}
+                        onChange={(e,f) => {
+                          if (f) {
+                            let ids = meetings?.map((a) => a.id)
+        
+                            setMeetingIds(ids)
+                          } else {
+                            setMeetingIds([])
+                          }
+                        }}
+                        inputProps={{ 'aria-label': 'controlled' }}
+                        style={{marginRight: "-24px"}}
+                      />
+                    </Tooltip>
+                  )
+                }
+               
+
+              </TableCell>
               <TableCell >Meeting Name</TableCell>
 
              { !own && <TableCell >Host</TableCell>}
@@ -198,7 +270,7 @@ const MeetingsTable = ({meetings, showModal, user, own}) => {
               <TableCell >Date</TableCell>
               <TableCell >Status</TableCell>
               <TableCell >Invited users</TableCell>
-              <TableCell align='right' >Actions</TableCell>
+              <TableCell width={300}>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -218,9 +290,33 @@ const MeetingsTable = ({meetings, showModal, user, own}) => {
             
               <TableRow
                 key={row.meetingId}
-                sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                onMouseEnter={() => {
+                  setMeetingId(row.id)
+                }}
+                onMouseLeave={()=> {
+                  setMeetingId(null)
+                }}
               >
-                <TableCell component="th" scope="row">
+                <TableCell>
+                  {
+                    own && (
+                      <Checkbox
+                        checked={meetingIds.map((a) => a).includes(row.id)}
+                        onChange={(e,f) => {
+                          if(f) {
+                            setMeetingIds([...meetingIds, row.id])
+                          } else {
+                            setMeetingIds(meetingIds.filter((b) => b !== row.id))
+                          }
+                        }}
+                        inputProps={{ 'aria-label': 'controlled' }}
+                        style={{marginRight: "-24px"}}
+                      />
+                    )
+                  }
+                 
+                </TableCell>
+                <TableCell>
                   {row.meetingName}
                 </TableCell>
 
@@ -280,37 +376,44 @@ const MeetingsTable = ({meetings, showModal, user, own}) => {
                 }
                 </TableCell>
 
-                <TableCell align='right'>
-                  <Tooltip title="Edit" placement="top">
-                    <Button
-                      disabled={!row.status || moment(row.event.end).isBefore(moment()) || row.user_id !== user.id}
-                      onClick={() => showModal(row)}
-                    >
-                      <EditOutlined />
-                    </Button>
-                    
-                  </Tooltip>
-                  <Tooltip title="Delete" placement="top" disabled={row.user_id !== user.id}>
-                    <Button>
-                      <DeleteOutlined
-                        style={{cursor: "pointer"}}
-                        onClick={() => deleteMeeting(row)}
-                      />
-                    </Button>
-                   
-                  </Tooltip>
+                <TableCell  width={300}>
+                  {
+                    meetingId === row.id ? (
+                      <>
+                        <Tooltip title="Edit" placement="top">
+                          <Button
+                            disabled={!row.status || moment(row.event.end).isBefore(moment()) || row.user_id !== user.id}
+                            onClick={() => showModal(row)}
+                          >
+                            <EditOutlined />
+                          </Button>
+                          
+                        </Tooltip>
+                        <Tooltip title="Delete" placement="top" disabled={row.user_id !== user.id}>
+                          <Button>
+                            <DeleteOutlined
+                              style={{cursor: "pointer"}}
+                              onClick={() => deleteMeeting(row)}
+                            />
+                          </Button>
+                        
+                        </Tooltip>
 
-                  <Tooltip title="Copy link" placement="top">
-                    <Button
-                      onClick={() => {
-                        navigator.clipboard.writeText(`${process.env.REACT_APP_HOST}/join/${row.meetingId}`)
-                        alert(`Link copied : ${process.env.REACT_APP_HOST}/join/${row.meetingId}`)
-                      }}
-                    >
-                      <ContentCopyIcon
-                      />
-                    </Button>
-                  </Tooltip>
+                        <Tooltip title="Copy link" placement="top">
+                          <Button
+                            onClick={() => {
+                              navigator.clipboard.writeText(`${process.env.REACT_APP_HOST}/join/${row.meetingId}`)
+                              alert(`Link copied : ${process.env.REACT_APP_HOST}/join/${row.meetingId}`)
+                            }}
+                          >
+                            <ContentCopyIcon
+                            />
+                          </Button>
+                        </Tooltip>
+                      </>
+                    ) : null
+                  }
+                 
                 </TableCell>
               </TableRow>
             ))}

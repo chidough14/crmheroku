@@ -17,7 +17,7 @@ export const AnnouncementsSlice = createSlice({
       state.announcements = action.payload.announcements
     },
     addAnnouncement: (state, action) => {
-      state.announcements.data = [...state.announcements.data, action.payload.announcement]
+      state.announcements.data = [action.payload.announcement, ...state.announcements.data]
     },
     addAnnouncements: (state, action) => {
       state.announcements.data = [...state.announcements.data, ...action.payload.announcements]

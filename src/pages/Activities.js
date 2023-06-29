@@ -522,27 +522,75 @@ const Activities = ({socket}) => {
           >
           
             
-            <MenuItem onClick={() => dispatch(addActivityIds({activityIds: activities?.map((a) => a.id)}))}>
+            <MenuItem 
+              onClick={() => {
+                if (showTrash) {
+                  dispatch(addActivityIds({activityIds: trashActivities?.map((a) => a.id)}))
+                } else {
+                  dispatch(addActivityIds({activityIds: activities?.map((a) => a.id)}))
+                }
+              }}
+            >
               All
             </MenuItem>
 
-            <MenuItem onClick={() => dispatch(removeActivityIds({activityIds: activities?.map((a) => a.id)}))}>
+            <MenuItem 
+              onClick={() => {
+                if (showTrash) {
+                  dispatch(removeActivityIds({activityIds: trashActivities?.map((a) => a.id)}))
+                } else {
+                  dispatch(removeActivityIds({activityIds: activities?.map((a) => a.id)}))
+                }
+              }}
+            >
               None
             </MenuItem>
 
-            <MenuItem onClick={() => dispatch(addActivityIds({activityIds: activities?.filter((b) => b.probability === "High").map((a) => a.id)}))}>
+            <MenuItem 
+              onClick={()=> {
+                if (showTrash) {
+                  dispatch(addActivityIds({activityIds: trashActivities?.filter((b) => b.probability === "High").map((a) => a.id)}))
+                } else {
+                  dispatch(addActivityIds({activityIds: activities?.filter((b) => b.probability === "High").map((a) => a.id)}))
+                }
+              }}
+            >
               High
             </MenuItem>
 
-            <MenuItem onClick={() => dispatch(addActivityIds({activityIds: activities?.filter((b) => b.probability === "Medium").map((a) => a.id)}))}>
+            <MenuItem
+              onClick={()=> {
+                if (showTrash) {
+                  dispatch(addActivityIds({activityIds: trashActivities?.filter((b) => b.probability === "Medium").map((a) => a.id)}))
+                } else {
+                  dispatch(addActivityIds({activityIds: activities?.filter((b) => b.probability === "Medium").map((a) => a.id)}))
+                }
+              }}
+            >
               Medium
             </MenuItem>
 
-            <MenuItem onClick={() => dispatch(addActivityIds({activityIds: activities?.filter((b) => b.probability === "Low").map((a) => a.id)}))}>
+            <MenuItem 
+              onClick={()=> {
+                if (showTrash) {
+                  dispatch(addActivityIds({activityIds: trashActivities?.filter((b) => b.probability === "Low").map((a) => a.id)}))
+                } else {
+                  dispatch(addActivityIds({activityIds: activities?.filter((b) => b.probability === "Low").map((a) => a.id)}))
+                }
+              }}
+            >
               Low
             </MenuItem>
 
-            <MenuItem onClick={() => dispatch(addActivityIds({activityIds: activities?.filter((b) => b.probability === "Closed").map((a) => a.id)}))}>
+            <MenuItem 
+              onClick={()=> {
+                if (showTrash) {
+                  dispatch(addActivityIds({activityIds: trashActivities?.filter((b) => b.probability === "Closed").map((a) => a.id)}))
+                } else {
+                  dispatch(addActivityIds({activityIds: activities?.filter((b) => b.probability === "Closed").map((a) => a.id)}))
+                }
+              }}
+            >
               Closed
             </MenuItem>
           </Menu>
