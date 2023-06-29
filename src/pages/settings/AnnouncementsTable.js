@@ -6,7 +6,7 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
-import { Button, Checkbox, Pagination, Snackbar, Tooltip, Typography } from '@mui/material';
+import { Box, Button, Checkbox, CircularProgress, Pagination, Snackbar, Tooltip, Typography } from '@mui/material';
 import { AddOutlined, DeleteOutline, EditOutlined } from '@mui/icons-material';
 import AddAnnouuncementModal from './modals/AddAnnouuncementModal';
 import MuiAlert from '@mui/material/Alert';
@@ -23,7 +23,7 @@ const Alert = React.forwardRef(function Alert(props, ref) {
 });
 
 
-const AnnouncementsTable = ({rows, announcementsLoading, socket, getAnnouncements}) => {
+const AnnouncementsTable = ({rows, loading, socket, getAnnouncements}) => {
   const [openModal, setOpenModal] = React.useState(false);
   const [page, setPage] = React.useState(1);
   const [openAlert, setOpenAlert] = React.useState(false);
@@ -186,7 +186,16 @@ const AnnouncementsTable = ({rows, announcementsLoading, socket, getAnnouncement
             </TableRow>
           </TableHead>
           <TableBody>
-            {rows?.data?.map((row) => (
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={6}>
+                  <Box sx={{ display: 'flex', marginLeft: "45%" }}>
+                    <CircularProgress />
+                  </Box>
+                </TableCell>
+              </TableRow>
+            ) :
+            rows?.data?.map((row) => (
               <TableRow
                 key={row?.id}
                 sx={{ '&:last-child td, &:last-child th': { border: 0 } }}

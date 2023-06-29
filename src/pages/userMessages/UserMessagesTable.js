@@ -265,7 +265,7 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
                   </Tooltip>
       } else {
         return   <Tooltip title="Mark as read">
-                    <MarkAsUnreadOutlined
+                    <MarkEmailRead
                       style={{cursor: "pointer"}}
                       onClick={()=> markAsRead("unread")}
                     />
@@ -356,129 +356,59 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
 
   return (
     <>
-    <div style={{display: "flex"}}>
-      <Typography variant='h7'><b>{ isInbox ? "Inbox" : "Outbox"}</b></Typography>
+      <div style={{display: "flex"}}>
+        <Typography variant='h7'><b>{ isInbox ? "Inbox" : "Outbox"}</b></Typography>
 
-      {
-        messageIds.length ? (
-          <div style={{marginLeft: "30px"}}>
+        {
+          messageIds.length ? (
+            <div style={{marginLeft: "30px"}}>
 
-            {
-              isInbox && (
-                <Tooltip title="Mark as read/unread">
-                  <MarkEmailRead
-                    style={{cursor: "pointer", marginLeft: "20px"}}
-                    onClick={()=> massMarkAsRead()}
-                  />
-                </Tooltip>
-              )
-            }
-    
-            <Tooltip title="Delete">
-              <DeleteOutlined
-                style={{cursor: "pointer", marginLeft: "20px"}}
-                onClick={()=> setOpenDialog(true)}
-              />
-             </Tooltip>
-
-             <span style={{marginLeft: "10px"}}>
-              {messageIds.length} Items Selected
-            </span>
-          </div>
-        ) : null
-      }
-
-
-      {
-        showUpdateNotification && (
-          <span style={{color: "green", marginLeft: "12px"}}>Updating...</span>
-        )
-      }
-
-     
-    </div>
-   
-    <TableContainer component={Paper}>
-      <Table sx={{ minWidth: 650 }} aria-label="custom pagination table">
-        <TableHead>
-            <TableRow>
-              <TableCell >
-                <Checkbox
-                  checked={arraysHaveSameContents(messages?.data?.map((a) => a.id), messageIds.map((a) => a.id))}
-                  indeterminate={messageIds.length > 0 && messageIds.length < messages?.data?.length}
-                  onChange={(e,f) => {
-                    if (f) {
-                      let ids = messages?.data?.map((a) => {
-                        return {
-                          id: a.id,
-                          read: a.isRead
-                        }
-                      })
-  
-                      setMessageIds(ids)
-                    } else {
-                      setMessageIds([])
-                    }
-                  }}
-                  inputProps={{ 'aria-label': 'controlled' }}
+              {
+                isInbox && (
+                  <Tooltip title="Mark as read/unread">
+                    <MarkEmailRead
+                      style={{cursor: "pointer", marginLeft: "20px"}}
+                      onClick={()=> massMarkAsRead()}
+                    />
+                  </Tooltip>
+                )
+              }
+      
+              <Tooltip title="Delete">
+                <DeleteOutlined
+                  style={{cursor: "pointer", marginLeft: "20px"}}
+                  onClick={()=> setOpenDialog(true)}
                 />
+              </Tooltip>
 
-                <span>
-                  <Button
-                    id="basic-button"
-                    aria-controls={openMenu ? 'basic-menu' : undefined}
-                    aria-haspopup="true"
-                    aria-expanded={openMenu ? 'true' : undefined}
-                    onClick={handleClick}
-                  >
-                    <ArrowDropDown />
-                  </Button>
-                  <Menu
-                    id="basic-menu"
-                    anchorEl={anchorEl}
-                    open={openMenu}
-                    onClose={handleCloseMenu}
-                    MenuListProps={{
-                      'aria-labelledby': 'basic-button',
-                    }}
-                  >
-                    {isInbox &&
-                      <>
-                        <MenuItem 
-                          onClick={() => {
-                            let readIds = messages?.data?.filter((a) => a.isRead).map((b) => {
-                              return {
-                                id: b.id,
-                                read: b.isRead
-                              }
-                            })
-                        
-                            setMessageIds(readIds)
-                          }}
-                        >
-                          Read
-                        </MenuItem>
-                        
-                        <MenuItem 
-                          onClick={() => {
-                            let readIds = messages?.data?.filter((a) => !a.isRead).map((b) => {
-                              return {
-                                id: b.id,
-                                read: b.isRead
-                              }
-                            })
-                        
-                            setMessageIds(readIds)
-                          }}
-                        >
-                          Unread
-                        </MenuItem>
-                      </>
-                    }
-                   
-                    <MenuItem 
-                      onClick={() => {
-                        let ids = messages.data.map((a) => {
+              <span style={{marginLeft: "10px"}}>
+                {messageIds.length} Items Selected
+              </span>
+            </div>
+          ) : null
+        }
+
+
+        {
+          showUpdateNotification && (
+            <span style={{color: "green", marginLeft: "12px"}}>Updating...</span>
+          )
+        }
+
+      
+      </div>
+    
+      <TableContainer component={Paper}>
+        <Table sx={{ minWidth: 650 }} aria-label="custom pagination table">
+          <TableHead>
+              <TableRow>
+                <TableCell >
+                  <Checkbox
+                    checked={arraysHaveSameContents(messages?.data?.map((a) => a.id), messageIds.map((a) => a.id))}
+                    indeterminate={messageIds.length > 0 && messageIds.length < messages?.data?.length}
+                    onChange={(e,f) => {
+                      if (f) {
+                        let ids = messages?.data?.map((a) => {
                           return {
                             id: a.id,
                             read: a.isRead
@@ -486,181 +416,252 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
                         })
     
                         setMessageIds(ids)
-                      }}
-                    >
-                      All
-                    </MenuItem>
-                    
-                    <MenuItem 
-                      onClick={() => {
-    
+                      } else {
                         setMessageIds([])
+                      }
+                    }}
+                    inputProps={{ 'aria-label': 'controlled' }}
+                  />
+
+                  <span>
+                    <Button
+                      id="basic-button"
+                      aria-controls={openMenu ? 'basic-menu' : undefined}
+                      aria-haspopup="true"
+                      aria-expanded={openMenu ? 'true' : undefined}
+                      onClick={handleClick}
+                    >
+                      <ArrowDropDown />
+                    </Button>
+                    <Menu
+                      id="basic-menu"
+                      anchorEl={anchorEl}
+                      open={openMenu}
+                      onClose={handleCloseMenu}
+                      MenuListProps={{
+                        'aria-labelledby': 'basic-button',
                       }}
                     >
-                      None
-                    </MenuItem>
-                  </Menu>
-                </span>
-              </TableCell>
-              <TableCell >Subject</TableCell>
-
-              {isInbox && <TableCell >Sent By</TableCell>}
-              {!isInbox && <TableCell >Recipient</TableCell>}
-              {isInbox && <TableCell >Message</TableCell>}
-              <TableCell >Date Sent</TableCell>
-              <TableCell >Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {
-              !messages?.data?.length ? (
-                <div style={{marginTop: "50px", marginLeft: "150%"}}>
-                  <ContentPasteOff sx={{fontSize: "64px"}}/>
-                  <Typography variant='h7' sx={{display: "flex", width: "150px"}}>No Messages</Typography>
-                </div>
-              ) : (
-                <>
-                 {
-                    loading ? (
-                      <div style={{ marginLeft: "200%", marginTop: "70px" }}>
-                        <Typography variant='h7'>
-                            <b>Loading...</b>
-                          </Typography>
-                      </div>
-                    ) :
-                    messages?.data?.map((row) => (
-                      <TableRow
-                        key={row.name} 
-                        sx={{backgroundColor: (isInbox && row.isRead) ? "lightgrey" : null}} 
-                        onMouseEnter={() => {
-                          setMessageId(row.id)
-                          setShowTableActions(true)
-                        }}
-                        onMouseLeave={()=> {
-                          setShowTableActions(false)
+                      {isInbox &&
+                        <>
+                          <MenuItem 
+                            onClick={() => {
+                              let readIds = messages?.data?.filter((a) => a.isRead).map((b) => {
+                                return {
+                                  id: b.id,
+                                  read: b.isRead
+                                }
+                              })
+                          
+                              setMessageIds(readIds)
+                            }}
+                          >
+                            Read
+                          </MenuItem>
+                          
+                          <MenuItem 
+                            onClick={() => {
+                              let readIds = messages?.data?.filter((a) => !a.isRead).map((b) => {
+                                return {
+                                  id: b.id,
+                                  read: b.isRead
+                                }
+                              })
+                          
+                              setMessageIds(readIds)
+                            }}
+                          >
+                            Unread
+                          </MenuItem>
+                        </>
+                      }
+                    
+                      <MenuItem 
+                        onClick={() => {
+                          let ids = messages.data.map((a) => {
+                            return {
+                              id: a.id,
+                              read: a.isRead
+                            }
+                          })
+      
+                          setMessageIds(ids)
                         }}
                       >
-                        <TableCell component="th" scope="row">
-                          <Checkbox
-                             checked={messageIds.map((a) => a.id).includes(row.id)}
-                             onChange={(e,f) => {
-                             
-                               if(f) {
-                                 setMessageIds([...messageIds, {id: row.id, read: row.isRead}])
-                               } else {
-                                setMessageIds(messageIds.filter((b) => b.id !== row.id))
-                               }
-                             }}
-                            inputProps={{ 'aria-label': 'controlled' }}
-                          />
-                        </TableCell>
-
-                        <TableCell component="th" scope="row">
-                          {row.subject}
-                        </TableCell>
-
-                        {
-                          isInbox &&
-                          <TableCell style={{ width: 160 }} >
-                            {/* {allUsers?.find((a) => a.id === row.sender_id)?.name} */}
-                            <Tooltip title={allUsers?.find((a)=> a.id === row.sender_id)?.name}>
-                              {getImage(row)}
-                            </Tooltip>
-                          </TableCell>
-                        }
+                        All
+                      </MenuItem>
                       
-                        {
-                          !isInbox &&
-                          <TableCell style={{ width: 160 }} >
-                            {allUsers?.find((a) => a.id === row.receiver_id)?.name}
+                      <MenuItem 
+                        onClick={() => {
+      
+                          setMessageIds([])
+                        }}
+                      >
+                        None
+                      </MenuItem>
+                    </Menu>
+                  </span>
+                </TableCell>
+                <TableCell >Subject</TableCell>
+
+                {isInbox && <TableCell >Sent By</TableCell>}
+                {!isInbox && <TableCell >Recipient</TableCell>}
+                {isInbox && <TableCell >Message</TableCell>}
+                <TableCell >Date Sent</TableCell>
+                <TableCell >Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {
+                !messages?.data?.length ? (
+                  <div style={{marginTop: "50px", marginLeft: "150%"}}>
+                    <ContentPasteOff sx={{fontSize: "64px"}}/>
+                    <Typography variant='h7' sx={{display: "flex", width: "150px"}}>No Messages</Typography>
+                  </div>
+                ) : (
+                  <>
+                  {
+                      loading ? (
+                        <div style={{ marginLeft: "200%", marginTop: "70px" }}>
+                          <Typography variant='h7'>
+                              <b>Loading...</b>
+                            </Typography>
+                        </div>
+                      ) :
+                      messages?.data?.map((row) => (
+                        <TableRow
+                          key={row.name} 
+                          sx={{ backgroundColor: (isInbox && row.isRead) ? "lightgrey" : null, cursor: "pointer"}} 
+                          onMouseEnter={() => {
+                            setMessageId(row.id)
+                            setShowTableActions(true)
+                          }}
+                          onMouseLeave={()=> {
+                            setShowTableActions(false)
+                          }}
+                          onClick={()=> navigate(`/messages/${row.id}`, {state: {isInbox, isRead: row.isRead, auto: !row.sender_id ? true : false}})}
+                        >
+                          <TableCell component="th" scope="row">
+                            <Checkbox
+                              checked={messageIds.map((a) => a.id).includes(row.id)}
+                              onChange={(e,f) => {
+                              
+                                if(f) {
+                                  setMessageIds([...messageIds, {id: row.id, read: row.isRead}])
+                                } else {
+                                  setMessageIds(messageIds.filter((b) => b.id !== row.id))
+                                }
+                              }}
+                              inputProps={{ 'aria-label': 'controlled' }}
+                            />
                           </TableCell>
-                        }
 
-                        { isInbox &&
-                          <TableCell style={{ width: 160 }} >
-                            {
-                              row.message.length > 15 ?
-                              `${row.message.substring(0, 15)}.....` :
-                              row.message
-                            }
+                          <TableCell component="th" scope="row">
+                            {row.subject}
                           </TableCell>
-                        }
-                      
-                        <TableCell style={{ width: 160 }} >
-                          {moment(row.created_at).format("MMMM Do YYYY")}
-                        </TableCell>
-                        <TableCell style={{ width: 160 }} >
-                          <div style={{display: "flex", justifyContent: "space-evenly"}}>
 
-                            {
-                              (showTableActions && messageId === row.id) && (
-                                <>
-                                  <Tooltip title="View message">
-                                    <ReadMoreOutlined
-                                      style={{cursor: "pointer"}}
-                                      onClick={()=> navigate(`/messages/${row.id}`, {state: {isInbox, isRead: row.isRead, auto: !row.sender_id ? true : false}})}
-                                    />
-                                  </Tooltip>
+                          {
+                            isInbox &&
+                            <TableCell style={{ width: 160 }} >
+                              {/* {allUsers?.find((a) => a.id === row.sender_id)?.name} */}
+                              <Tooltip title={allUsers?.find((a)=> a.id === row.sender_id)?.name}>
+                                {getImage(row)}
+                              </Tooltip>
+                            </TableCell>
+                          }
+                        
+                          {
+                            !isInbox &&
+                            <TableCell style={{ width: 160 }} >
+                              {allUsers?.find((a) => a.id === row.receiver_id)?.name}
+                            </TableCell>
+                          }
 
-                                  {
-                                    renderMarkAsRead(row)
-                                  }
+                          { isInbox &&
+                            <TableCell style={{ width: 160 }} >
+                              {
+                                row.message.length > 15 ?
+                                `${row.message.substring(0, 15)}.....` :
+                                row.message
+                              }
+                            </TableCell>
+                          }
+                        
+                          <TableCell style={{ width: 160 }} >
+                            {moment(row.created_at).format("MMMM Do YYYY")}
+                          </TableCell>
+                          <TableCell style={{ width: 160 }} >
+                            <div style={{display: "flex", justifyContent: "space-evenly"}}>
 
-                                  <Tooltip title="Delete">
-                                    <DeleteOutlined
-                                      style={{cursor: "pointer"}}
-                                      onClick={()=> deleteMessage(row)}
-                                    />
-                                  </Tooltip>
-                                </>
-                              )
-                            }
+                              {
+                                (showTableActions && messageId === row.id) && (
+                                  <>
+                                    {/* <Tooltip title="View message">
+                                      <ReadMoreOutlined
+                                        style={{cursor: "pointer"}}
+                                        onClick={()=> navigate(`/messages/${row.id}`, {state: {isInbox, isRead: row.isRead, auto: !row.sender_id ? true : false}})}
+                                      />
+                                    </Tooltip> */}
 
-                            {
-                              (showNewMessageTag && row.new) && (
-                                <Chip label="New" color="success" />
-                              )
-                            }
-                          
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  }
-                </>
-              )
-            }
-           
-          </TableBody>
-      </Table>
-    </TableContainer>
+                                    {
+                                      renderMarkAsRead(row)
+                                    }
+
+                                    <Tooltip title="Delete">
+                                      <DeleteOutlined
+                                        style={{cursor: "pointer"}}
+                                        onClick={()=> deleteMessage(row)}
+                                      />
+                                    </Tooltip>
+                                  </>
+                                )
+                              }
+
+                              {
+                                (showNewMessageTag && row.new) && (
+                                  <Chip label="New" color="success" />
+                                )
+                              }
+                            
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    }
+                  </>
+                )
+              }
+            
+            </TableBody>
+        </Table>
+      </TableContainer>
 
 
-    <div style={{marginTop: "20px"}}>
-      <Pagination
-        count={ Math.ceil(messages?.total / messages?.per_page)}
-        page={page}
-        onChange={(page, idx) => {
-          handleChangePage(page, idx)
-        }}
-        color="secondary"
-        showFirstButton
-        showLastButton
+      <div style={{marginTop: "20px"}}>
+        <Pagination
+          count={ Math.ceil(messages?.total / messages?.per_page)}
+          page={page}
+          onChange={(page, idx) => {
+            handleChangePage(page, idx)
+          }}
+          color="secondary"
+          showFirstButton
+          showLastButton
+        />
+      </div>
+
+      <DeleteDialog
+        open={openDialog}
+        setOpen={setOpenDialog}
+        handleDelete={handleDelete}
+        showDeleteteNotification={showDeleteteNotification}
       />
-    </div>
 
-    <DeleteDialog
-      open={openDialog}
-      setOpen={setOpenDialog}
-      handleDelete={handleDelete}
-      showDeleteteNotification={showDeleteteNotification}
-    />
-
-    <Snackbar open={openAlert} autoHideDuration={6000} onClose={handleCloseAlert}>
-      <Alert onClose={handleCloseAlert} severity={severity} sx={{ width: '100%' }}>
-        { text }
-      </Alert>
-    </Snackbar>
+      <Snackbar open={openAlert} autoHideDuration={6000} onClose={handleCloseAlert}>
+        <Alert onClose={handleCloseAlert} severity={severity} sx={{ width: '100%' }}>
+          { text }
+        </Alert>
+      </Snackbar>
     </>
   );
 }
