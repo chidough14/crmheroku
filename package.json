@@ -44,7 +44,7 @@
   "scripts": {
     "start-client": "react-scripts start",
     "build-client": "react-scripts build",
-    "build": "react-scripts --openssl-legacy-provider build && (cd chatserver && npm install)",
+    "build": "react-scripts build && (cd chatserver && npm install)",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "start": "cd chatserver && npm start",
