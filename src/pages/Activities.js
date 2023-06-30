@@ -296,12 +296,10 @@ const Activities = ({socket}) => {
   }, [searchQuery])
 
   const setSortOption =  (value) => {
-    //setFetchData(true)
     dispatch(setSortOptionValue({option: value}))
   }
 
   const closeSearch =  () => {
-    //setSearchQuery("")
     setShowSearch(false)
   }
 
