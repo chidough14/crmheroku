@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes, Navigate, useNavigate } from "react-router-dom";
+import { BrowserRouter, Route, Routes, useNavigate } from "react-router-dom";
 import LoginReg from "./pages/auth/LoginReg";
 import ResetPassword from "./pages/auth/ResetPassword";
 import SendPasswordResetEmail from "./pages/auth/SendPasswordResetEmail";
@@ -46,6 +46,7 @@ function App() {
   const auth = useSelector(state => state.auth)
   const dispatch = useDispatch()
   const { data, isSuccess } = useGetLoggedUserQuery(token)
+  const navigate = useNavigate()
   
   useEffect(() => {
    
@@ -157,7 +158,7 @@ function App() {
   return (
     <>
       {/* <SessionTimer socket={socket} /> */}
-      <BrowserRouter>
+      {/* <BrowserRouter> */}
         <Routes>
           <Route path="/" element={<AppLayout  socket={socket} />}>
             <Route index element={<Home />} />
@@ -185,7 +186,7 @@ function App() {
           </Route>
           <Route path="*" element={<h1>Error 404 Page not found !!</h1>} />
         </Routes>
-      </BrowserRouter>
+      {/* </BrowserRouter> */}
     </>
   );
 }

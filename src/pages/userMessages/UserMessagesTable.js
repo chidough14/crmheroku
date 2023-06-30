@@ -552,6 +552,9 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
                                   setMessageIds(messageIds.filter((b) => b.id !== row.id))
                                 }
                               }}
+                              onClick={(e)=> {
+                                  e.stopPropagation()
+                              }}
                               inputProps={{ 'aria-label': 'controlled' }}
                             />
                           </TableCell>
