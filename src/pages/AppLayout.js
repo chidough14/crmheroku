@@ -35,7 +35,7 @@ import InboxIcon from '@mui/icons-material/MoveToInbox';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import StarBorder from '@mui/icons-material/StarBorder';
-import { setOnlineUsers } from '../features/userSlice';
+import { reloadFollowers, setOnlineUsers } from '../features/userSlice';
 import ActivityModal from '../components/activities/ActivityModal';
 import { setReloadMessages } from '../features/MessagesSlice';
 
@@ -277,6 +277,11 @@ export default function AppLayout({socket}) {
 
     socket.on('userLogoutResponse', (arr) => {
       dispatch(setOnlineUsers({onlineUsers: arr}))
+      
+    });
+
+    socket.on('reloadFollowers', (data) => {
+     dispatch(reloadFollowers({reload: true}))
       
     });
   }, [socket])
