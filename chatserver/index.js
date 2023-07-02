@@ -71,6 +71,15 @@ socketIO.on('connection', (socket) => {
     }
   });
 
+
+  socket.on('userFollowed', (data) => {
+    let xx = arr.find((a)=> a.userId === data.recipientId)
+
+    if(xx) {
+      socketIO.to(xx.id).emit('reloadFollowers', "User followed");
+    }
+  });
+
   socket.on('sendConferenceNotification', (data) => {
     for (let i=0; i<arr.length; i++) {
       const { message } = data;
