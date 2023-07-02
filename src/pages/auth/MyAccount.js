@@ -3,11 +3,11 @@ import React, { useEffect, useReducer, useState } from 'react';
 import { getToken } from '../../services/LocalStorageService';
 import { useChangeUserPasswordMutation } from '../../services/userAuthApi';
 import { useDispatch, useSelector } from 'react-redux';
-import { ChangeCircleOutlined, MessageOutlined, PersonOutlineOutlined, SaveOutlined} from '@mui/icons-material';
+import { ChangeCircleOutlined, MessageOutlined, PeopleOutlineOutlined, SaveOutlined, UpdateOutlined} from '@mui/icons-material';
 import moment from 'moment';
 import UploadWidget from './UploadWidget';
 import instance from '../../services/fetchApi';
-import { setShowSaveNotification, setShowSpinner, setUserInfo, updateAllUsers } from '../../features/userSlice';
+import { addFollowers, reloadFollowers, removeFollower, setFollwed, setFollwers, setShowSaveNotification, setShowSpinner, setUserInfo, updateAllUsers } from '../../features/userSlice';
 import avatar from '../../assets/avtar9.jpg';
 import MuiAlert from '@mui/material/Alert';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -17,7 +17,7 @@ const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
 });
 
-const MyAccount = () => {
+const MyAccount = ({ socket }) => {
 
   const [error, setError] = useState({
     status: false,
@@ -28,7 +28,22 @@ const MyAccount = () => {
   const [imageLoaded, setImageLoaded] = useState(false)
   const [changeUserPassword] = useChangeUserPasswordMutation()
   const token = getToken()
-  const {id, name, email, created_at, profile_pic, allUsers, showSpinner, showSaveNotification, onlineUsers} = useSelector(state => state.user)
+  const {
+    id, 
+    name, 
+    email, 
+    created_at, 
+    profile_pic, 
+    allUsers, 
+    showSpinner, 
+    showSaveNotification, 
+    onlineUsers,
+    followers,
+    followed,
+    usersFollowed,
+    usersFollowers,
+    reload
+  } = useSelector(state => state.user)
   const dispatch = useDispatch()
   const [openAlert, setOpenAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
@@ -39,6 +54,7 @@ const MyAccount = () => {
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [lastSeen, setLastSeen] = useState("")
   const [loadingLastSeen, setLoadingLastSeen] = useState(false)
+  const [showUpdateNotification, setShowUpdateNotification] = useState(false)
   const params = useParams()
   const navigate = useNavigate()
 
@@ -83,6 +99,49 @@ const MyAccount = () => {
       showAlert("Ooops an error was encountred", "error")
     })
   }
+
+  const getFollwers = async (id = null) => {
+    let url
+    url = id ? `followers/${id}` : `followers`
+    await instance.get(url)
+    .then((res) => {
+      if(id) {
+        dispatch(setFollwers({followers: res.data.followers}))
+      } else {
+        dispatch(setFollwers({usersFollowers: res.data.followers}))
+      }
+    })
+    .catch(() => {
+      
+    })
+  }
+
+  const getFollwed = async (id = null) => {
+    let url
+    url = id ? `followed/${id}` : `followed`
+    await instance.get(url)
+    .then((res) => {
+       if(id) {
+        dispatch(setFollwed({followed: res.data.followed}))
+      } else {
+        dispatch(setFollwed({usersFollowed: res.data.followed}))
+      }
+    })
+    .catch(() => {
+      
+    })
+  }
+
+  
+  useEffect(() => {
+    if (params.id === "mine") {
+      getFollwers()
+      getFollwed()
+    } else {
+      getFollwers(params.id)
+      getFollwed(params.id)
+    }
+  }, [params.id, reload])
 
   useEffect(() => {
     if (params.id === "mine") {
@@ -213,6 +272,82 @@ const MyAccount = () => {
     }
   }
 
+  const renderFollowersCount = () => {
+    if (params.id === "mine") {
+      return usersFollowers.length 
+    } else {
+      return followers.length 
+    }
+  }
+
+  const renderFollowedCount = () => {
+    if (params.id === "mine") {
+      return usersFollowed.length 
+    } else {
+      return followed.length 
+    }
+  }
+
+  const followUser = async (followee_id) => {
+    setShowUpdateNotification(true)
+    await instance.post(`follow-user`, {followee_id})
+    .then((res) => {
+      setShowUpdateNotification(false)
+      dispatch(addFollowers({follower: res.data.record}))
+      socket.emit('userFollowed', { recipientId:  parseInt(followee_id)});
+    })
+    .catch(() => {
+      setShowUpdateNotification(false)
+      showAlert("Ooops an error was encountred", "error")
+    })
+  }
+
+  const unFollowUser = async (followee_id) => {
+    setShowUpdateNotification(true)
+    await instance.post(`unfollow-user`, {followee_id})
+    .then((res) => {
+      setShowUpdateNotification(false)
+      dispatch(removeFollower({id}))
+      socket.emit('userFollowed', { recipientId:  parseInt(followee_id)});
+    })
+    .catch(() => {
+      setShowUpdateNotification(false)
+      showAlert("Ooops an error was encountred", "error")
+    })
+  }
+
+  const renderFollowIcon = () => {
+    if (followers.map((a) => a.follower_id).includes(id)) {
+      return (
+        <Tooltip title="Unfollow">
+          <Button
+            onClick={() => {
+              unFollowUser(params.id)
+            }}
+            variant='contained'
+            size='small'
+          >
+            Unfollow
+          </Button>
+        </Tooltip>
+      )
+    } else {
+      return (
+        <Tooltip title="Follow">
+          <Button
+            onClick={() => {
+              followUser(params.id)
+            }}
+            size='small'
+            variant='contained'
+          >
+            Follow
+          </Button>
+        </Tooltip>
+      )
+    }
+  }
+
   return <>
     <Box sx={{ display: 'flex', flexDirection: 'column', flexWrap: 'wrap', maxWidth: 600, mx: 4 }}>
       <div style={{display: "flex", justifyContent: 'space-between', marginTop: "30px"}}>
@@ -252,16 +387,6 @@ const MyAccount = () => {
                 </Button>
               </Tooltip>
 
-              <Tooltip title='Change Password'>
-                <Button
-                  size='small' 
-                  onClick={()=> setShowChangePassword(prev => !prev)}
-                  
-                >
-                  <ChangeCircleOutlined />
-                </Button>
-              </Tooltip>
-
               <Tooltip title='Update Profile'>
                 <Button
                   size='small' 
@@ -271,7 +396,17 @@ const MyAccount = () => {
                   }}
                   
                 >
-                  <PersonOutlineOutlined />
+                  <UpdateOutlined />
+                </Button>
+              </Tooltip>
+
+              <Tooltip title='Change Password'>
+                <Button
+                  size='small' 
+                  onClick={()=> setShowChangePassword(prev => !prev)}
+                  
+                >
+                  <ChangeCircleOutlined />
                 </Button>
               </Tooltip>
             </div>
@@ -279,12 +414,18 @@ const MyAccount = () => {
 
 
           {
-            (params.id !== "mine") && (
-              <Tooltip title="Send Message">
-                <Button onClick={() => navigate(`/messages`, { state: {id: params?.id, populateEmail: true, sendMessage: true}})}>
-                  <MessageOutlined />
-                </Button>
-              </Tooltip>
+            (params.id !== "mine" && profile?.user_id !== id) && (
+              <>
+                {
+                  renderFollowIcon()
+                }
+
+                <Tooltip title="Send Message">
+                  <Button onClick={() => navigate(`/messages`, { state: {id: params?.id, populateEmail: true, sendMessage: true}})}>
+                    <MessageOutlined />
+                  </Button>
+                </Tooltip>
+              </>
             
             )
           }
@@ -296,7 +437,7 @@ const MyAccount = () => {
                 <CircularProgress size={48} />
               </Box>
           ) : (
-            <div style={{marginLeft: "30px"}}>
+            <div style={{marginLeft: "50px"}}>
               <Typography variant="h7" display="block"  gutterBottom>
                 <b>Name</b> : { params.id === "mine" ? name : allUsers?.find((a)=> a.id === parseInt(params.id))?.name }
               </Typography>
@@ -337,11 +478,19 @@ const MyAccount = () => {
                   </Typography>
                 )
               }
+
+              <div>
+                <PeopleOutlineOutlined style={{marginBottom: "-5px"}} /> <span >{ renderFollowersCount() } Follower . { renderFollowedCount() } Following</span>
+              </div>
              
             </div>
           )
         }
       </div>
+
+      {
+        showUpdateNotification && (<p style={{color: "green", fontSize: "14px"}}>Updating....</p>)
+      }
       
       {
         showSaveNotification && (<p style={{color: "green", fontSize: "14px"}}>Saving picture....</p>)

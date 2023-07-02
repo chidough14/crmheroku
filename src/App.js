@@ -172,7 +172,7 @@ function App() {
             <Route path="/companies/:id" element={<Company />} />
             <Route path="/activities" element={<Activities socket={socket}  />} />
             <Route path="/activities/:id" element={<ActivityDetails />} />
-            <Route path="/profile/:id" element={<MyAccount />} />
+            <Route path="/profile/:id" element={<MyAccount socket={socket} />} />
             <Route path="/events" element={<CalendarEvents socket={socket} />} />
             {/* <Route path="/messages" element={<Messages socket={socket} />} /> */}
             <Route path="/settings" element={<Settings socket={socket} />} />

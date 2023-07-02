@@ -19,6 +19,11 @@ const initialState = {
   showLogoutNotification: false,
   showLoginSpinner: false,
   showAnnouncementsLoading: false,
+  followers: [],
+  followed: [],
+  usersFollowers: [],
+  usersFollowed: [],
+  reload: false,
 }
 
 export const userSlice = createSlice({
@@ -105,6 +110,33 @@ export const userSlice = createSlice({
     },
     setShowAnnouncementsLoading: (state, action) => {
       state.showAnnouncementsLoading = action.payload.showAnnouncementsLoading
+    },
+    setFollwers: (state, action) => {
+      if(action.payload.followers) {
+        state.followers = action.payload.followers
+      }
+
+      if(action.payload.usersFollowers) {
+        state.usersFollowers = action.payload.usersFollowers
+      }
+    },
+    setFollwed: (state, action) => {
+      if(action.payload.followed) {
+        state.followed = action.payload.followed
+      }
+
+      if(action.payload.usersFollowed) {
+        state.usersFollowed = action.payload.usersFollowed
+      }
+    },
+    addFollowers: (state, action) => {
+      state.followers = [...state.followers, action.payload.follower]
+    },
+    removeFollower: (state, action) => {
+      state.followers = state.followers.filter((a) => a.follower_id !== parseInt(action.payload.id))
+    },
+    reloadFollowers: (state, action) => {
+      state.reload = !state.reload
     }
   },
 })
@@ -126,7 +158,12 @@ export const {
   setShowLogoutNotification,
   setShowLoginSpinner,
   setShowAnnouncementsLoading,
-  removeUsers
+  removeUsers,
+  setFollwers,
+  setFollwed,
+  addFollowers,
+  removeFollower,
+  reloadFollowers
 } = userSlice.actions
 
 export default userSlice.reducer

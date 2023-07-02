@@ -260,14 +260,20 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
         return   <Tooltip title="Mark as unread">
                     <MarkAsUnreadOutlined
                       style={{cursor: "pointer"}}
-                      onClick={()=> markAsRead("read")}
+                      onClick={(e)=> {
+                        e.stopPropagation()
+                        markAsRead("read")
+                      }}
                     />
                   </Tooltip>
       } else {
         return   <Tooltip title="Mark as read">
                     <MarkEmailRead
                       style={{cursor: "pointer"}}
-                      onClick={()=> markAsRead("unread")}
+                      onClick={(e)=> {
+                        e.stopPropagation()
+                        markAsRead("unread")
+                      }}
                     />
                   </Tooltip>
       }
@@ -613,7 +619,10 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
                                     <Tooltip title="Delete">
                                       <DeleteOutlined
                                         style={{cursor: "pointer"}}
-                                        onClick={()=> deleteMessage(row)}
+                                        onClick={(e)=> {
+                                          e.stopPropagation()
+                                          deleteMessage(row)
+                                        }}
                                       />
                                     </Tooltip>
                                   </>
