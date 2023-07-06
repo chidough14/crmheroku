@@ -130,10 +130,20 @@ export const userSlice = createSlice({
       }
     },
     addFollowers: (state, action) => {
-      state.followers = [...state.followers, action.payload.follower]
+      if(action.payload.mine) {
+        state.usersFollowed = [...state.usersFollowed, action.payload.follower]
+      } else {
+        state.followers = [...state.followers, action.payload.follower]
+      }
+     
     },
     removeFollower: (state, action) => {
-      state.followers = state.followers.filter((a) => a.follower_id !== parseInt(action.payload.id))
+      if (action.payload.mine) {
+        state.usersFollowed = state.usersFollowed.filter((a) => a.followee_id !== parseInt(action.payload.id))
+      } else {
+        state.followers = state.followers.filter((a) => a.follower_id !== parseInt(action.payload.id))
+      }
+     
     },
     reloadFollowers: (state, action) => {
       state.reload = !state.reload
