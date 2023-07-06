@@ -1,9 +1,9 @@
-import { Box, TextField, Button, Typography, Tooltip, Snackbar, CircularProgress } from '@mui/material';
+import { Box, TextField, Button, Typography, Tooltip, Snackbar, CircularProgress, List, ListItem, ListItemAvatar, Avatar, ListItemText, Checkbox, ListItemButton, IconButton } from '@mui/material';
 import React, { useEffect, useReducer, useState } from 'react';
 import { getToken } from '../../services/LocalStorageService';
 import { useChangeUserPasswordMutation } from '../../services/userAuthApi';
 import { useDispatch, useSelector } from 'react-redux';
-import { ChangeCircleOutlined, MessageOutlined, PeopleOutlineOutlined, SaveOutlined, UpdateOutlined} from '@mui/icons-material';
+import { ChangeCircleOutlined, CloseOutlined, DeleteOutline, MessageOutlined, PeopleOutlineOutlined, SaveOutlined, UpdateOutlined} from '@mui/icons-material';
 import moment from 'moment';
 import UploadWidget from './UploadWidget';
 import instance from '../../services/fetchApi';
@@ -55,6 +55,8 @@ const MyAccount = ({ socket }) => {
   const [lastSeen, setLastSeen] = useState("")
   const [loadingLastSeen, setLoadingLastSeen] = useState(false)
   const [showUpdateNotification, setShowUpdateNotification] = useState(false)
+  const [showFollowers, setShowFollowers] = useState(false);
+  const [showFollowersMode, setShowFollowersMode] = useState("followers");
   const params = useParams()
   const navigate = useNavigate()
 
@@ -134,14 +136,15 @@ const MyAccount = ({ socket }) => {
 
   
   useEffect(() => {
-    if (params.id === "mine") {
+    setShowFollowers(false)
+    if (params.id === "mine" ||  profile?.user_id === id) {
       getFollwers()
       getFollwed()
     } else {
       getFollwers(params.id)
       getFollwed(params.id)
     }
-  }, [params.id, reload])
+  }, [params.id, reload, profile?.id, id])
 
   useEffect(() => {
     if (params.id === "mine") {
@@ -272,6 +275,14 @@ const MyAccount = ({ socket }) => {
     }
   }
 
+  const renderCount = (arr1, arr2) => {
+    if (params.id === "mine") {
+      return arr1.length 
+    } else {
+      return arr2.length 
+    }
+  }
+
   const renderFollowersCount = () => {
     if (params.id === "mine") {
       return usersFollowers.length 
@@ -288,12 +299,20 @@ const MyAccount = ({ socket }) => {
     }
   }
 
-  const followUser = async (followee_id) => {
+  const followUnfollowUser = async (followee_id, follow) => {
+    let url
+    url = follow ? `follow-user` : `unfollow-user`
+
     setShowUpdateNotification(true)
-    await instance.post(`follow-user`, {followee_id})
+    await instance.post(url, {followee_id})
     .then((res) => {
       setShowUpdateNotification(false)
-      dispatch(addFollowers({follower: res.data.record}))
+      if (follow) {
+        dispatch(addFollowers({follower: res.data.record, mine: (params.id === "mine" || profile?.user_id === id) ? true : false}))
+      } else {
+        dispatch(removeFollower({id: (params.id === "mine" || profile?.user_id === id) ? followee_id : id,  mine: (params.id === "mine" || profile?.user_id === id) ? true : false}))
+      }
+    
       socket.emit('userFollowed', { recipientId:  parseInt(followee_id)});
     })
     .catch(() => {
@@ -302,51 +321,94 @@ const MyAccount = ({ socket }) => {
     })
   }
 
-  const unFollowUser = async (followee_id) => {
-    setShowUpdateNotification(true)
-    await instance.post(`unfollow-user`, {followee_id})
-    .then((res) => {
-      setShowUpdateNotification(false)
-      dispatch(removeFollower({id}))
-      socket.emit('userFollowed', { recipientId:  parseInt(followee_id)});
-    })
-    .catch(() => {
-      setShowUpdateNotification(false)
-      showAlert("Ooops an error was encountred", "error")
-    })
+  const getInitials = (string) => {
+    let names = string?.split(' '),
+        initials = names[0].substring(0, 1).toUpperCase();
+    
+    if (names.length > 1) {
+        initials += names[names.length - 1].substring(0, 1).toUpperCase();
+    }
+    return initials;
   }
 
   const renderFollowIcon = () => {
-    if (followers.map((a) => a.follower_id).includes(id)) {
-      return (
-        <Tooltip title="Unfollow">
-          <Button
-            onClick={() => {
-              unFollowUser(params.id)
-            }}
-            variant='contained'
-            size='small'
-          >
-            Unfollow
-          </Button>
-        </Tooltip>
-      )
-    } else {
-      return (
-        <Tooltip title="Follow">
-          <Button
-            onClick={() => {
-              followUser(params.id)
-            }}
-            size='small'
-            variant='contained'
-          >
-            Follow
-          </Button>
-        </Tooltip>
-      )
-    }
+    return (
+      <Tooltip title={followers.map((a) => a.follower_id).includes(id) ? "Unfollow" : "Follow"}>
+        <Button
+          onClick={() => {
+            if (followers.map((a) => a.follower_id).includes(id)) {
+              followUnfollowUser(params.id, false)
+            } else {
+              followUnfollowUser(params.id, true)
+            }
+          
+          }}
+          variant='contained'
+          size='small'
+        >
+          {
+            followers.map((a) => a.follower_id).includes(id) ? "Unfollow" : "Follow"
+          }
+        </Button>
+      </Tooltip>
+    )
   }
+
+  const renderFollowButton = (id, name) => {
+    let ids = usersFollowed.map((a) => a?.followee_id)
+    let user = allUsers.find((b) => b.id === id)
+
+    return (
+      <ListItem 
+        alignItems="flex-start"
+        secondaryAction={
+          <Button
+            onClick={() => {
+              if(ids.includes(id)) {
+                followUnfollowUser(id, false)
+              } else {
+                followUnfollowUser(id, true)
+              }
+            }}
+          >
+            {
+              ids.includes(id) ? "Unfollow" : "Follow"
+            }
+          </Button>
+        }
+      >
+        <ListItemAvatar 
+          style={{cursor: "pointer"}}
+          onClick={() => navigate(`/profile/${id}`)}
+        >
+          {
+            (user?.profile_pic === "" || user?.profile_pic === null) ?
+            <Avatar>
+              {getInitials(user?.name)}
+            </Avatar>
+            :
+            <Avatar alt={user?.name} src={user?.profile_pic} />
+          }
+        </ListItemAvatar>
+        <ListItemText
+          secondary={
+            <React.Fragment>
+              <Typography
+                sx={{ display: 'inline' }}
+                component="span"
+                variant="h6"
+                color="text.primary"
+              >
+              { name }
+              </Typography>
+            </React.Fragment>
+          }
+        />
+      </ListItem>
+    )
+
+  } 
+  
 
   return <>
     <Box sx={{ display: 'flex', flexDirection: 'column', flexWrap: 'wrap', maxWidth: 600, mx: 4 }}>
@@ -438,50 +500,110 @@ const MyAccount = ({ socket }) => {
               </Box>
           ) : (
             <div style={{marginLeft: "50px"}}>
-              <Typography variant="h7" display="block"  gutterBottom>
-                <b>Name</b> : { params.id === "mine" ? name : allUsers?.find((a)=> a.id === parseInt(params.id))?.name }
-              </Typography>
-
-              <Typography variant="h7" display="block"  gutterBottom>
-                <b>Email</b> : {params.id === "mine" ?  email : allUsers?.find((a)=> a.id === parseInt(params.id))?.email }
-              </Typography>
-
-              <Typography variant="h7" display="block"  gutterBottom>
-                <b>Date Registered</b> : { params.id === "mine" ? moment(created_at).format('MMMM Do YYYY') : moment(allUsers?.find((a)=> a.id === parseInt(params.id))?.created_at).format('MMMM Do YYYY') }
-              </Typography>
-
-
-              <Typography variant="h7" display="block"  gutterBottom>
-                <b>Bio</b> : { profile?.bio }
-              </Typography>
-
-              <Typography variant="h7" display="block"  gutterBottom>
-                <b>Company</b> : { profile?.company }
-              </Typography>
-
-              <Typography variant="h7" display="block"  gutterBottom>
-                <b>Address</b> :  { profile?.address }
-              </Typography>
-
-              <Typography variant="h7" display="block"  gutterBottom>
-                <b>Occupation</b> :  { profile?.occupation }
-              </Typography>
-
-              <Typography variant="h7" display="block"  gutterBottom>
-                <b>Website</b> :  { profile?.website }
-              </Typography>
-
               {
-                params.id !== "mine" && (
-                  <Typography variant="h7" display="block"  gutterBottom>
-                    <b>Last seen</b> :  { showOnlineStatus(params.id) }
-                  </Typography>
+                showFollowers ? (
+                  <>
+                    <div style={{display: "flex", justifyContent: "space-between", width: "300%"}}>
+                      <span>
+                        {
+                          showFollowersMode === "followers" ? "Followers" : "Followed"
+                        }
+                      </span>
+                      <span>
+                        <CloseOutlined 
+                          style={{cursor: "pointer"}} 
+                          onClick={() => {
+                            setShowFollowers(false)
+                          }}
+                        />
+                      </span>
+                    </div>
+
+                    <List sx={{ width: '300%', bgcolor: 'background.paper' }}>
+                      {
+                        ((showFollowersMode === "followers" && params?.id === "mine") || (showFollowersMode === "followers" && profile?.user_id === id)) ? 
+
+                        usersFollowers?.map((a) => renderFollowButton(a.follower_id, allUsers?.find((b) => b.id === a.follower_id)?.name))
+                        : usersFollowed?.map((a) => renderFollowButton(a.followee_id, allUsers?.find((b) => b.id === a.followee_id)?.name))
+                      }
+                    </List>
+
+
+                  </>
+                ) : (
+                  <>
+                    <Typography variant="h7" display="block"  gutterBottom>
+                      <b>Name</b> : { params.id === "mine" ? name : allUsers?.find((a)=> a.id === parseInt(params.id))?.name }
+                    </Typography>
+    
+                    <Typography variant="h7" display="block"  gutterBottom>
+                      <b>Email</b> : {params.id === "mine" ?  email : allUsers?.find((a)=> a.id === parseInt(params.id))?.email }
+                    </Typography>
+    
+                    <Typography variant="h7" display="block"  gutterBottom>
+                      <b>Date Registered</b> : { params.id === "mine" ? moment(created_at).format('MMMM Do YYYY') : moment(allUsers?.find((a)=> a.id === parseInt(params.id))?.created_at).format('MMMM Do YYYY') }
+                    </Typography>
+    
+    
+                    <Typography variant="h7" display="block"  gutterBottom>
+                      <b>Bio</b> : { profile?.bio }
+                    </Typography>
+    
+                    <Typography variant="h7" display="block"  gutterBottom>
+                      <b>Company</b> : { profile?.company }
+                    </Typography>
+    
+                    <Typography variant="h7" display="block"  gutterBottom>
+                      <b>Address</b> :  { profile?.address }
+                    </Typography>
+    
+                    <Typography variant="h7" display="block"  gutterBottom>
+                      <b>Occupation</b> :  { profile?.occupation }
+                    </Typography>
+    
+                    <Typography variant="h7" display="block"  gutterBottom>
+                      <b>Website</b> :  { profile?.website }
+                    </Typography>
+    
+                    {
+                      params.id !== "mine" && (
+                        <Typography variant="h7" display="block"  gutterBottom>
+                          <b>Last seen</b> :  { showOnlineStatus(params.id) }
+                        </Typography>
+                      )
+                    }
+
+                    <div>
+                      <PeopleOutlineOutlined style={{marginBottom: "-5px"}} /> 
+                      <span 
+                        style={{cursor: (params.id === "mine" || profile?.user_id === id) ? "pointer" : null}}
+                        onClick={() => {
+                          if(params.id === "mine" || profile?.user_id === id) {
+                            setShowFollowers(true)
+                            setShowFollowersMode("followers")
+                          }
+                        
+                        }}
+                      >
+                        { renderCount(usersFollowers, followers) } Follower
+                      </span> 
+
+                      <span 
+                        style={{cursor: (params.id === "mine" || profile?.user_id === id) ? "pointer" : null}}
+                        onClick={() => {
+                          if(params.id === "mine" || profile?.user_id === id) {
+                            setShowFollowers(true)
+                            setShowFollowersMode("followed")
+                          }
+                       
+                        }}
+                      >
+                        . { renderCount(usersFollowed, followed) } Following
+                      </span>
+                    </div>
+                  </>
                 )
               }
-
-              <div>
-                <PeopleOutlineOutlined style={{marginBottom: "-5px"}} /> <span >{ renderFollowersCount() } Follower . { renderFollowedCount() } Following</span>
-              </div>
              
             </div>
           )
