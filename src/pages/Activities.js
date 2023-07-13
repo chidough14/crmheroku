@@ -6,13 +6,15 @@ import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import ActivityColumn from '../components/activities/ActivityColumn'
 import ActivityModal from '../components/activities/ActivityModal'
-import { addActivity, addActivityIds, editActivity, editActivityProbability, removeActivities, removeActivity, removeActivityIds, setActivities, setOpenPrompt, setShowCloningNotification, setShowDeleteNotification, setSortOptionValue, setTrashActivities } from '../features/ActivitySlice'
+import { addActivity, addActivityIds, editActivity, editActivityProbability, removeActivities, removeActivity, removeActivityIds, setActivities, setFollowers, setOpenPrompt, setShowCloningNotification, setShowDeleteNotification, setSortOptionValue, setTrashActivities } from '../features/ActivitySlice'
 import instance from '../services/fetchApi'
 import { getToken } from '../services/LocalStorageService'
 import SortButton from './orders/SortButton'
 import MuiAlert from '@mui/material/Alert';
 import ActivityTransferModal from '../components/activities/ActivityTransferModal'
 import { deleteEvent } from '../features/EventSlice'
+import { arraysHaveSameContents } from '../services/checkers';
+import { setFollwers } from '../features/userSlice'
 
 
 const Alert = React.forwardRef(function Alert(props, ref) {
@@ -23,7 +25,16 @@ const Activities = ({socket}) => {
   const [columns, setColumns] = useState([])
   const [activityId, setActivityId] = useState()
   const dispatch = useDispatch()
-  const { activities, sortOption, activityIds, showCloningNotification, showDeleteNotification, trashActivities } = useSelector((state) => state.activity) 
+  const { 
+    activities, 
+    sortOption, 
+    activityIds, 
+    showCloningNotification, 
+    showDeleteNotification, 
+    trashActivities,
+    followers 
+  } = useSelector((state) => state.activity) 
+  const { id, name, usersFollowed, usersFollowers, onlineUsers } = useSelector(state => state.user)
   const [open, setOpen] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -69,6 +80,22 @@ const Activities = ({socket}) => {
   }
 
   const token = getToken()
+
+  const getFollowers = async () => {
+    await instance.get(`followers`)
+    .then((res) => {
+      dispatch(setFollowers({followers: res.data.followers}))
+      // from user slice
+      dispatch(setFollwers({usersFollowers: res.data.followers}))
+    })
+    .catch(() => {
+      
+    })
+  }
+
+  useEffect(() => {
+    getFollowers()
+  }, [followers?.length, usersFollowed?.length])
 
   useEffect(() => {
     if (!token) {
@@ -143,6 +170,17 @@ const Activities = ({socket}) => {
     })
     .catch(() => {
       showAlert("Oops an error was encountered", "error")
+    })
+  }
+
+  const addMessage  = async (arr) => {
+
+    await instance.post(`add-message-for-offline-followers`, {arr})
+    .then((res) => {
+      
+    })
+    .catch(() => {
+    
     })
   }
 
@@ -222,6 +260,25 @@ const Activities = ({socket}) => {
         navigate(`/activities/${activityId}`)
       }
 
+      let onlineUsersIds = onlineUsers?.map((a) => a.userId)
+      let offlineIds = []
+
+      for (let i = 0; i < usersFollowers.length; i++) {
+        if (onlineUsersIds.includes(usersFollowers[i].follower_id)) {
+          socket.emit('activity_moved', { 
+            follower_id: usersFollowers[i].follower_id, 
+            message: `${name} moved ${activities?.find((a) => a.id === activityId)?.label} from ${source.droppableId} to ${destination.droppableId}`, sender_id: id 
+          });
+        } else {
+          offlineIds = [...offlineIds, {id: usersFollowers[i].follower_id, message: `${name} moved ${activities?.find((a) => a.id === activityId)?.label} from ${source.droppableId} to ${destination.droppableId}`}]
+        }
+     
+      }
+
+      if (offlineIds?.length) {
+        addMessage(offlineIds)
+      }
+   
       return null
     }
   }
@@ -359,30 +416,6 @@ const Activities = ({socket}) => {
       dispatch(setShowDeleteNotification({showDeleteNotification: false}))
     })
   };
-
-  const arraysHaveSameContents = (array1, array2) => {
-    // Check if the arrays have the same length
-    if (array1.length !== array2.length) {
-      return false;
-    }
-
-    if (!array1.length && !array2.length) {
-      return false;
-    }
-  
-    // Sort the arrays to ensure consistent ordering for comparison
-    const sortedArray1 = array1.slice().sort();
-    const sortedArray2 = array2.slice().sort();
-  
-    // Compare each element in the arrays
-    for (let i = 0; i < sortedArray1.length; i++) {
-      if (sortedArray1[i] !== sortedArray2[i]) {
-        return false;
-      }
-    }
-  
-    return true;
-  }
 
   const renderIndeterminate = (activityIds) => {
     if (showTrash) {

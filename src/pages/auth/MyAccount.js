@@ -41,8 +41,7 @@ const MyAccount = ({ socket }) => {
     followers,
     followed,
     usersFollowed,
-    usersFollowers,
-    reload
+    usersFollowers
   } = useSelector(state => state.user)
   const dispatch = useDispatch()
   const [openAlert, setOpenAlert] = useState(false);
@@ -144,7 +143,7 @@ const MyAccount = ({ socket }) => {
       getFollwers(params.id)
       getFollwed(params.id)
     }
-  }, [params.id, reload, profile?.id, id])
+  }, [params.id,  profile?.user_id, id])
 
   useEffect(() => {
     if (params.id === "mine") {
@@ -280,22 +279,6 @@ const MyAccount = ({ socket }) => {
       return arr1.length 
     } else {
       return arr2.length 
-    }
-  }
-
-  const renderFollowersCount = () => {
-    if (params.id === "mine") {
-      return usersFollowers.length 
-    } else {
-      return followers.length 
-    }
-  }
-
-  const renderFollowedCount = () => {
-    if (params.id === "mine") {
-      return usersFollowed.length 
-    } else {
-      return followed.length 
     }
   }
 

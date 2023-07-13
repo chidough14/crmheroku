@@ -24,6 +24,7 @@ const initialState = {
   usersFollowers: [],
   usersFollowed: [],
   reload: false,
+  followersData: []
 }
 
 export const userSlice = createSlice({
@@ -147,7 +148,21 @@ export const userSlice = createSlice({
     },
     reloadFollowers: (state, action) => {
       state.reload = !state.reload
-    }
+    },
+    setFollowersData: (state, action) => {
+    
+      if (Array.isArray(action.payload.followersData)) {
+        state.followersData = [...state.followersData, ...action.payload.followersData]
+      } else {
+        state.followersData = [...state.followersData, action.payload.followersData]
+      }
+    },
+    removeFollowersData: (state, action) => {
+      state.followersData = state.followersData.filter((a)=> a.id !== action.payload.id)
+    },
+    emptyFollowersData: (state, action) => {
+      state.followersData = []
+    },
   },
 })
 
@@ -173,7 +188,10 @@ export const {
   setFollwed,
   addFollowers,
   removeFollower,
-  reloadFollowers
+  reloadFollowers,
+  setFollowersData,
+  removeFollowersData,
+  emptyFollowersData
 } = userSlice.actions
 
 export default userSlice.reducer

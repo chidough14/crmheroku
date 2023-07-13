@@ -12,7 +12,8 @@ const initialState = {
   showDeleteNotification: false,
   showTransferNotification: false,
   showCreatingInvoiceSpinner: false,
-  activityIds: []
+  activityIds: [],
+  followers: []
 }
 
 export const ActivitySlice = createSlice({
@@ -124,6 +125,9 @@ export const ActivitySlice = createSlice({
     setTrashActivities: (state, action) => {
       state.trashActivities = action.payload.activities
     },
+    setFollowers: (state, action) => {
+      state.followers = action.payload.followers
+    },
   },
 })
 
@@ -156,7 +160,8 @@ export const {
   addActivityIds,
   removeActivityIds,
   removeActivities,
-  setTrashActivities
+  setTrashActivities,
+  setFollowers
 } = ActivitySlice.actions
 
 export default ActivitySlice.reducer

@@ -37,7 +37,7 @@ const addLogout = async (user) => {
     user_id: parseInt(user.userId)
   })
   .then((res) => {
-     console.log(res);
+    //  console.log(res);
   })
   .catch((e) => console.log(e))
 }
@@ -68,6 +68,14 @@ socketIO.on('connection', (socket) => {
     const {  message } = data;
     if(xx) {
       socketIO.to(xx.id).emit('receiveNotification', message);
+    }
+  });
+
+  socket.on('activity_moved', (data) => {
+    let xx = arr.find((a)=> a.userId === data.follower_id)
+    const {  message, sender_id } = data;
+    if(xx) {
+      socketIO.to(xx.id).emit('activity_moved', {message, sender: sender_id });
     }
   });
 

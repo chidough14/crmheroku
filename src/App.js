@@ -9,7 +9,7 @@ import { useDispatch, useSelector } from "react-redux";
 import Lists from "./pages/Lists";
 import { useEffect, useState } from "react";
 import { getToken } from "./services/LocalStorageService";
-import { setAllUsersData, setLoadingDashboard, setUserInfo } from "./features/userSlice";
+import { setAllUsersData, setFollowersData, setLoadingDashboard, setUserInfo } from "./features/userSlice";
 import { useGetLoggedUserQuery } from "./services/userAuthApi";
 import Activities from "./pages/Activities";
 import SingleList from "./pages/SingleList";
@@ -84,14 +84,6 @@ function App() {
 
     let requests = []
     requests.push(
-      // instance.get(`mylists`)
-      // .then((res)=> {
-      //     dispatch(setLists({lists: res.data.lists}))
-      //   return Promise.resolve(true);
-      // })
-      // .catch((e)=>{
-      //   return Promise.resolve(false);
-      // }),
       instance.get(`activities`)
       .then((res)=> {
         dispatch(setActivities({activities: res.data.activities}))
@@ -100,23 +92,14 @@ function App() {
       .catch((e)=>{
         return Promise.resolve(false);
       }),
-      // instance.get(`events`)
-      // .then((res)=> {
-      //   dispatch(setEvents({events: res.data.events}))
-      //   return Promise.resolve(true);
-      // })
-      // .catch((e)=>{
-      //   return Promise.resolve(false);
-      // }),
-      // instance.get(`messages`)
-      // .then((res)=> {
-      //   dispatch(setInboxMessages({inbox: res.data.inbox}))
-      //   dispatch(setOutboxMessages({outbox: res.data.outbox}))
-      //   return Promise.resolve(true);
-      // })
-      // .catch((e)=>{
-      //   return Promise.resolve(false);
-      // }),
+      instance.get(`followers-offline-activities`)
+      .then((res)=> {
+        dispatch(setFollowersData({followersData: res.data.followersData}))
+        return Promise.resolve(true);
+      })
+      .catch((e)=>{
+        return Promise.resolve(false);
+      }),
       instance.get(`users`)
       .then((res) => {
         dispatch(setAllUsersData({users: res.data.users}))
@@ -125,15 +108,6 @@ function App() {
       .catch((e)=>{
         return Promise.resolve(false);
       }),
-      // instance.get(`meetings`)
-      // .then((res) => {
-      //   dispatch(setMeetings({meetings: res.data.meetings}))
-      //   dispatch(setInvitedMeetings({invitedMeetings: res.data.invitedMeetings}))
-      //   return Promise.resolve(true);
-      // })
-      // .catch((e)=>{
-      //   return Promise.resolve(false);
-      // })
     )
 
 
