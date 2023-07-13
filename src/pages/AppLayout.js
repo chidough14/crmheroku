@@ -22,7 +22,7 @@ import { AddOutlined, DashboardOutlined, DensitySmallOutlined, MeetingRoomOutlin
 import ListIcon from '@mui/icons-material/List';
 import PointOfSaleIcon from '@mui/icons-material/PointOfSale';
 import CalendarMonthIcon from '@mui/icons-material/CalendarViewMonth';
-import { Badge, Button, CircularProgress, Collapse, Snackbar, Tooltip } from '@mui/material';
+import { Badge, Button, Collapse, Snackbar, Tooltip } from '@mui/material';
 import BellNotification from '../components/BellNotification';
 import UserAccountsCircle from '../components/UserAccountsCircle';
 import SearchBar from '../components/SearchBar';
@@ -30,14 +30,13 @@ import instance from '../services/fetchApi';
 import { setSearchResults } from '../features/companySlice';
 import { setSelectedCompanyId } from '../features/listSlice';
 import MuiAlert from '@mui/material/Alert';
-
-import InboxIcon from '@mui/icons-material/MoveToInbox';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
-import StarBorder from '@mui/icons-material/StarBorder';
-import { reloadFollowers, setOnlineUsers } from '../features/userSlice';
+import { emptyFollowersData, reloadFollowers, removeFollowersData, setFollowersData, setFollwed, setFollwers, setOnlineUsers } from '../features/userSlice';
 import ActivityModal from '../components/activities/ActivityModal';
 import { setReloadMessages } from '../features/MessagesSlice';
+import { Stack } from '@mui/system';
+import FollowersNotification from '../components/FollowersNotification';
 
 
 const Alert = React.forwardRef(function Alert(props, ref) {
@@ -155,6 +154,12 @@ const sideBarItems = [
   },
 ]
 
+const action = (
+  <Button color="secondary" size="small">
+    lorem ipsum dolorem
+  </Button>
+);
+
 
 export default function AppLayout({socket}) {
   const theme = useTheme();
@@ -162,7 +167,7 @@ export default function AppLayout({socket}) {
   const [openActivityModal, setOpenActivityModal] = React.useState(false);
 
   const token = getToken()
-  const {id, name, allUsers, profile_pic, onlineUsers, showLogoutNotification} = useSelector(state => state.user)
+  const {id, name, allUsers, profile_pic, onlineUsers, showLogoutNotification, followersData} = useSelector(state => state.user)
   const {list, loadingCompanies} = useSelector(state => state.list)
   const [loggedIn, setLoggedIn] = React.useState(false)
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -177,7 +182,9 @@ export default function AppLayout({socket}) {
   const {activities} = useSelector(state=> state.activity)
   const [openAlert, setOpenAlert] = React.useState(false)
   const [text, setText] = React.useState("")
+  const [message, setMessgae] = React.useState("")
   const [alertType, setAlertType] = React.useState("")
+  // const [followersData, setFollowersData] = React.useState([])
   const navigate = useNavigate()
 
   const handleOpen = () => setOpenActivityModal(true);
@@ -190,13 +197,17 @@ export default function AppLayout({socket}) {
 
   const [state, setState] = React.useState({
     openNotification: false,
+    openFollowersNotification: false,
     vertical: 'top',
     horizontal: 'center',
+    showFollowersActivity: false
   });
-  const { vertical, horizontal, openNotification } = state;
+  const { vertical, horizontal, openNotification, showFollowersActivity, openFollowersNotification } = state;
 
   const handleCloseNotification = () => {
-    setState({ ...state, openNotification: false });
+    setState({ ...state, openNotification: false,  openFollowersNotification: false });
+    // setFollowersData(null)
+    // dispatch(emptyFollowersData())
   };
 
   const isListPage = matchPath("/listsview/*", pathname)
@@ -257,9 +268,42 @@ export default function AppLayout({socket}) {
     })
   }
 
+  const getFollwers = async () => {
+    await instance.get(`followers`)
+    .then((res) => {
+      dispatch(setFollwers({usersFollowers: res.data.followers}))
+    })
+    .catch(() => {
+      
+    })
+  }
+
+  const getFollwed = async () => {
+    await instance.get(`followed`)
+    .then((res) => {
+      dispatch(setFollwed({usersFollowed: res.data.followed}))
+    })
+    .catch(() => {
+      
+    })
+  }
+
   React.useEffect(()=> {
      getNotifications("none")
   }, [loggedIn, fetchNotifications])
+
+  const  generateRandomId = () => {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const length = 6;
+    let randomId = '';
+  
+    for (let i = 0; i < length; i++) {
+      const randomIndex = Math.floor(Math.random() * characters.length);
+      randomId += characters.charAt(randomIndex);
+    }
+  
+    return randomId;
+  }
 
   React.useEffect(()=> {
     socket.on('receiveNotification', (message) => {
@@ -281,14 +325,20 @@ export default function AppLayout({socket}) {
     });
 
     socket.on('reloadFollowers', (data) => {
-     dispatch(reloadFollowers({reload: true}))
+    //  dispatch(reloadFollowers({reload: true}))
+      getFollwed()
+      getFollwers()
       
     });
-  }, [socket])
 
-  // React.useEffect(()=> {
-  //  console.log(onlineUsers);
-  // }, [onlineUsers])
+    socket.on('activity_moved', (data) => {
+
+      dispatch(setFollowersData({followersData: { id: generateRandomId(), message: data.message, sender: data.sender }}))
+
+      setState({ ...state, openFollowersNotification: true});
+        
+    });
+  }, [socket])
 
   const handleDrawerOpen = () => {
     setOpen(prev => !prev)
@@ -482,8 +532,19 @@ export default function AppLayout({socket}) {
     return null
   }
 
+  const deleteFollowerMessage = async (id) => {
+    await instance.delete(`followers-offline-activities/${id}`)
+    .then((res) => {
+
+    })
+  }
+
   return (
-    <>
+    <div
+    style={{
+      position: "relative"
+     }}
+    >
       <Box sx={{ display: 'flex' }}>
         <CssBaseline />
 
@@ -505,6 +566,16 @@ export default function AppLayout({socket}) {
                   />
               )
             }&nbsp;&nbsp;&nbsp;&nbsp;
+
+              {
+                loggedIn && (
+                  <FollowersNotification
+                    data={followersData}
+                    allUsers={allUsers}
+                    deleteFollowerMessage={deleteFollowerMessage}
+                  />
+                )
+              }&nbsp;&nbsp;&nbsp;&nbsp;
 
             {
                 loggedIn && (
@@ -750,14 +821,16 @@ export default function AppLayout({socket}) {
 
       <Snackbar
         anchorOrigin={{ vertical, horizontal }}
-        open={openNotification}
+        open={openNotification || openFollowersNotification}
         onClose={handleCloseNotification}
         key={vertical + horizontal}
       >
-      <Alert onClose={handleCloseNotification} severity="success" sx={{ width: '100%' }}>
+        <Alert onClose={handleCloseNotification} severity="success" sx={{ width: '100%' }}>
+          
         You have a new notification
-      </Alert>
-    </Snackbar>
-    </>
+          
+        </Alert>
+      </Snackbar>
+    </div>
   );
 }
