@@ -143,9 +143,9 @@ function App() {
             <Route path="/dashboard" element={<Dashboard  socket={socket} />} />
             <Route path="/lists" element={<Lists socket={socket}/>} />
             <Route path="/listsview/:id" element={<SingleList />} />
-            <Route path="/companies/:id" element={<Company />} />
+            <Route path="/companies/:id" element={<Company socket={socket}  />} />
             <Route path="/activities" element={<Activities socket={socket}  />} />
-            <Route path="/activities/:id" element={<ActivityDetails />} />
+            <Route path="/activities/:id" element={<ActivityDetails socket={socket}  />} />
             <Route path="/profile/:id" element={<MyAccount socket={socket} />} />
             <Route path="/events" element={<CalendarEvents socket={socket} />} />
             {/* <Route path="/messages" element={<Messages socket={socket} />} /> */}

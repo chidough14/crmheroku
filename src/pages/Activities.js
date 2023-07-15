@@ -6,7 +6,20 @@ import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import ActivityColumn from '../components/activities/ActivityColumn'
 import ActivityModal from '../components/activities/ActivityModal'
-import { addActivity, addActivityIds, editActivity, editActivityProbability, removeActivities, removeActivity, removeActivityIds, setActivities, setFollowers, setOpenPrompt, setShowCloningNotification, setShowDeleteNotification, setSortOptionValue, setTrashActivities } from '../features/ActivitySlice'
+import { 
+  addActivity,
+  addActivityIds, 
+  editActivityProbability, 
+  removeActivities, 
+  removeActivityIds, 
+  setActivities, 
+  setFollowers, 
+  setOpenPrompt, 
+  setShowCloningNotification, 
+  setShowDeleteNotification, 
+  setSortOptionValue, 
+  setTrashActivities 
+} from '../features/ActivitySlice'
 import instance from '../services/fetchApi'
 import { getToken } from '../services/LocalStorageService'
 import SortButton from './orders/SortButton'
@@ -260,6 +273,7 @@ const Activities = ({socket}) => {
         navigate(`/activities/${activityId}`)
       }
 
+      // send notification message to your followers
       let onlineUsersIds = onlineUsers?.map((a) => a.userId)
       let offlineIds = []
 
@@ -267,7 +281,9 @@ const Activities = ({socket}) => {
         if (onlineUsersIds.includes(usersFollowers[i].follower_id)) {
           socket.emit('activity_moved', { 
             follower_id: usersFollowers[i].follower_id, 
-            message: `${name} moved ${activities?.find((a) => a.id === activityId)?.label} from ${source.droppableId} to ${destination.droppableId}`, sender_id: id 
+            message: `${name} moved ${activities?.find((a) => a.id === activityId)?.label} from ${source.droppableId} to ${destination.droppableId}`, 
+            sender_id: id,
+            activityId: activityId  
           });
         } else {
           offlineIds = [...offlineIds, {id: usersFollowers[i].follower_id, message: `${name} moved ${activities?.find((a) => a.id === activityId)?.label} from ${source.droppableId} to ${destination.droppableId}`}]
@@ -379,13 +395,44 @@ const Activities = ({socket}) => {
   };
 
   const deleteActivities = async (activityIds) => {
-    let url
+    let url, msg, actvs, obj
+    let arr = []
+    let onlineUsersIds = onlineUsers?.map((a) => a.userId)
+    let offlineIds = []
     url = showTrash ? `activities-bulk-force-delete` : `activities-bulk-delete`
+    actvs = showTrash ? trashActivities : activities
+  
+    for(let i=0;i< activityIds.length;i++) {
+      obj = actvs.find((a) => a.id === activityIds[i])
+      arr = [...arr, obj]
+    }
 
     dispatch(setShowDeleteNotification({showDeleteNotification: true}))
 
     await instance.post(url, {activityIds})
     .then(() => {
+      msg = showTrash ?
+      `${name} deleted  the following activities : ${arr.map((a) => a.label).join(", ").replace(/,(?=[^,]*$)/, " and")}` : 
+      `${name} moved the following activities to trash : ${arr.map((a) => a.label).join(", ").replace(/,(?=[^,]*$)/, " and")}`
+
+      for (let i = 0; i < usersFollowers.length; i++) {
+        if (onlineUsersIds.includes(usersFollowers[i].follower_id)) {
+          socket.emit('bulk_activity_deleted', { 
+            follower_id: usersFollowers[i].follower_id, 
+            message: msg, 
+            sender_id: id,
+            activityId: activityIds 
+          });
+        } else {
+          offlineIds = [...offlineIds, {id: usersFollowers[i].follower_id,  message: msg}]
+        }
+     
+      }
+
+      if (offlineIds?.length) {
+        addMessage(offlineIds)
+      }
+
       showAlert("Activities deleted", "success")
       handleCloseDialog()
       dispatch(removeActivities({activityIds, showTrash}))
@@ -393,17 +440,47 @@ const Activities = ({socket}) => {
       dispatch(removeActivityIds({activityIds}))
       dispatch(setShowDeleteNotification({showDeleteNotification: false}))
     })
-    .catch(() => {
+    .catch((e) => {
+      console.log(e);
       showAlert("Ooops an error was encountered", "error")
       dispatch(setShowDeleteNotification({showDeleteNotification: false}))
     })
   };
 
   const restoreActivities = async (activityIds) => {
+    let arr = []
+    for(let i=0;i< activityIds.length;i++) {
+      let obj = trashActivities.find((a) => a.id === activityIds[i])
+      arr = [...arr, obj]
+    }
+
     dispatch(setShowDeleteNotification({showDeleteNotification: true}))
 
     await instance.post(`activities-bulk-restore`, {activityIds})
     .then(() => {
+
+      let onlineUsersIds = onlineUsers?.map((a) => a.userId)
+      let offlineIds = []
+
+      for (let i = 0; i < usersFollowers.length; i++) {
+        if (onlineUsersIds.includes(usersFollowers[i].follower_id)) {
+          socket.emit('bulk_activity_restored', { 
+            follower_id: usersFollowers[i].follower_id, 
+            message: `${name} restored the following activities : ${arr.map((a) => a.label).join(", ").replace(/,(?=[^,]*$)/, " and")}`, 
+            sender_id: id,
+            activityId: activityIds 
+          });
+        } else {
+          offlineIds = [...offlineIds, {id: usersFollowers[i].follower_id,  message: `${name} restored the following activities : ${arr.map((a) => a.label).join(", ").replace(/,(?=[^,]*$)/, " and")}`}]
+        }
+     
+      }
+
+      if (offlineIds?.length) {
+        addMessage(offlineIds)
+      }
+
+
       showAlert("Activities restored", "success")
       handleCloseDialog()
       dispatch(removeActivities({activityIds, showTrash}))
@@ -411,7 +488,8 @@ const Activities = ({socket}) => {
      // dispatch(deleteEvent({activityIds}))
       dispatch(setShowDeleteNotification({showDeleteNotification: false}))
     })
-    .catch(() => {
+    .catch((e) => {
+      console.log(e);
       showAlert("Ooops an error was encountered", "error")
       dispatch(setShowDeleteNotification({showDeleteNotification: false}))
     })
@@ -734,6 +812,7 @@ const Activities = ({socket}) => {
         open={open}
         setOpen={setOpen}
         mode="activities"
+        socket={socket}
       />
 
       <ActivityTransferModal

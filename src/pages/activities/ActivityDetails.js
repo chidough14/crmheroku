@@ -62,7 +62,7 @@ function a11yProps(index) {
   };
 }
 
-const ActivityDetails = () => {
+const ActivityDetails = ({socket}) => {
   const params = useParams()
   const dispatch = useDispatch()
   const {activity, openPrompt, showCreatingInvoiceSpinner, showDeleteNotification} = useSelector((state) => state.activity)
@@ -566,6 +566,7 @@ const ActivityDetails = () => {
        setOpen={setOpenEditModal}
        editMode={true}
        activity={activity && activity}
+       socket={socket}
       />
 
       <EventModal
