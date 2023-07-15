@@ -45,7 +45,7 @@ const validationSchema = yup.object({
     .required('Type is required'),
 });
 
-const ActivityModal = ({open, setOpen, companyObject, openActivityModal, activity, editMode, mode}) => {
+const ActivityModal = ({open, setOpen, companyObject, openActivityModal, activity, editMode, mode, socket}) => {
  
   const [openAlert, setOpenAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
@@ -132,6 +132,41 @@ const ActivityModal = ({open, setOpen, companyObject, openActivityModal, activit
     setCompanyId(value.id)
   }
 
+  const addMessage  = async (arr) => {
+
+    await instance.post(`add-message-for-offline-followers`, {arr})
+    .then((res) => {
+      
+    })
+    .catch(() => {
+    
+    })
+  }
+
+  const sendNotificationToFollowers  = (activity, msg, event) => {
+    let onlineUsersIds = user?.onlineUsers?.map((a) => a.userId)
+    let offlineIds = []
+
+    for (let i = 0; i < user?.usersFollowers.length; i++) {
+      if (onlineUsersIds.includes(user?.usersFollowers[i].follower_id)) {
+        socket.emit(event, { 
+          follower_id: user?.usersFollowers[i].follower_id, 
+          message: msg, 
+          sender_id: user?.id,
+          activityId: activity.id 
+        });
+      } else {
+        offlineIds = [...offlineIds, {id: user?.usersFollowers[i].follower_id, message: msg}]
+      }
+  
+    }
+
+    if (offlineIds?.length) {
+      addMessage(offlineIds)
+    }
+   
+  }
+
   const formik = useFormik({
     initialValues: {
       label: '',
@@ -151,6 +186,9 @@ const ActivityModal = ({open, setOpen, companyObject, openActivityModal, activit
         
         await instance.patch(`activities/${activity.id}`, values)
         .then((res) => {
+
+          sendNotificationToFollowers(res.data.activity, `${user?.name} edited ${activity.label}`, "activity_edited")
+
           showAlert("Activity updated successfully", "success")
   
           dispatch(editActivity({activity: res.data.activity}))
@@ -181,6 +219,8 @@ const ActivityModal = ({open, setOpen, companyObject, openActivityModal, activit
         
         await instance.post(`activities`, values)
         .then((res) => {
+          sendNotificationToFollowers(res.data.activity, `${user?.name} created a new activity ${res.data.activity.label}`, "activity_created")
+     
           showAlert("Activity created successfully", "success")
 
           res.data.activity.decreased_probability = null

@@ -42,6 +42,14 @@ const addLogout = async (user) => {
   .catch((e) => console.log(e))
 }
 
+const sendEvent = (arr, data, event) => {
+  let xx = arr.find((a)=> a.userId === data.follower_id)
+  const {  message, sender_id, activityId } = data;
+  if(xx) {
+    socketIO.to(xx.id).emit(event, {message, sender: sender_id, activityId });
+  }
+}
+
 let users = [];
 let arr = []
 //Add this before the app.get() block
@@ -72,11 +80,31 @@ socketIO.on('connection', (socket) => {
   });
 
   socket.on('activity_moved', (data) => {
-    let xx = arr.find((a)=> a.userId === data.follower_id)
-    const {  message, sender_id } = data;
-    if(xx) {
-      socketIO.to(xx.id).emit('activity_moved', {message, sender: sender_id });
-    }
+    sendEvent(arr, data, 'activity_moved')
+  });
+
+  socket.on('activity_created', (data) => {
+    sendEvent(arr, data, 'activity_created')
+  });
+
+  socket.on('activity_edited', (data) => {
+    sendEvent(arr, data, 'activity_edited')
+  });
+
+  socket.on('activity_deleted', (data) => {
+    sendEvent(arr, data, 'activity_deleted')
+  });
+
+  socket.on('activity_restored', (data) => {
+    sendEvent(arr, data, 'activity_restored')
+  });
+
+  socket.on('bulk_activity_restored', (data) => {
+    sendEvent(arr, data, 'bulk_activity_restored')
+  });
+
+  socket.on('bulk_activity_deleted', (data) => {
+    sendEvent(arr, data, 'bulk_activity_deleted')
   });
 
 
