@@ -305,6 +305,12 @@ export default function AppLayout({socket}) {
     return randomId;
   }
 
+  const showFollowersNotification = (data) => {
+    dispatch(setFollowersData({followersData: { id: generateRandomId(), message: data.message, sender: data.sender }}))
+
+    setState({ ...state, openFollowersNotification: true});
+  }
+
   React.useEffect(()=> {
     socket.on('receiveNotification', (message) => {
       dispatch(setReloadMessages({reloadMessages: true}))
@@ -333,10 +339,32 @@ export default function AppLayout({socket}) {
 
     socket.on('activity_moved', (data) => {
 
-      dispatch(setFollowersData({followersData: { id: generateRandomId(), message: data.message, sender: data.sender }}))
-
-      setState({ ...state, openFollowersNotification: true});
+      showFollowersNotification(data)
         
+    });
+
+    socket.on('activity_created', (data) => {
+      showFollowersNotification(data)
+    });
+
+    socket.on('activity_edited', (data) => {
+      showFollowersNotification(data)
+    });
+
+    socket.on('activity_deleted', (data) => {
+      showFollowersNotification(data)
+    });
+
+    socket.on('activity_restored', (data) => {
+      showFollowersNotification(data)
+    });
+
+    socket.on('bulk_activity_restored', (data) => {
+      showFollowersNotification(data)
+    });
+
+    socket.on('bulk_activity_deleted', (data) => {
+      showFollowersNotification(data)
     });
   }, [socket])
 
@@ -810,6 +838,7 @@ export default function AppLayout({socket}) {
         open={openActivityModal}
         setOpen={setOpenActivityModal}
         mode="sidebar"
+        socket={socket}
       />
 
 
