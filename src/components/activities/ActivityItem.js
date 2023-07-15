@@ -72,12 +72,14 @@ const ActivityItem = ({activity, index, socket, showTrash}) => {
     handleOpen()
   };
 
-  const handleClickOpen = (event) => {
+  const handleClickOpen = (event, activity) => {
     event.stopPropagation()
+    setActivityObj(activity)
     setOpenDialog(true);
   };
 
   const handleCloseDialog = () => {
+    setActivityObj(null)
     setOpenDialog(false);
     setRestoreMode(false)
   };
@@ -90,14 +92,52 @@ const ActivityItem = ({activity, index, socket, showTrash}) => {
     setOpenAlert(false)
   };
 
+  const addNotificationMessage  = async (arr) => {
+
+    await instance.post(`add-message-for-offline-followers`, {arr})
+    .then((res) => {
+      
+    })
+    .catch(() => {
+    
+    })
+  }
+
+  const sendNotificationToFollowers  = (activity, msg, event) => {
+    let onlineUsersIds = user?.onlineUsers?.map((a) => a.userId)
+    let offlineIds = []
+
+    for (let i = 0; i < user?.usersFollowers.length; i++) {
+      if (onlineUsersIds.includes(user?.usersFollowers[i].follower_id)) {
+        socket.emit(event, { 
+          follower_id: user?.usersFollowers[i].follower_id, 
+          message: msg, 
+          sender_id: user?.id,
+          activityId: activity.id 
+        });
+      } else {
+        offlineIds = [...offlineIds, {id: user?.usersFollowers[i].follower_id, message: msg}]
+      }
+  
+    }
+
+    if (offlineIds?.length) {
+      addNotificationMessage(offlineIds)
+    }
+   
+  }
+
   const deleteActivity = async (id, e) => {
-    let url
+    let url, message
     url = showTrash ? `activities-force-delete/${id}` : `activities/${id}`
+    message = showTrash ? `${user?.name} deleted ${activityObj.label}` : `${user?.name} moved ${activityObj.label} to trash`
 
     dispatch(setShowDeleteNotification({showDeleteNotification: true}))
 
     await instance.delete(url)
     .then(() => {
+      sendNotificationToFollowers(activityObj, message, "activity_deleted")
+
       showAlert("Activity deleted", "success")
       handleCloseDialog()
       dispatch(removeActivity({activityId: id, showTrash}))
@@ -138,6 +178,8 @@ const ActivityItem = ({activity, index, socket, showTrash}) => {
 
     await instance.get(`activity-restore/${id}`)
     .then(() => {
+      sendNotificationToFollowers(activityObj, `${user?.name} restored ${activityObj.label}`, "activity_restored")
+
       handleCloseDialog()
       showAlert("Activity restored", "success")
       dispatch(removeActivity({activityId: id, showTrash}))
@@ -212,6 +254,7 @@ const ActivityItem = ({activity, index, socket, showTrash}) => {
                           onClick={() => {
                             setRestoreMode(true)
                             setOpenDialog(true)
+                            setActivityObj(activity)
                           }}
                         >
                           <RestoreFromTrash /> Restore
@@ -219,7 +262,7 @@ const ActivityItem = ({activity, index, socket, showTrash}) => {
                       ) : null
                     }
                   
-                    <MenuItem onClick={handleClickOpen}><DeleteOutlined /> Delete</MenuItem>
+                    <MenuItem onClick={(e) =>handleClickOpen(e, activity)}><DeleteOutlined /> Delete</MenuItem>
 
                     {
                       showTrash ? null : (
@@ -311,6 +354,7 @@ const ActivityItem = ({activity, index, socket, showTrash}) => {
        setOpen={setOpenModal}
        editMode={true}
        activity={activity}
+       socket={socket}
       />
 
       <ActivityTransferModal

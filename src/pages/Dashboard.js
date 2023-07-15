@@ -315,6 +315,7 @@ const Dashboard = ({socket}) => {
         open={open}
         setOpen={setOpen}
         mode="dashboard"
+        socket={socket}
       />
 
       <Snackbar open={openAlert} autoHideDuration={6000} onClose={handleCloseAlert}>
