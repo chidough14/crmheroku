@@ -6,6 +6,9 @@
 app = "crmclient"
 primary_region = "ams"
 
+[env]
+  REACT_APP_BASE_URL="https://crmserver.fly.dev/api/"
+
 [http_service]
   internal_port = 3000
   force_https = true

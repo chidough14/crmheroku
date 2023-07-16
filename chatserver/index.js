@@ -3,7 +3,10 @@ const app = express();
 const axios = require('axios');
 const path = require('path');
 require("dotenv").config(); 
-const PORT = process.env.PORT || 4000;
+// const PORT = process.env.PORT || 4000;
+
+const port = process.env.PORT || 3000;
+const host = '0.0.0.0';
 
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY); 
 
@@ -316,6 +319,7 @@ app.post('/api/webhook', express.raw({type: 'application/json'}), (req, response
   response.send().end();
 });
 
-http.listen(PORT, () => {
-  console.log(`Server listening on ${PORT}`);
+http.listen(port, host, () => {
+  console.log(`Server is running on http://${host}:${port}`);
+  // console.log(`Server is running on ${PORT}`);
 });

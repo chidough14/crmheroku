@@ -11,6 +11,7 @@ WORKDIR /app
 
 # Set production environment
 ENV NODE_ENV=production
+ENV REACT_APP_BASE_URL=https://crmserver.fly.dev/api/
 
 
 # Throw-away build stage to reduce size of final image
