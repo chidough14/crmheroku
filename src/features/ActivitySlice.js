@@ -13,7 +13,9 @@ const initialState = {
   showTransferNotification: false,
   showCreatingInvoiceSpinner: false,
   activityIds: [],
-  followers: []
+  followers: [],
+  commentContent: "",
+  childCommentContent: ""
 }
 
 export const ActivitySlice = createSlice({
@@ -128,6 +130,22 @@ export const ActivitySlice = createSlice({
     setFollowers: (state, action) => {
       state.followers = action.payload.followers
     },
+    addComments: (state, action) => {
+      state.activity.comments = [...state.activity.comments, action.payload.comment ]
+    },
+    editComment: (state, action) => {
+      let idx = state.activity.comments.findIndex((a) => a.id === action.payload.comment.id)
+      state.activity.comments[idx] = action.payload.comment
+    },
+    deleteComment: (state, action) => {
+      state.activity.comments = state.activity.comments.filter((a) => a.id !== action.payload.id)
+    },
+    setCommentContent: (state, action) => {
+      state.commentContent = action.payload.content
+    },
+    setChildCommentContent: (state, action) => {
+      state.childCommentContent = action.payload.content
+    },
   },
 })
 
@@ -161,7 +179,12 @@ export const {
   removeActivityIds,
   removeActivities,
   setTrashActivities,
-  setFollowers
+  setFollowers,
+  addComments,
+  setCommentContent,
+  editComment,
+  setChildCommentContent,
+  deleteComment
 } = ActivitySlice.actions
 
 export default ActivitySlice.reducer

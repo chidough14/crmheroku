@@ -1,11 +1,11 @@
 import { Box, Button, CircularProgress, FormControl, MenuItem, Modal, Select, Snackbar, TextField, Typography} from '@mui/material'
 import MuiAlert from '@mui/material/Alert';
 import { useFormik } from 'formik';
-import React, { useEffect, useReducer, useState } from 'react'
+import React, { useReducer, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import * as yup from 'yup';
 import instance from '../../../services/fetchApi';
-import { addAnnouncement, addAnnouncements, addCategories, addCategory, setCategories, setShowAddSpinner, updateAnnouncement } from '../../../features/AnnouncementsSlice';
+import {  addCategories, addCategory, setShowAddSpinner } from '../../../features/AnnouncementsSlice';
 import { checkEmptyString } from '../../../services/checkers';
 import { AddOutlined } from '@mui/icons-material';
 
