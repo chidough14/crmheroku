@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import PropTypes from 'prop-types';
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
-import { addProductItemToActivity, deleteActivityEvent, removeActivity, removeInvoiceFromActivity, removeProductItem, setClosePrompt, setShowDeleteNotification, setSingleActivity, updateProductItem } from '../../features/ActivitySlice'
+import { addComments, addProductItemToActivity, deleteActivityEvent, editComment, removeActivity, removeInvoiceFromActivity, removeProductItem, setClosePrompt, setShowDeleteNotification, setSingleActivity, updateProductItem } from '../../features/ActivitySlice'
 import instance from '../../services/fetchApi'
 import { AddOutlined, DeleteOutlined, EditOutlined } from '@mui/icons-material';
 import ActivityProductsTable from './ActivityProductsTable';
@@ -24,7 +24,7 @@ import MuiAlert from '@mui/material/Alert';
 import { loadStripe } from "@stripe/stripe-js"; 
 import axios from "axios"
 import { setProductAdding } from '../../features/ProductSlice';
-
+import Comments from '../comments/Comments';
 const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
 });
@@ -160,6 +160,46 @@ const ActivityDetails = ({socket}) => {
 
 
   }, [activity])
+
+  const updateComments = (data, user, params, flag) => {
+    let actId = data.activityId
+    let comment = JSON.parse(data.comment)
+  
+    if(comment.user_id === user?.id) {
+
+    } else {
+
+      if(parseInt(params?.id) === actId) {
+        if (flag === "add") {
+          dispatch(addComments({comment}))
+        } else {
+          dispatch(editComment({comment}))
+        }
+    
+      } else {
+        
+      }
+    }
+  }
+
+  useEffect(()=> {
+     
+    socket.on('comment_added', (data) => {
+      updateComments(data, user, params, "add")
+    
+    });
+
+    socket.on('comment_deleted', (data) => {
+     
+      updateComments(data, user, params, "delete")
+    
+    });
+
+    socket.on('comment_edited', (data) => {
+      updateComments(data, user, params, "edit")
+    });
+
+  }, [params.id, socket])
 
   const addProductToActivity = async () => {
     dispatch(setProductAdding({productAdding: true}))
@@ -344,157 +384,168 @@ const ActivityDetails = ({socket}) => {
             <CircularProgress />
           </Box>
         ) : (
-        <Box sx={{ width: '100%', marginTop: "30px" }}>
-          <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-            <Tabs value={value} onChange={handleChange} aria-label="basic tabs example">
-              <Tab label="Details" {...a11yProps(0)} />
-              <Tab label="Products" {...a11yProps(1)} />
-              <Tab label="Invoices" {...a11yProps(2)} />
-            </Tabs>
-          </Box>
-          <TabPanel value={value} index={0}>
-            <div style={{display: "flex", justifyContent: "space-between", marginBottom: "20px"}}>
-              <div>
-                <Typography variant="h7" display="block"  gutterBottom>
-                  <b>Label</b> : {activity?.label}
-                </Typography>
+        <>
+          <Box sx={{ width: '100%', marginTop: "30px" }}>
+            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+              <Tabs value={value} onChange={handleChange} aria-label="basic tabs example">
+                <Tab label="Details" {...a11yProps(0)} />
+                <Tab label="Products" {...a11yProps(1)} />
+                <Tab label="Invoices" {...a11yProps(2)} />
+              </Tabs>
+            </Box>
+            <TabPanel value={value} index={0}>
+              <div style={{display: "flex", justifyContent: "space-between", marginBottom: "20px"}}>
+                <div>
+                  <Typography variant="h7" display="block"  gutterBottom>
+                    <b>Label</b> : {activity?.label}
+                  </Typography>
 
-                <Typography variant="h7" display="block"  gutterBottom>
-                  <b>Description</b> : {activity?.description}
-                </Typography>
+                  <Typography variant="h7" display="block"  gutterBottom>
+                    <b>Description</b> : {activity?.description}
+                  </Typography>
 
-                <Typography variant="h7" display="block"  gutterBottom>
-                  <b>Assignee</b> : {activity?.assignedTo}
-                </Typography>
+                  <Typography variant="h7" display="block"  gutterBottom>
+                    <b>Assignee</b> : {activity?.assignedTo}
+                  </Typography>
 
-                <Typography variant="h7" display="block"  gutterBottom>
-                  <b>Type</b> : {activity?.type}
-                </Typography>
+                  <Typography variant="h7" display="block"  gutterBottom>
+                    <b>Type</b> : {activity?.type}
+                  </Typography>
 
-                <Typography variant="h7" display="block"  gutterBottom>
-                  <b>Estimate</b> : {activity?.earningEstimate}
-                </Typography>
+                  <Typography variant="h7" display="block"  gutterBottom>
+                    <b>Estimate</b> : {activity?.earningEstimate}
+                  </Typography>
 
-                <Typography variant="h7" display="block"  gutterBottom>
-                  <b>Probability</b> : {activity?.probability}
-                </Typography>
+                  <Typography variant="h7" display="block"  gutterBottom>
+                    <b>Probability</b> : {activity?.probability}
+                  </Typography>
 
-                <Typography variant="h7" display="block"  gutterBottom>
-                  <b>Company</b> : 
-                  <Button style={{borderRadius: "30px"}} onClick={() => navigate(`/companies/${activity?.company?.id}`)}>
-                    {activity?.company?.name}
-                  </Button>
-                </Typography>
+                  <Typography variant="h7" display="block"  gutterBottom>
+                    <b>Company</b> : 
+                    <Button style={{borderRadius: "30px"}} onClick={() => navigate(`/companies/${activity?.company?.id}`)}>
+                      {activity?.company?.name}
+                    </Button>
+                  </Typography>
 
-                <Button disabled={activity?.user_id !== user?.id} variant="contained" size='small' onClick={() => setOpenEditModal(true)} style={{borderRadius: "30px"}}><EditOutlined /></Button>&nbsp;&nbsp;&nbsp;
+                  <Button disabled={activity?.user_id !== user?.id} variant="contained" size='small' onClick={() => setOpenEditModal(true)} style={{borderRadius: "30px"}}><EditOutlined /></Button>&nbsp;&nbsp;&nbsp;
 
-                <Button disabled={activity?.user_id !== user?.id}  variant="contained" color='error' size='small' onClick={()=> setOpenDialogDeleteActivity(true)} style={{borderRadius: "30px"}}><DeleteOutlined /> </Button>
-              </div>
-
-              <div style={{margin: "auto", width: "60%"}}>
-                <div style={{display: "flex", justifyContent: "space-between"}}>
-                  <Typography variant='h6'  component="div" sx={{ flexGrow: 2 }}><b>Upcoming Events</b></Typography>
-                  <Button variant="contained" size='small' onClick={() => setOpenAddEventModal(true)} style={{borderRadius: "30px"}} disabled={activity?.user_id !== user?.id}>
-                    <AddOutlined />
-                  </Button>
+                  <Button disabled={activity?.user_id !== user?.id}  variant="contained" color='error' size='small' onClick={()=> setOpenDialogDeleteActivity(true)} style={{borderRadius: "30px"}}><DeleteOutlined /> </Button>
                 </div>
 
-                <ActivityEventsTable
-                  events={activity?.events}
-                  editEvent={editEvent}
-                  deleteEvent={removeEvent}
+                <div style={{margin: "auto", width: "60%"}}>
+                  <div style={{display: "flex", justifyContent: "space-between"}}>
+                    <Typography variant='h6'  component="div" sx={{ flexGrow: 2 }}><b>Upcoming Events</b></Typography>
+                    <Button variant="contained" size='small' onClick={() => setOpenAddEventModal(true)} style={{borderRadius: "30px"}} disabled={activity?.user_id !== user?.id}>
+                      <AddOutlined />
+                    </Button>
+                  </div>
+
+                  <ActivityEventsTable
+                    events={activity?.events}
+                    editEvent={editEvent}
+                    deleteEvent={removeEvent}
+                    activity={activity}
+                    user={user}
+                  />
+                </div>
+              </div>
+            </TabPanel>
+
+            <TabPanel value={value} index={1}>
+              <div style={{display: "flex", justifyContent: "space-between"}}>
+                <Typography variant='h6'><b>Products</b></Typography>
+
+                <Button disabled={activity?.user_id !== user?.id} variant="contained" size='small' style={{borderRadius: "30px"}} onClick={() => setOpenAddModal(true)}>Add Product</Button>
+              </div>
+            
+              <div>
+                <ActivityProductsTable 
+                  products={activity?.products} 
+                  editItem={editItem} 
+                  deleteItem={deleteItem}
                   activity={activity}
                   user={user}
                 />
-              </div>
-            </div>
-          </TabPanel>
-
-          <TabPanel value={value} index={1}>
-            <div style={{display: "flex", justifyContent: "space-between"}}>
-              <Typography variant='h6'><b>Products</b></Typography>
-
-              <Button disabled={activity?.user_id !== user?.id} variant="contained" size='small' style={{borderRadius: "30px"}} onClick={() => setOpenAddModal(true)}>Add Product</Button>
-            </div>
-          
-            <div>
-              <ActivityProductsTable 
-                products={activity?.products} 
-                editItem={editItem} 
-                deleteItem={deleteItem}
-                activity={activity}
-                user={user}
-              />
 
 
-              <div style={{display: "flex", justifyContent: "space-between", marginTop: "40px" }}>
-                <Typography variant='h5'  component="div" sx={{ flexGrow: 2}}>
-                  <b>Total:</b> ${total}
-                </Typography>
-                
-                {
-                  activity?.probability !== "Closed" ? (
-                    <Tooltip title="Close the deal to create an invoice">
-                      <div>
+                <div style={{display: "flex", justifyContent: "space-between", marginTop: "40px" }}>
+                  <Typography variant='h5'  component="div" sx={{ flexGrow: 2}}>
+                    <b>Total:</b> ${total}
+                  </Typography>
+                  
+                  {
+                    activity?.probability !== "Closed" ? (
+                      <Tooltip title="Close the deal to create an invoice">
+                        <div>
+                          <Button 
+                            variant="contained" 
+                            disableElevation 
+                            style={{borderRadius: "30px"}} 
+                            disabled
+                          >
+                            Create Invoice
+                          </Button>
+                        </div>
+                      </Tooltip>
+                    ) : (
+                      <div hidden={openForm}>
                         <Button 
                           variant="contained" 
                           disableElevation 
                           style={{borderRadius: "30px"}} 
-                          disabled
+                          onClick={() => setOpenForm(true)}
+                          disabled={activity?.user_id !== user?.id}
                         >
                           Create Invoice
                         </Button>
-                      </div>
-                    </Tooltip>
-                  ) : (
-                    <div hidden={openForm}>
-                      <Button 
-                        variant="contained" 
-                        disableElevation 
-                        style={{borderRadius: "30px"}} 
-                        onClick={() => setOpenForm(true)}
-                        disabled={activity?.user_id !== user?.id}
-                      >
-                        Create Invoice
-                      </Button>
 
-                      <Button 
-                        variant="contained" 
-                        disableElevation 
-                        style={{borderRadius: "30px"}} 
-                        onClick={() => makePayment()}
-                        disabled={activity?.user_id !== user?.id}
-                      >
-                        Pay with Stripe
-                      </Button>
+                        <Button 
+                          variant="contained" 
+                          disableElevation 
+                          style={{borderRadius: "30px"}} 
+                          onClick={() => makePayment()}
+                          disabled={activity?.user_id !== user?.id}
+                        >
+                          Pay with Stripe
+                        </Button>
+                      </div>
+                    )
+                  }
+                  
+                </div>
+                
+                {
+                  openForm && (
+                    <div>
+                      <InvoiceForm activityId={activity?.id} showCreatingInvoiceSpinner={showCreatingInvoiceSpinner} />
                     </div>
                   )
                 }
-                
-              </div>
               
-              {
-                openForm && (
-                  <div>
-                    <InvoiceForm activityId={activity?.id} showCreatingInvoiceSpinner={showCreatingInvoiceSpinner} />
-                  </div>
-                )
-              }
-            
-            
-            </div>
-          </TabPanel>
+              
+              </div>
+            </TabPanel>
 
-          <TabPanel value={value} index={2}>
-            <ActivityInvoiceTable 
-              invoices={activity?.invoices} 
-              showInvoice={showInvoice} 
-              showDeleteDialog={showDeleteDialog}
-              activity={activity}
-              user={user}
+            <TabPanel value={value} index={2}>
+              <ActivityInvoiceTable 
+                invoices={activity?.invoices} 
+                showInvoice={showInvoice} 
+                showDeleteDialog={showDeleteDialog}
+                activity={activity}
+                user={user}
+              />
+            </TabPanel>
+          </Box>
+
+          <div>
+            <Typography variant='h6'>Comments</Typography>
+            <Comments
+              comments={activity?.comments}
+              activityId={activity?.id}
+              socket={socket}
             />
-          </TabPanel>
-        </Box>
+          </div>
+        </>
         )
       }
       

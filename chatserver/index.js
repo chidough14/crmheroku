@@ -144,6 +144,18 @@ socketIO.on('connection', (socket) => {
     socketIO.emit('new_announcement_created', data);
   });
 
+  socket.on('comment_added', (data) => {
+    socketIO.emit('comment_added', data);
+  });
+
+  socket.on('comment_deleted', (data) => {
+    socketIO.emit('comment_deleted', data);
+  });
+
+  socket.on('comment_edited', (data) => {
+    socketIO.emit('comment_edited', data);
+  });
+
   socket.on('logout', () => {
     console.log(': A user loggedout');
 
