@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import PropTypes from 'prop-types';
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
-import { addComments, addProductItemToActivity, deleteActivityEvent, editComment, removeActivity, removeInvoiceFromActivity, removeProductItem, setClosePrompt, setShowDeleteNotification, setSingleActivity, updateProductItem } from '../../features/ActivitySlice'
+import { addComments, addProductItemToActivity, deleteActivityEvent, editComment, removeActivity, removeInvoiceFromActivity, removeProductItem, setClosePrompt, setDownvotes, setShowDeleteNotification, setSingleActivity, setUpvotes, updateProductItem } from '../../features/ActivitySlice'
 import instance from '../../services/fetchApi'
 import { AddOutlined, DeleteOutlined, EditOutlined } from '@mui/icons-material';
 import ActivityProductsTable from './ActivityProductsTable';
@@ -126,6 +126,26 @@ const ActivityDetails = ({socket}) => {
     setValue(newValue);
   };
 
+  const getUpvotes = async () => {
+    await instance.get(`users-upvotes`)
+    .then((res) => {
+      dispatch(setUpvotes({upvotes: res.data.upvotes}))
+    })
+  };
+
+  
+  const getDownvotes = async () => {
+    await instance.get(`users-downvotes`)
+    .then((res) => {
+      dispatch(setDownvotes({downvotes: res.data.downvotes}))
+    })
+  };
+
+  useEffect(() => {
+    getUpvotes()
+    getDownvotes()
+  }, [])
+
   useEffect(()=> {
 
     const getActivityDetails = async () => {
@@ -164,22 +184,33 @@ const ActivityDetails = ({socket}) => {
   const updateComments = (data, user, params, flag) => {
     let actId = data.activityId
     let comment = JSON.parse(data.comment)
-  
-    if(comment.user_id === user?.id) {
 
-    } else {
-
-      if(parseInt(params?.id) === actId) {
-        if (flag === "add") {
-          dispatch(addComments({comment}))
-        } else {
-          dispatch(editComment({comment}))
-        }
-    
+    if(parseInt(params?.id) === actId) {
+      if (flag === "add") {
+        dispatch(addComments({comment}))
       } else {
-        
+        dispatch(editComment({comment}))
       }
+  
+    } else {
+      
     }
+  
+    // if(comment.user_id === user?.id) {
+
+    // } else {
+
+    //   if(parseInt(params?.id) === actId) {
+    //     if (flag === "add") {
+    //       dispatch(addComments({comment}))
+    //     } else {
+    //       dispatch(editComment({comment}))
+    //     }
+    
+    //   } else {
+        
+    //   }
+    // }
   }
 
   useEffect(()=> {
@@ -197,6 +228,10 @@ const ActivityDetails = ({socket}) => {
 
     socket.on('comment_edited', (data) => {
       updateComments(data, user, params, "edit")
+    });
+
+    socket.on('comment_upvoted', (data) => {
+      updateComments(data, user, params, "upvote")
     });
 
   }, [params.id, socket])
