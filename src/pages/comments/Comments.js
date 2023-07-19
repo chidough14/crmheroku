@@ -1,13 +1,14 @@
 import React, { useState } from 'react'
-import { Card, CardContent, Typography, Divider, Button, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material'
+import { Card, CardContent, Typography, Divider, Button, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, IconButton } from '@mui/material'
 import { useDispatch, useSelector } from 'react-redux';
 import moment from 'moment';
 import CommentForm from './CommentForm';
 import instance from '../../services/fetchApi';
-import { addComments, editComment, setChildCommentContent, setCommentContent } from '../../features/ActivitySlice';
-import { DeleteOutline, EditOutlined, ReplyOutlined } from '@mui/icons-material';
+import { addComments, editComment, editDownVotes, editUpVotes, setChildCommentContent, setCommentContent } from '../../features/ActivitySlice';
+import { DeleteOutline, EditOutlined, ReplyOutlined, ThumbDown, ThumbUp } from '@mui/icons-material';
 import AddCommentModal from './AddCommentModal';
 import { useNavigate } from 'react-router';
+import { Box } from '@mui/system';
 
 
 const Comment = ({ 
@@ -22,7 +23,11 @@ const Comment = ({
   setCommentId, 
   setOpenDeleteDialog,
   setHide,
-  hide 
+  hide,
+  handleDownvote,
+  handleUpvote,
+  upvotes,
+  downvotes 
 }) => {
   const navigate = useNavigate()
 
@@ -36,6 +41,30 @@ const Comment = ({
         initials += names[names.length - 1].substring(0, 1).toUpperCase();
     }
     return initials;
+  }
+
+  const renderShowHideReplies = (hide, comment) => {
+    if (comment.children && comment.children.length) {
+      if (hide === comment.id) {
+        return  <Button
+                  onClick={() => {
+                    setHide(null)
+                  }}
+                >
+                  Show Replies
+                </Button>
+      } else {
+        return  <Button
+                  onClick={() => {
+                    setHide(comment.id)
+                  }}
+                >
+                  Hide Replies
+                </Button>
+      }
+    } else {
+      return null
+    }
   }
 
   return (
@@ -98,13 +127,23 @@ const Comment = ({
                 </Typography>
       
                 <div style={{display: "flex"}}>
-                  <Button
-                    onClick={() => {
-                      setHide(comment.id)
-                    }}
-                  >
-                    Hide Replies
-                  </Button>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <span>{comment.upvotes}</span>
+                    <IconButton color={upvotes.includes(comment.id) ? "warning" : "primary"} onClick={() => handleUpvote(comment.id)}>
+                      <ThumbUp />
+                    </IconButton>
+                    {/* <Typography variant="body1">
+                      {comment.upvotes - comment.downvotes}
+                    </Typography>
+                    <span>{comment.downvotes}</span>
+                    <IconButton color={downvotes.includes(comment.id) ? "warning" : "primary"} onClick={() => handleDownvote(comment.id)}>
+                      <ThumbDown />
+                    </IconButton> */}
+                  </Box>
+
+
+                  { renderShowHideReplies(hide, comment) }
+                 
 
                   <Button
                     onClick={() => {
@@ -168,6 +207,10 @@ const Comment = ({
               setOpenDeleteDialog={setOpenDeleteDialog}
               setHide={setHide}
               hide={hide}
+              handleDownvote={handleDownvote}
+              handleUpvote={handleUpvote}
+              upvotes={upvotes}
+              downvotes={downvotes}
             />
           ))}
         </div>
@@ -178,6 +221,7 @@ const Comment = ({
 
 const Comments = ({comments, activityId, socket}) => {
   const { allUsers, id } = useSelector(state => state.user)
+  const { upvotes, downvotes } = useSelector(state => state.activity)
   const dispatch = useDispatch()
   const [openModal, setOpenModal] = useState(false)
   const [parentId, setParentId] = useState(null)
@@ -203,6 +247,23 @@ const Comments = ({comments, activityId, socket}) => {
     }
   
     return nestedComments;
+  };
+
+  const handleUpvote = async (id) => {
+    await instance.get(`comment/${id}/upvote`)
+    .then((res) => {
+      socket.emit('comment_upvoted', { activityId, comment: JSON.stringify(res.data.comment) });
+      dispatch(editComment({comment: res.data.comment}))
+      dispatch(editUpVotes({id: res.data.comment.id}))
+    })
+  };
+
+  const handleDownvote = async (id) => {
+    await instance.get(`comment/${id}/downvote`)
+    .then((res) => {
+      dispatch(editComment({comment: res.data.comment}))
+      dispatch(editDownVotes({id: res.data.comment.id}))
+    })
   };
 
   const saveComment = async (content, parent_id = null) => {
@@ -263,6 +324,10 @@ const Comments = ({comments, activityId, socket}) => {
           setOpenDeleteDialog={setOpenDeleteDialog}
           setHide={setHide}
           hide={hide}
+          handleDownvote={handleDownvote}
+          handleUpvote={handleUpvote}
+          upvotes={upvotes}
+          downvotes={downvotes}
         />
       ))}
 
