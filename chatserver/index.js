@@ -141,19 +141,23 @@ socketIO.on('connection', (socket) => {
   });
 
   socket.on('new_announcement', (data) => {
-    socketIO.emit('new_announcement_created', data);
+    socket.emit('new_announcement_created', data);
   });
 
   socket.on('comment_added', (data) => {
-    socketIO.emit('comment_added', data);
+    socket.broadcast.emit('comment_added', data);
   });
 
   socket.on('comment_deleted', (data) => {
-    socketIO.emit('comment_deleted', data);
+    socket.broadcast.emit('comment_deleted', data);
   });
 
   socket.on('comment_edited', (data) => {
-    socketIO.emit('comment_edited', data);
+    socket.broadcast.emit('comment_edited', data);
+  });
+
+  socket.on('comment_upvoted', (data) => {
+    socket.broadcast.emit('comment_upvoted', data);
   });
 
   socket.on('logout', () => {

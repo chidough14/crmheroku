@@ -15,7 +15,9 @@ const initialState = {
   activityIds: [],
   followers: [],
   commentContent: "",
-  childCommentContent: ""
+  childCommentContent: "",
+  upvotes: [],
+  downvotes: []
 }
 
 export const ActivitySlice = createSlice({
@@ -146,6 +148,28 @@ export const ActivitySlice = createSlice({
     setChildCommentContent: (state, action) => {
       state.childCommentContent = action.payload.content
     },
+    setUpvotes: (state, action) => {
+      state.upvotes = action.payload.upvotes.map((a) => a.comment_id)
+    },
+    setDownvotes: (state, action) => {
+      state.downvotes = action.payload.downvotes.map((a) => a.comment_id)
+    },
+    editUpVotes: (state, action) => {
+      if(state.upvotes.includes(action.payload.id)) {
+        state.upvotes = state.upvotes.filter((a) => a !== action.payload.id)
+      } else {
+        state.upvotes = [...state.upvotes, action.payload.id]
+      }
+     
+    },
+    editDownVotes: (state, action) => {
+      if(state.downvotes.includes(action.payload.id)) {
+        state.downvotes = state.downvotes.filter((a) => a !== action.payload.id)
+      } else {
+        state.downvotes = [...state.downvotes, action.payload.id]
+      }
+     
+    },
   },
 })
 
@@ -184,7 +208,11 @@ export const {
   setCommentContent,
   editComment,
   setChildCommentContent,
-  deleteComment
+  deleteComment,
+  setDownvotes,
+  setUpvotes,
+  editUpVotes,
+  editDownVotes
 } = ActivitySlice.actions
 
 export default ActivitySlice.reducer
