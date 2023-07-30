@@ -83,6 +83,15 @@ const SingleMessage = ({socket}) => {
 
   }, [location])
 
+  const isValidJson = (string) => {
+    try {
+      JSON.parse(string)
+      return true
+    } catch (error) {
+      return false
+    }
+  }
+
   useEffect(()=> {
     if(location.state?.auto) {
       let mySubString = singleMessage?.message?.substring(
@@ -94,11 +103,19 @@ const SingleMessage = ({socket}) => {
     }
 
     if(singleMessage?.quill_message) {
-      var converter = new QuillDeltaToHtmlConverter(JSON.parse(singleMessage?.quill_message).ops, {});
+      if (isValidJson(singleMessage?.quill_message)) {
+        var converter = new QuillDeltaToHtmlConverter(JSON.parse(singleMessage?.quill_message).ops, {});
 
-      var html = converter.convert(); 
+        var html = converter.convert();
 
-      setContent(html)
+        if (html) {
+          setContent(html)
+        } else {
+          setContent(singleMessage?.quill_message)
+        }
+      } else {
+        setContent(singleMessage?.quill_message)
+      }
     } else {
       setContent("")
     }
