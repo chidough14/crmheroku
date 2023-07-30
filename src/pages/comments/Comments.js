@@ -67,6 +67,17 @@ const Comment = ({
     }
   }
 
+  const replaceUsernames = (input) => {
+    const regex = /@\[([^)]+)\]\([^)]+\)/g;
+    return input.replace(regex, (match, username) => username);
+  }
+
+  const renderCommentContent = (comment) => {
+    return (
+      <Typography variant="body1">{replaceUsernames(comment.content)}</Typography>
+    )
+  }
+
   return (
    
     <Card sx={{marginBottom: "20px"}}>
@@ -76,7 +87,10 @@ const Comment = ({
             <Typography variant="body1">Comment deleted</Typography>
           ) : (
             <>
-              <Typography variant="body1">{comment.content}</Typography>
+              {
+                renderCommentContent(comment)
+              }
+          
               <div style={{display: "flex", justifyContent: "space-between"}}>
                 <Typography variant="caption" color="textSecondary">
                   {
@@ -220,7 +234,7 @@ const Comment = ({
 };
 
 const Comments = ({comments, activityId, socket}) => {
-  const { allUsers, id } = useSelector(state => state.user)
+  const { allUsers, id, name } = useSelector(state => state.user)
   const { upvotes, downvotes } = useSelector(state => state.activity)
   const dispatch = useDispatch()
   const [openModal, setOpenModal] = useState(false)
@@ -266,31 +280,112 @@ const Comments = ({comments, activityId, socket}) => {
     })
   };
 
-  const saveComment = async (content, parent_id = null) => {
+  const extractNames = (input) => {
+    const regex = /\(([^)]+)\)/g; // Regular expression to match text inside normal brackets
+    const namesArray = [];
+    let match;
+    
+    while ((match = regex.exec(input)) !== null) {
+      namesArray.push(match[1]);
+    }
+  
+    return namesArray;
+  };
+
+  const replaceUsernames = (input) => {
+    const regex = /@\[([^)]+)\]\([^)]+\)/g;
+    return input.replace(regex, (match, username) => username);
+  }
+
+
+
+  const saveComment = async (content, mentions, parent_id = null) => {
+    let names = extractNames(content)
+    let userData
+    for (let i=0; i<mentions.length; i++) {
+      let username = mentions[i].substr(1)
+      let allusers = allUsers.map((a) => {
+        return {
+          ...a,
+          name: a.name.replace(/\s/g, '' ).toLowerCase() 
+        }
+      })
+
+      userData  = allusers.find((a) => a.name === username)
+    }
+
     let body = {
       content,
       activity_id: activityId,
-      parent_id
+      parent_id,
+      userData,
+      mentions: names
     }
+    
     await instance.post(`comment`, body)
     .then((res) => {
       socket.emit('comment_added', { activityId, comment: JSON.stringify(res.data.comment) });
-      dispatch(addComments({comment: res.data.comment}))
+
+      if(names.length > 0) {
+        let data = {
+          ...res.data.comment,
+          content: replaceUsernames(res.data.comment.content)
+        }
+        dispatch(addComments({comment: data}))
+      } else {
+        dispatch(addComments({comment: res.data.comment}))
+      }
+     
       dispatch(setCommentContent({content: ""}))
       dispatch(setChildCommentContent({content: ""}))
       setOpenModal(false)
+
+      for (let i=0; i<names.length; i++) {
+        let username = names[i] 
+
+        let userInfo  = allUsers?.find((a) => a.name === username)
+        socket.emit('sendNotification', { recipientId: userInfo.id, message: `You were mentioned by ${name}` });  
+      }
+      
     })
   }
 
-  const updateComment = async (content) => {
-    let body = {
-      content
+  const updateComment = async (content, mentions) => {
+    let names = extractNames(content)
+    let userData
+    for (let i=0; i<mentions.length; i++) {
+      let username = mentions[i].substr(1)
+      let allusers = allUsers.map((a) => {
+        return {
+          ...a,
+          name: a.name.replace(/\s/g, '' ).toLowerCase() 
+        }
+      })
+
+      userData  = allusers.find((a) => a.name === username)
     }
+
+    let body = {
+      content,
+      mentions: names
+    }
+
     await instance.patch(`comment/${commentId}`, body)
     .then((res) => {
     
       socket.emit('comment_edited', { activityId, comment: JSON.stringify(res.data.comment) });
-      dispatch(editComment({comment: res.data.comment}))
+
+      if(names.length > 0) {
+        let data = {
+          ...res.data.comment,
+          content: replaceUsernames(res.data.comment.content)
+        }
+        dispatch(editComment({comment: data}))
+      } else {
+        dispatch(editComment({comment: res.data.comment}))
+      }
+
+      // dispatch(editComment({comment: res.data.comment}))
       dispatch(setChildCommentContent({content: ""}))
       setCommentId(null)
       setOpenModal(false)
@@ -334,6 +429,8 @@ const Comments = ({comments, activityId, socket}) => {
       <CommentForm
         saveComment={saveComment}
       /> 
+
+      {/* <CommentMentions /> */}
 
       <AddCommentModal
         open={openModal}

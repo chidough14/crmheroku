@@ -32,6 +32,7 @@
     "react-chartjs-2": "^5.1.0",
     "react-dom": "^18.2.0",
     "react-geocode": "^0.2.3",
+    "react-mentions": "^4.4.10",
     "react-mui-fileuploader": "^0.5.2",
     "react-quill": "^2.0.0",
     "react-redux": "^7.2.8",
