@@ -5,6 +5,10 @@ import * as yup from 'yup';
 import { useFormik } from 'formik';
 import { useDispatch, useSelector } from 'react-redux';
 import { setChildCommentContent } from '../../features/ActivitySlice';
+import { MentionsInput, Mention } from 'react-mentions'
+import defaultMentionStyles from './defaultMentionStyles'
+import defaultStyle from './defaultStyle'
+import { useState } from 'react';
 
 const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
@@ -31,15 +35,43 @@ const validationSchema = yup.object({
 const AddCommentModal = ({open, setOpen, parentId, saveComment, editMode, updateComment}) => {
   const { childCommentContent } = useSelector(state => state.activity)
   const dispatch = useDispatch()
+  const { allUsers } = useSelector(state => state.user)
+  const [mentions, setMentions] = useState([]);
 
   const handleChange = (e) => {
-    dispatch(setChildCommentContent({content: e.target.value}))
+    const value = e.target.value;
+    dispatch(setChildCommentContent({content: value}))
+
+    const regex = /@(\w+)/g;
+    const matchedMentions = value.match(regex);
+    if (matchedMentions) {
+      const uniqueMentions = [...new Set(matchedMentions)];
+      setMentions(uniqueMentions);
+    }
   }
 
   const handleClose = (e) => {
     setOpen(false)
     dispatch(setChildCommentContent({content: ""}))
   }
+
+  const fetchUsers = (query, callback) => {
+    if (!query) return;
+  
+    setTimeout(() => {
+      const filteredUsers = allUsers.map((a) => {
+        return {
+          id: a.name,
+          display: a.name
+        }
+      }).
+      filter((user) =>
+        user.display.toLowerCase().includes(query)
+      );
+
+      callback(filteredUsers);
+    }, 1000);
+  };
 
   return (
     <>
@@ -55,7 +87,7 @@ const AddCommentModal = ({open, setOpen, parentId, saveComment, editMode, update
                 {editMode ? "Edit" : "Add"} Comment
             </Typography>
 
-            <TextField
+            {/* <TextField
               style={{marginBottom: "12px"}}
               required
               size='small'
@@ -67,7 +99,21 @@ const AddCommentModal = ({open, setOpen, parentId, saveComment, editMode, update
               label="Content"
               value={childCommentContent}
               onChange={handleChange}
-            /> 
+            />  */}
+
+            <MentionsInput 
+              style={defaultStyle} 
+              value={childCommentContent}
+              onChange={handleChange}
+              placeholder={"Mention people using '@'"}
+              a11ySuggestionsListLabel={"Suggested mentions"}
+            >
+              <Mention
+                trigger="@"
+                style={defaultMentionStyles}
+                data={fetchUsers}
+              />
+            </MentionsInput>
 
 
             <p></p>
@@ -78,9 +124,9 @@ const AddCommentModal = ({open, setOpen, parentId, saveComment, editMode, update
                 variant="contained" 
                 onClick={() => {
                   if(editMode) {
-                    updateComment(childCommentContent)
+                    updateComment(childCommentContent, mentions)
                   } else {
-                    saveComment(childCommentContent, parentId)
+                    saveComment(childCommentContent, mentions, parentId)
                   }
                   
                 }}
