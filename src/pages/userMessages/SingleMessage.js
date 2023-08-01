@@ -94,9 +94,9 @@ const SingleMessage = ({socket}) => {
 
   useEffect(()=> {
     if(location.state?.auto) {
-      let mySubString = singleMessage?.message?.substring(
-        singleMessage?.message.indexOf("(") + 1, 
-        singleMessage?.message.lastIndexOf(")")
+      let mySubString = singleMessage?.quill_message?.substring(
+        singleMessage?.quill_message.indexOf("(") + 1, 
+        singleMessage?.quill_message.lastIndexOf(")")
       );
 
       setActivityId(parseInt(mySubString))
@@ -121,7 +121,7 @@ const SingleMessage = ({socket}) => {
     }
 
   
-  }, [singleMessage])
+  }, [singleMessage, location])
 
   const getInitials = (string) => {
     let names = string?.split(' '),

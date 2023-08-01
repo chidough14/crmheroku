@@ -1,5 +1,5 @@
 import { AddOutlined, ArrowDropDown, CopyAllOutlined, DeleteOutline, FolderDelete, InfoOutlined, MoveUpOutlined, Restore, RestorePage, SearchOutlined } from '@mui/icons-material'
-import { Button, Checkbox, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Menu, MenuItem, Snackbar, TextField, Toolbar, Tooltip, Typography } from '@mui/material'
+import { Button, Checkbox, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Menu, MenuItem, Snackbar, TextField, Toolbar, Tooltip, Typography } from '@mui/material'
 import React, { useEffect, useState } from 'react'
 import {DragDropContext} from 'react-beautiful-dnd'
 import { useDispatch, useSelector } from 'react-redux'
@@ -15,6 +15,7 @@ import {
   setActivities, 
   setFollowers, 
   setOpenPrompt, 
+  setReloadActivities, 
   setShowCloningNotification, 
   setShowDeleteNotification, 
   setSortOptionValue, 
@@ -45,7 +46,8 @@ const Activities = ({socket}) => {
     showCloningNotification, 
     showDeleteNotification, 
     trashActivities,
-    followers 
+    followers,
+    reloadActivities 
   } = useSelector((state) => state.activity) 
   const { id, name, usersFollowed, usersFollowers, onlineUsers } = useSelector(state => state.user)
   const [open, setOpen] = useState(false);
@@ -106,6 +108,14 @@ const Activities = ({socket}) => {
     })
   }
 
+  const fetchActivities = async () => {
+    await instance.get(`/activities`)
+    .then((res) => {
+      dispatch(setActivities({activities: res.data.activities}))
+      dispatch(setReloadActivities({reloadActivities: false}))
+    })
+  }
+
   useEffect(() => {
     getFollowers()
   }, [followers?.length, usersFollowed?.length])
@@ -116,16 +126,13 @@ const Activities = ({socket}) => {
     }
   }, [token])
 
-  // useEffect(() => {
-  //   const fetchActivities = async () => {
-  //     await instance.get(`/activities`)
-  //     .then((res) => {
-  //       dispatch(setActivities({activities: res.data.activities}))
-  //     })
-  //   }
+  useEffect(() => {
+    if (reloadActivities) {
 
-  //   fetchActivities()
-  // }, [])
+      fetchActivities()
+    }
+
+  }, [reloadActivities])
 
   useEffect(() => {
 
