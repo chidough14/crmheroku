@@ -299,26 +299,13 @@ const Comments = ({comments, activityId, socket}) => {
 
 
 
-  const saveComment = async (content, mentions, parent_id = null) => {
+  const saveComment = async (content, parent_id = null) => {
     let names = extractNames(content)
-    let userData
-    for (let i=0; i<mentions.length; i++) {
-      let username = mentions[i].substr(1)
-      let allusers = allUsers.map((a) => {
-        return {
-          ...a,
-          name: a.name.replace(/\s/g, '' ).toLowerCase() 
-        }
-      })
-
-      userData  = allusers.find((a) => a.name === username)
-    }
 
     let body = {
       content,
       activity_id: activityId,
       parent_id,
-      userData,
       mentions: names
     }
     
@@ -350,20 +337,8 @@ const Comments = ({comments, activityId, socket}) => {
     })
   }
 
-  const updateComment = async (content, mentions) => {
+  const updateComment = async (content) => {
     let names = extractNames(content)
-    let userData
-    for (let i=0; i<mentions.length; i++) {
-      let username = mentions[i].substr(1)
-      let allusers = allUsers.map((a) => {
-        return {
-          ...a,
-          name: a.name.replace(/\s/g, '' ).toLowerCase() 
-        }
-      })
-
-      userData  = allusers.find((a) => a.name === username)
-    }
 
     let body = {
       content,

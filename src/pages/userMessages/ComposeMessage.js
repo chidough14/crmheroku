@@ -101,7 +101,7 @@ const ComposeMessage = ({replyMode, singleMessage, socket, state, sendingMessage
           for (let i = 0; i < res.data.createdMessages.length; i++) {
              dispatch(addNewMessage({message: res.data.createdMessages[i]}))
 
-             socket.emit('sendNotification', { recipientId: res.data.createdMessages[i].receiver_id, message: values.message });
+             socket.emit('sendNotification', { recipientId: res.data.createdMessages[i].receiver_id, message: "New Message" });
           }
           showAlert("Messages sent", "success")
           setValue("")
@@ -136,7 +136,7 @@ const ComposeMessage = ({replyMode, singleMessage, socket, state, sendingMessage
             showAlert("Message sent", "success")
             resetForm()
 
-            socket.emit('sendNotification', { recipientId: receiverId, message: values.message });
+            socket.emit('sendNotification', { recipientId: receiverId, message: "New Message" });
           })
           .catch(() => {
             dispatch(setSendingMessage({isSending: false}))

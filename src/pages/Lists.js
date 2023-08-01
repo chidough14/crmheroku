@@ -10,7 +10,7 @@ import ListCard from '../components/lists/ListCard';
 import ListModal from '../components/lists/ListModal';
 import "./list.css"
 import instance from '../services/fetchApi';
-import { addList, addListIds, removeListIds, removeLists, setLists, setShowCloningNotification, setShowSpinner, setSortOptionValue } from '../features/listSlice';
+import { addList, addListIds, removeListIds, removeLists, setLists, setReloadLists, setShowCloningNotification, setShowSpinner, setSortOptionValue } from '../features/listSlice';
 import Pagination from '@mui/material/Pagination';
 import SortButton from './orders/SortButton';
 import { AddOutlined, ContentPasteOff, CopyAllOutlined, DeleteOutline, FolderDelete, MoveUpOutlined, Restore, RestorePage, SearchOutlined } from '@mui/icons-material';
@@ -39,7 +39,7 @@ export default function Lists({socket}) {
   const token = getToken()
   const navigate = useNavigate()
   const dispatch = useDispatch()
-  const {lists, sortOption, showSpinner, listIds, showCloningNotification} = useSelector((state) => state.list)
+  const {lists, sortOption, showSpinner, listIds, showCloningNotification, reloadLists} = useSelector((state) => state.list)
   const [page, setPage] = React.useState(1)
 
   const [open, setOpen] = React.useState(false);
@@ -125,6 +125,13 @@ export default function Lists({socket}) {
        
       }
   }, [sortOption])
+
+  React.useEffect(() => {
+    if (reloadLists) {
+      getListsResult(page)
+      dispatch(setReloadLists({reloadLists: false}))
+    }
+  }, [reloadLists])
 
   React.useEffect(() => {
     if (!token) {
