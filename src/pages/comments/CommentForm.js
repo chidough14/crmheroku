@@ -9,6 +9,7 @@ import defaultStyle from './defaultStyle'
 const CommentForm = ({saveComment}) => {
 
   const { commentContent } = useSelector(state => state.activity)
+  const { id } = useSelector(state => state.user)
   const [mentions, setMentions] = useState([]);
 
   const dispatch = useDispatch()
@@ -38,13 +39,18 @@ const CommentForm = ({saveComment}) => {
   
     setTimeout(() => {
       const filteredUsers = allUsers.map((a) => {
-        return {
-          id: a.name,
-          display: a.name
+        if(a.id === id) {
+
+        } else {
+          return {
+            id: a.name,
+            display: a.name
+          }
         }
+       
       }).
       filter((user) =>
-        user.display.toLowerCase().includes(query)
+        user?.display.toLowerCase().includes(query)
       );
 
       callback(filteredUsers);
@@ -82,7 +88,7 @@ const CommentForm = ({saveComment}) => {
           />
         </MentionsInput>
 
-      <Button variant='contained' onClick={() => saveComment(commentContent, mentions)}>
+      <Button variant='contained' onClick={() => saveComment(commentContent)}>
         Save
       </Button>
     </div>
