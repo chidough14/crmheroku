@@ -124,9 +124,9 @@ const AddCommentModal = ({open, setOpen, parentId, saveComment, editMode, update
                 variant="contained" 
                 onClick={() => {
                   if(editMode) {
-                    updateComment(childCommentContent, mentions)
+                    updateComment(childCommentContent)
                   } else {
-                    saveComment(childCommentContent, mentions, parentId)
+                    saveComment(childCommentContent, parentId)
                   }
                   
                 }}

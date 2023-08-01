@@ -12,7 +12,8 @@ const initialState = {
   showSpinner: false,
   showCloningNotification: false,
   showUploadNotification: false,
-  listIds: []
+  listIds: [],
+  reloadLists: false
 }
 
 export const listSlice = createSlice({
@@ -88,6 +89,9 @@ export const listSlice = createSlice({
     },
     removeListIds: (state, action) => {
       state.listIds = state.listIds.filter((a) => !action.payload.listIds.includes(a))
+    },
+    setReloadLists: (state, action) => {
+      state.reloadLists = action.payload.reloadLists
     }
   },
 })
@@ -112,7 +116,8 @@ export const {
   addListId,
   addListIds,
   removeListId,
-  removeListIds
+  removeListIds,
+  setReloadLists
 } = listSlice.actions
 
 export default listSlice.reducer

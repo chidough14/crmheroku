@@ -28,7 +28,7 @@ import UserAccountsCircle from '../components/UserAccountsCircle';
 import SearchBar from '../components/SearchBar';
 import instance from '../services/fetchApi';
 import { setSearchResults } from '../features/companySlice';
-import { setSelectedCompanyId } from '../features/listSlice';
+import { setReloadLists, setSelectedCompanyId } from '../features/listSlice';
 import MuiAlert from '@mui/material/Alert';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
@@ -37,6 +37,7 @@ import ActivityModal from '../components/activities/ActivityModal';
 import { setReloadMessages } from '../features/MessagesSlice';
 import { Stack } from '@mui/system';
 import FollowersNotification from '../components/FollowersNotification';
+import { setReloadActivities } from '../features/ActivitySlice';
 
 
 const Alert = React.forwardRef(function Alert(props, ref) {
@@ -317,6 +318,14 @@ export default function AppLayout({socket}) {
       getNotifications("showNotification")
 
       // Decide whether to reload lists if the transfer is a list
+      if(message === "Activity Transfer" || message === "Activities Transfer" ) {
+        dispatch(setReloadActivities({reloadActivities: true}))
+      }
+
+      if(message === "List transfer" ) {
+        dispatch(setReloadLists({reloadLists: true}))
+      }
+      
       
     });
     

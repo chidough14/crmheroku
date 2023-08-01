@@ -17,7 +17,8 @@ const initialState = {
   commentContent: "",
   childCommentContent: "",
   upvotes: [],
-  downvotes: []
+  downvotes: [],
+  reloadActivities: false
 }
 
 export const ActivitySlice = createSlice({
@@ -170,6 +171,9 @@ export const ActivitySlice = createSlice({
       }
      
     },
+    setReloadActivities: (state, action) => {
+      state.reloadActivities = action.payload.reloadActivities
+    },
   },
 })
 
@@ -212,7 +216,8 @@ export const {
   setDownvotes,
   setUpvotes,
   editUpVotes,
-  editDownVotes
+  editDownVotes,
+  setReloadActivities
 } = ActivitySlice.actions
 
 export default ActivitySlice.reducer
