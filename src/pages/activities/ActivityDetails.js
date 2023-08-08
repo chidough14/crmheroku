@@ -25,6 +25,7 @@ import { loadStripe } from "@stripe/stripe-js";
 import axios from "axios"
 import { setProductAdding } from '../../features/ProductSlice';
 import Comments from '../comments/Comments';
+import { DeltaToStringConverter } from '../../services/DeltaToStringConverter';
 const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
 });
@@ -152,6 +153,14 @@ const ActivityDetails = ({socket}) => {
       setLoading(true)
       await instance.get(`activities/${params.id}`)
       .then((res) => {
+        let formttedComments = res.data.activity.comments.map((a)=> {
+          return {
+            ...a,
+            content: DeltaToStringConverter(JSON.parse(a.content).ops)
+          }
+        })
+
+        res.data.activity.comments = formttedComments
         dispatch(setSingleActivity({activity: res.data.activity}))
         setLoading(false)
       })

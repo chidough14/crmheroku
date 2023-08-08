@@ -88,7 +88,11 @@ const CommentForm = ({saveComment}) => {
           />
         </MentionsInput>
 
-      <Button variant='contained' onClick={() => saveComment(commentContent)}>
+      <Button 
+        variant='contained' 
+        onClick={() => saveComment(commentContent)}
+        style={{marginTop: "10px"}}
+      >
         Save
       </Button>
     </div>
