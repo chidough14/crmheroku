@@ -9,7 +9,8 @@ import instance from '../../services/fetchApi'
 import { getToken } from '../../services/LocalStorageService'
 import ComposeMessage from './ComposeMessage'
 import MuiAlert from '@mui/material/Alert';
-import { QuillDeltaToHtmlConverter } from 'quill-delta-to-html';
+import { DeltaToStringConverter } from '../../services/DeltaToStringConverter'
+// import { QuillDeltaToHtmlConverter } from 'quill-delta-to-html';
 
 const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
@@ -104,15 +105,17 @@ const SingleMessage = ({socket}) => {
 
     if(singleMessage?.quill_message) {
       if (isValidJson(singleMessage?.quill_message)) {
-        var converter = new QuillDeltaToHtmlConverter(JSON.parse(singleMessage?.quill_message).ops, {});
+        // var converter = new QuillDeltaToHtmlConverter(JSON.parse(singleMessage?.quill_message).ops, {});
 
-        var html = converter.convert();
+        // var html = converter.convert();
 
-        if (html) {
-          setContent(html)
-        } else {
-          setContent(singleMessage?.quill_message)
-        }
+        setContent(DeltaToStringConverter(JSON.parse(singleMessage?.quill_message).ops))
+
+        // if (html) {
+        //   setContent(html)
+        // } else {
+        //   setContent(singleMessage?.quill_message)
+        // }
       } else {
         setContent(singleMessage?.quill_message)
       }
