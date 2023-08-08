@@ -9,6 +9,9 @@ import { DeleteOutline, EditOutlined, ReplyOutlined, ThumbDown, ThumbUp } from '
 import AddCommentModal from './AddCommentModal';
 import { useNavigate } from 'react-router';
 import { Box } from '@mui/system';
+import CommentFormQill from './CommentFormQill';
+import { QuillDeltaToHtmlConverter } from 'quill-delta-to-html';
+import { DeltaToStringConverter } from '../../services/DeltaToStringConverter';
 
 
 const Comment = ({ 
@@ -45,23 +48,19 @@ const Comment = ({
 
   const renderShowHideReplies = (hide, comment) => {
     if (comment.children && comment.children.length) {
-      if (hide === comment.id) {
-        return  <Button
-                  onClick={() => {
+      return  <Button
+                onClick={() => {
+                  if (hide === comment.id) {
                     setHide(null)
-                  }}
-                >
-                  Show Replies
-                </Button>
-      } else {
-        return  <Button
-                  onClick={() => {
+                  } else {
                     setHide(comment.id)
-                  }}
-                >
-                  Hide Replies
-                </Button>
-      }
+                  }
+                }}
+              >
+                {
+                  hide === comment.id ? "Show Replies" : "Hide Replies"
+                }
+              </Button>
     } else {
       return null
     }
@@ -73,8 +72,10 @@ const Comment = ({
   }
 
   const renderCommentContent = (comment) => {
+    console.log(comment.content, typeof comment.content);
     return (
-      <Typography variant="body1">{replaceUsernames(comment.content)}</Typography>
+      // <Typography variant="body1">{replaceUsernames(comment.content)}</Typography>
+      <div dangerouslySetInnerHTML={{ __html: comment.content }} />
     )
   }
 
@@ -336,9 +337,56 @@ const Comments = ({comments, activityId, socket}) => {
       
     })
   }
+  
 
-  const updateComment = async (content) => {
-    let names = extractNames(content)
+  const saveComment2 = async (content, names, parent_id = null) => {
+
+
+    let body = {
+      content,
+      activity_id: activityId,
+      parent_id,
+      mentions: names
+    }
+
+    
+    await instance.post(`comment`, body)
+    .then((res) => {
+
+      res.data.comment.content = DeltaToStringConverter(res.data.comment.content.ops)
+      dispatch(addComments({comment: res.data.comment}))
+
+
+      socket.emit('comment_added', { activityId, comment: JSON.stringify(res.data.comment) });
+
+      // if(names.length > 0) {
+      //   let data = {
+      //     ...res.data.comment,
+      //     content: replaceUsernames(res.data.comment.content)
+      //   }
+      //   dispatch(addComments({comment: data}))
+      // } else {
+      //   dispatch(addComments({comment: res.data.comment}))
+      // }
+     
+      dispatch(setCommentContent({content: ""}))
+      dispatch(setChildCommentContent({content: ""}))
+      setOpenModal(false)
+      setParentId(null)
+
+      for (let i=0; i<names.length; i++) {
+        let username = names[i] 
+
+        let userInfo  = allUsers?.find((a) => a.name === username)
+        socket.emit('sendNotification', { recipientId: userInfo.id, message: `You were mentioned by ${name}` });  
+      }
+      
+    })
+  }
+
+
+  const updateComment = async (content, names) => {
+    // let names = extractNames(content)
 
     let body = {
       content,
@@ -347,23 +395,35 @@ const Comments = ({comments, activityId, socket}) => {
 
     await instance.patch(`comment/${commentId}`, body)
     .then((res) => {
-    
+
+      res.data.comment.content = DeltaToStringConverter(res.data.comment.content.ops)
+
       socket.emit('comment_edited', { activityId, comment: JSON.stringify(res.data.comment) });
 
-      if(names.length > 0) {
-        let data = {
-          ...res.data.comment,
-          content: replaceUsernames(res.data.comment.content)
-        }
-        dispatch(editComment({comment: data}))
-      } else {
-        dispatch(editComment({comment: res.data.comment}))
-      }
+      dispatch(editComment({comment: res.data.comment}))
+
+      // if(names.length > 0) {
+      //   let data = {
+      //     ...res.data.comment,
+      //     content: replaceUsernames(res.data.comment.content)
+      //   }
+      //   dispatch(editComment({comment: data}))
+      // } else {
+      //   dispatch(editComment({comment: res.data.comment}))
+      // }
 
       // dispatch(editComment({comment: res.data.comment}))
       dispatch(setChildCommentContent({content: ""}))
       setCommentId(null)
       setOpenModal(false)
+      setParentId(null)
+
+      for (let i=0; i<names.length; i++) {
+        let username = names[i] 
+
+        let userInfo  = allUsers?.find((a) => a.name === username)
+        socket.emit('sendNotification', { recipientId: userInfo.id, message: `You were mentioned by ${name}` });  
+      }
     })
   }
 
@@ -401,18 +461,22 @@ const Comments = ({comments, activityId, socket}) => {
         />
       ))}
 
-      <CommentForm
+      {/* <CommentForm
         saveComment={saveComment}
-      /> 
+      />  */}
 
-      {/* <CommentMentions /> */}
+      <CommentFormQill
+       saveComment={saveComment2}
+       allUsers={allUsers}
+      />
 
       <AddCommentModal
         open={openModal}
         setOpen={setOpenModal}
         parentId={parentId}
         activityId={activityId}
-        saveComment={saveComment}
+        saveComment={saveComment2}
+        // saveComment={saveComment}
         updateComment={updateComment}
         dispatch={dispatch}
         editMode={editMode}

@@ -9,6 +9,7 @@ import { MentionsInput, Mention } from 'react-mentions'
 import defaultMentionStyles from './defaultMentionStyles'
 import defaultStyle from './defaultStyle'
 import { useState } from 'react';
+import CommentFormQill from './CommentFormQill';
 
 const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
@@ -87,6 +88,15 @@ const AddCommentModal = ({open, setOpen, parentId, saveComment, editMode, update
                 {editMode ? "Edit" : "Add"} Comment
             </Typography>
 
+            <CommentFormQill
+              saveComment={saveComment}
+              allUsers={allUsers}
+              parentId={parentId}
+              editMode={editMode}
+              childCommentContent={childCommentContent}
+              updateComment={updateComment}
+            />
+
             {/* <TextField
               style={{marginBottom: "12px"}}
               required
@@ -101,7 +111,7 @@ const AddCommentModal = ({open, setOpen, parentId, saveComment, editMode, update
               onChange={handleChange}
             />  */}
 
-            <MentionsInput 
+            {/* <MentionsInput 
               style={defaultStyle} 
               value={childCommentContent}
               onChange={handleChange}
@@ -146,7 +156,7 @@ const AddCommentModal = ({open, setOpen, parentId, saveComment, editMode, update
               >
                 Cancel
               </Button>
-            </div>
+            </div> */}
           </form>
         </Box>
       </Modal>
