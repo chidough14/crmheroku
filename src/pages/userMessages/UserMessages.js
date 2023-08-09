@@ -8,14 +8,14 @@ import UserMessagesTable from './UserMessagesTable';
 import ComposeMessage from './ComposeMessage';
 import { useEffect } from 'react';
 import instance from '../../services/fetchApi';
-import { setInboxMessages, setOutboxMessages } from '../../features/MessagesSlice';
+import { setInboxMessages, setOutboxMessages, setPage } from '../../features/MessagesSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getToken } from '../../services/LocalStorageService';
-import { CreateOutlined, InboxOutlined, OutboxOutlined, PhoneOutlined, SendOutlined } from '@mui/icons-material';
+import { CreateOutlined, InboxOutlined, OutboxOutlined } from '@mui/icons-material';
 import { Snackbar, Tooltip } from '@mui/material';
 import MuiAlert from '@mui/material/Alert';
-import { Quill } from 'react-quill';
+import SingleMessage from './SingleMessage';
 
 
 const Alert = React.forwardRef(function Alert(props, ref) {
@@ -63,7 +63,7 @@ const UserMessages = ({socket}) => {
 
   const token = getToken()
   const navigate = useNavigate()
-  const {inbox, outbox, sendingMessage}  = useSelector(state => state.message)
+  const {inbox, outbox, sendingMessage, showSingleMessage, page, currentMessageId}  = useSelector(state => state.message)
   const [openAlert, setOpenAlert] = React.useState(false)
   const [severity, setSeverity] = React.useState("")
   const [text, setText] = React.useState("")
@@ -112,6 +112,7 @@ const UserMessages = ({socket}) => {
 
   const handleChange = (event, newValue) => {
     setValue(newValue);
+    dispatch(setPage({page: 1}))
   };
 
   const getInboxMessages = async (page = 1) => {
@@ -119,18 +120,6 @@ const UserMessages = ({socket}) => {
 
     await instance.get(`inboxmessages?page=${page}`)
     .then((res)=> {
-      // let msg = res.data.inbox.data.map((a)=> {
-      //   const content = new Quill.import('delta').import(a.quill_message)
-        
-      //   return {
-      //     ...a,
-      //     quill_message: content
-      //   }
-      // })
-
-      // res.data.inbox.data = msg
-    
-      
       dispatch(setInboxMessages({inbox: res.data.inbox}))
       setInboxLoading(false)
     })
@@ -144,16 +133,6 @@ const UserMessages = ({socket}) => {
     setOutboxLoading(true)
     await instance.get(`outboxmessages?page=${page}`)
     .then((res)=> {
-      // let msg = res.data.outbox.data.map((a)=> {
-      //   const content = new Quill.import('delta').import(a.quill_message)
-        
-      //   return {
-      //     ...a,
-      //     quill_message: content
-      //   }
-      // })
-
-      // res.data.outbox.data = msg
       dispatch(setOutboxMessages({outbox: res.data.outbox}))
       setOutboxLoading(false)
     })
@@ -163,21 +142,38 @@ const UserMessages = ({socket}) => {
     })
   }
 
+  React.useEffect(() => {
+    if(value === 0){
+     getInboxMessages(page)
+   } else {
+     getOutboxMessages(page)
+   }
+ }, [page])
+
   useEffect(()=> {
-    if (!outbox?.data){
+    if (!outbox?.data.length){
       getOutboxMessages()
     }
    
-    if (!inbox?.data) {
+    if (!inbox?.data.length) {
       getInboxMessages()
     }
     
    
-  }, [inbox?.data, outbox?.data])
+  }, [inbox?.data.length, outbox?.data.length])
 
   return (
     <>
     <Typography variant='h6'>Messages</Typography>
+      {
+      showSingleMessage ? (
+        <>
+          <SingleMessage
+            currentMessageId={currentMessageId}
+          />
+        </>
+      ) :
+      
       <Box
         sx={{ flexGrow: 1, bgcolor: 'background.paper', display: 'flex', height: 224, marginTop: "20px" }}
       >
@@ -203,6 +199,7 @@ const UserMessages = ({socket}) => {
           <ComposeMessage socket={socket} state={state} sendingMessage={sendingMessage} />
         </TabPanel>
       </Box>
+      }
 
       <Snackbar open={openAlert} autoHideDuration={6000} onClose={handleCloseAlert}>
         <Alert onClose={handleCloseAlert} severity={severity} sx={{ width: '100%' }}>

@@ -4,12 +4,15 @@ import React, { useState } from 'react'
 import moment from 'moment';
 import { useNavigate } from 'react-router-dom';
 import "./bell.css"
+import { setCurrentMessageId, setFromBell, setShowSingleMessage } from '../features/MessagesSlice';
+import { useDispatch } from 'react-redux';
 
 
 
 
 const BellNotification = ({inbox, allUsers, invitedMeetings}) => {
   const [anchorEl, setAnchorEl] = useState(null);
+  const dispatch = useDispatch()
   const open = Boolean(anchorEl);
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
@@ -147,7 +150,15 @@ const BellNotification = ({inbox, allUsers, invitedMeetings}) => {
               } else {
                 username = allUsers?.find((b)=> b.id === a.sender_id)?.name
               }
-              return <MenuItem onClick={()=>navigate(`/messages/${a.id}`, {state: {isInbox: true, isRead: a.isRead, auto: !a.sender_id ? true : false}})}>
+              return <MenuItem 
+                        onClick={() => {
+                          // navigate(`/messages/${a.id}`, {state: {isInbox: true, isRead: a.isRead, auto: !a.sender_id ? true : false}})
+                          dispatch(setShowSingleMessage({showSingleMessage: true}))
+                          dispatch(setCurrentMessageId({currentMessageId: a.id}))
+                          dispatch(setFromBell({fromBell: true}))
+                          navigate(`/messages`, {state: {isInbox: true, isRead: a.isRead, auto: !a.sender_id ? true : false}})
+                        }}
+                      >
                       <p>
                         <b>{a.subject} </b>sent by &nbsp;
                         <Tooltip title={username}>
