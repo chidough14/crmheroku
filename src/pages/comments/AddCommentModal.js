@@ -95,6 +95,8 @@ const AddCommentModal = ({open, setOpen, parentId, saveComment, editMode, update
               editMode={editMode}
               childCommentContent={childCommentContent}
               updateComment={updateComment}
+              reply={true}
+              handleClose={handleClose}
             />
 
             {/* <TextField

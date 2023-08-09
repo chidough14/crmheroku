@@ -10,8 +10,9 @@ import AddCommentModal from './AddCommentModal';
 import { useNavigate } from 'react-router';
 import { Box } from '@mui/system';
 import CommentFormQill from './CommentFormQill';
-import { QuillDeltaToHtmlConverter } from 'quill-delta-to-html';
-import { DeltaToStringConverter } from '../../services/DeltaToStringConverter';
+// import { QuillDeltaToHtmlConverter } from 'quill-delta-to-html';
+// import { DeltaToStringConverter } from '../../services/DeltaToStringConverter';
+import deltaToString from "delta-to-string-converter"
 
 
 const Comment = ({ 
@@ -58,7 +59,7 @@ const Comment = ({
                 }}
               >
                 {
-                  hide === comment.id ? "Show Replies" : "Hide Replies"
+                  hide === comment.id ? `Show ${comment.numReplies} Replies` : `Hide ${comment.numReplies} replies`
                 }
               </Button>
     } else {
@@ -72,7 +73,6 @@ const Comment = ({
   }
 
   const renderCommentContent = (comment) => {
-    console.log(comment.content, typeof comment.content);
     return (
       // <Typography variant="body1">{replaceUsernames(comment.content)}</Typography>
       <div dangerouslySetInnerHTML={{ __html: comment.content }} />
@@ -251,10 +251,17 @@ const Comments = ({comments, activityId, socket}) => {
     for (let i = 0; i < comments?.length; i++) {
 
       if (comments[i].parent_id === parentId) {
+        const childComments = createNestedStructure(comments, comments[i].id);
+        const totalNumReplies =
+          childComments.reduce((total, childComment) => total + childComment.numReplies, 0) +
+          childComments.length;
+  
         const comment = {
           ...comments[i],
-          children: createNestedStructure(comments, comments[i].id),
+          children: childComments,
+          numReplies: totalNumReplies,
         };
+  
         nestedComments.push(comment);
       }
 
@@ -353,7 +360,7 @@ const Comments = ({comments, activityId, socket}) => {
     await instance.post(`comment`, body)
     .then((res) => {
 
-      res.data.comment.content = DeltaToStringConverter(res.data.comment.content.ops)
+      res.data.comment.content = deltaToString(res.data.comment.content.ops)
       dispatch(addComments({comment: res.data.comment}))
 
 
@@ -396,7 +403,7 @@ const Comments = ({comments, activityId, socket}) => {
     await instance.patch(`comment/${commentId}`, body)
     .then((res) => {
 
-      res.data.comment.content = DeltaToStringConverter(res.data.comment.content.ops)
+      res.data.comment.content = deltaToString(res.data.comment.content.ops)
 
       socket.emit('comment_edited', { activityId, comment: JSON.stringify(res.data.comment) });
 

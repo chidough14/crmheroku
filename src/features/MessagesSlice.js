@@ -11,7 +11,11 @@ const initialState = {
   sendingMessage: false,
   showUpdateNotification: false,
   showDeleteteNotification: false,
-  reloadMessages: false
+  reloadMessages: false,
+  showSingleMessage: false,
+  page: 1,
+  currentMessageId: undefined,
+  fromBell: false,
 }
 
 export const MessageSlice = createSlice({
@@ -92,6 +96,18 @@ export const MessageSlice = createSlice({
     },
     setReloadMessages: (state, action) => {
       state.reloadMessages = action.payload.reloadMessages
+    },
+    setShowSingleMessage: (state, action) => {
+      state.showSingleMessage = action.payload.showSingleMessage
+    },
+    setPage: (state, action) => {
+      state.page = action.payload.page
+    },
+    setCurrentMessageId: (state, action) => {
+      state.currentMessageId = action.payload.currentMessageId
+    },
+    setFromBell: (state, action) => {
+      state.fromBell = action.payload.fromBell
     }
   },
 })
@@ -114,7 +130,11 @@ export const {
   massReadInboxMessages,
   setShowUpdateNotification,
   setShowDeleteNotification,
-  setReloadMessages
+  setReloadMessages,
+  setShowSingleMessage,
+  setPage,
+  setCurrentMessageId,
+  setFromBell
 } = MessageSlice.actions
 
 export default MessageSlice.reducer

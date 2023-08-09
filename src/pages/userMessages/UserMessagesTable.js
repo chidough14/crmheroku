@@ -22,7 +22,7 @@ import moment from 'moment';
 import { useNavigate } from 'react-router-dom';
 import DeleteDialog from './DeleteDialog';
 import instance from '../../services/fetchApi';
-import { massReadInboxMessages, readInboxMessages, reloadNotifications, removeMessage, removeMessages, setInboxMessages, setReloadMessages, setShowDeleteNotification, setShowUpdateNotification } from '../../features/MessagesSlice';
+import { massReadInboxMessages, readInboxMessages, reloadNotifications, removeMessage, removeMessages, setCurrentMessageId, setInboxMessages, setPage, setReloadMessages, setShowDeleteNotification, setShowSingleMessage, setShowUpdateNotification } from '../../features/MessagesSlice';
 import MuiAlert from '@mui/material/Alert';
 
 
@@ -93,9 +93,9 @@ TablePaginationActions.propTypes = {
 
 const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessages, loading}) => {
 
-  const [page, setPage] = React.useState(1);
+  // const [page, setPage] = React.useState(1);
   const {allUsers} = useSelector(state => state.user)
-  const {showUpdateNotification, showDeleteteNotification, reloadMessages} = useSelector(state => state.message)
+  const {showUpdateNotification, showDeleteteNotification, reloadMessages, page} = useSelector(state => state.message)
   const navigate = useNavigate()
   const [openDialog, setOpenDialog] = React.useState(false);
   const [messageId, setMessageId] = React.useState();
@@ -121,13 +121,19 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
     setChecked(event.target.checked);
   };
 
-  React.useEffect(() => {
-     if(isInbox){
-      getInboxMessages(page)
-    } else {
-      getOutboxMessages(page)
-    }
-  }, [page])
+  // React.useEffect(() => {
+  //    if(isInbox){
+  //     // if (!inbox?.data.length) {
+  //     //   getInboxMessages(page)
+  //     // }
+  //     getInboxMessages(page)
+  //   } else {
+  //     // if(!outbox?.data.length) {
+  //     //   getOutboxMessages(page)
+  //     // }
+  //     getOutboxMessages(page)
+  //   }
+  // }, [page])
 
   const reloadInbox = async () => {
     await instance.get(`inboxmessages?page=1`)
@@ -159,7 +165,8 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
   }
 
   const handleChangePage = (event, newPage) => {
-    setPage(newPage)
+    // setPage(newPage)
+    dispatch(setPage({page: newPage}))
   };
 
   const deleteMessage = (message) => {
@@ -545,7 +552,11 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
                           onMouseLeave={()=> {
                             setShowTableActions(false)
                           }}
-                          onClick={()=> navigate(`/messages/${row.id}`, {state: {isInbox, isRead: row.isRead, auto: !row.sender_id ? true : false}})}
+                          onClick={()=> {
+                            dispatch(setShowSingleMessage({showSingleMessage: true}))
+                            dispatch(setCurrentMessageId({currentMessageId: row.id}))
+                            // navigate(`/messages/${row.id}`, {state: {isInbox, isRead: row.isRead, auto: !row.sender_id ? true : false}})
+                          }}
                         >
                           <TableCell component="th" scope="row">
                             <Checkbox
