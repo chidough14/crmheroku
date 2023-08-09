@@ -34,7 +34,7 @@ import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import { emptyFollowersData, reloadFollowers, removeFollowersData, setFollowersData, setFollwed, setFollwers, setOnlineUsers } from '../features/userSlice';
 import ActivityModal from '../components/activities/ActivityModal';
-import { setReloadMessages } from '../features/MessagesSlice';
+import { setInboxMessages, setReloadMessages, setShowSingleMessage } from '../features/MessagesSlice';
 import { Stack } from '@mui/system';
 import FollowersNotification from '../components/FollowersNotification';
 import { setReloadActivities } from '../features/ActivitySlice';
@@ -179,7 +179,7 @@ export default function AppLayout({socket}) {
   const [inboxData, setInboxData] = React.useState([])
   const [invitedMeetingsData, setInvitedMeetingsData] = React.useState([])
   const { invitedMeetings } = useSelector((state) => state.meeting) 
-  const {fetchNotifications} = useSelector(state => state.message)
+  const {fetchNotifications, page} = useSelector(state => state.message)
   const {activities} = useSelector(state=> state.activity)
   const [openAlert, setOpenAlert] = React.useState(false)
   const [text, setText] = React.useState("")
@@ -269,6 +269,17 @@ export default function AppLayout({socket}) {
     })
   }
 
+  const reloadInbox = async () => {
+    await instance.get(`inboxmessages?page=${page}`)
+    .then((res)=> {
+      dispatch(setInboxMessages({inbox: res.data.inbox}))
+
+    })
+    .catch(() => {
+      showAlert()
+    })
+  }
+
   const getFollwers = async () => {
     await instance.get(`followers`)
     .then((res) => {
@@ -291,6 +302,7 @@ export default function AppLayout({socket}) {
 
   React.useEffect(()=> {
      getNotifications("none")
+     reloadInbox()
   }, [loggedIn, fetchNotifications])
 
   const  generateRandomId = () => {
@@ -758,7 +770,12 @@ export default function AppLayout({socket}) {
                                 height: open ? null : "50px",
                                 marginLeft: open ? null : "6px"
                               }}
-                              onClick={()=> navigate(`${a.link}`, {state: {isInbox: true}})}
+                              onClick={()=> {
+                                if (a.name === "Messages") {
+                                  dispatch(setShowSingleMessage({showSingleMessage: false}))
+                                }
+                                navigate(`${a.link}`, {state: {isInbox: true}})}
+                              }
                             >
                                <ListItemButton
                                   sx={{

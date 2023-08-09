@@ -4,23 +4,24 @@ import moment from 'moment'
 import React, {useEffect, useState} from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
-import { readInboxMessages, reloadNotifications, setSingleMessage } from '../../features/MessagesSlice'
+import { readInboxMessages, reloadNotifications, setFromBell, setPage, setShowSingleMessage, setSingleMessage } from '../../features/MessagesSlice'
 import instance from '../../services/fetchApi'
 import { getToken } from '../../services/LocalStorageService'
 import ComposeMessage from './ComposeMessage'
 import MuiAlert from '@mui/material/Alert';
-import { DeltaToStringConverter } from '../../services/DeltaToStringConverter'
+// import { DeltaToStringConverter } from '../../services/DeltaToStringConverter'
 // import { QuillDeltaToHtmlConverter } from 'quill-delta-to-html';
+import deltaToString from "delta-to-string-converter"
 
 const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
 });
 
-const SingleMessage = ({socket}) => {
+const SingleMessage = ({socket, currentMessageId}) => {
   const params = useParams()
   const location = useLocation()
   const dispatch = useDispatch()
-  const { singleMessage, sendingMessage } = useSelector(state => state.message)
+  const { inbox, singleMessage, sendingMessage, fromBell } = useSelector(state => state.message)
   const {allUsers} = useSelector(state => state.user)
   const [replyMode, setReplyMode] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -43,13 +44,49 @@ const SingleMessage = ({socket}) => {
     }
   }, [token])
 
+  // useEffect(() => {
+
+  //   const getMessage = async () => {
+  //     setLoading(true)
+  //     await instance.get(`messages/${params.id}`)
+  //     .then((res) => {
+  //       dispatch(setSingleMessage({message: res.data.messageDetails}))
+  //       setLoading(false)
+  //     })
+  //     .catch(() => {
+  //       setOpenAlert(true)
+  //       setSeverity("error")
+  //       setText("Ooops an error was encountered")
+  //     })
+  //   }
+
+  //   const readMessage = async () => {
+  //     await instance.patch(`messages/${params.id}/read`, {isRead: true})
+  //     .then((res) => {
+  //      // dispatch(readInboxMessages({messageId: res.data.messageDetails.id}))
+  //       dispatch(reloadNotifications())
+  //     })
+  //   }
+
+  //   if (params.id) {
+  //     getMessage()
+
+  //     if (!location.state?.isRead && location.state?.isInbox) {
+  //       readMessage()
+  //     }
+    
+  //   }
+
+  // }, [params?.id])
+
   useEffect(() => {
 
     const getMessage = async () => {
       setLoading(true)
-      await instance.get(`messages/${params.id}`)
+      await instance.get(`messages/${currentMessageId}`)
       .then((res) => {
         dispatch(setSingleMessage({message: res.data.messageDetails}))
+        dispatch(reloadNotifications())
         setLoading(false)
       })
       .catch(() => {
@@ -59,30 +96,26 @@ const SingleMessage = ({socket}) => {
       })
     }
 
-    const readMessage = async () => {
-      await instance.patch(`messages/${params.id}/read`, {isRead: true})
-      .then((res) => {
-       // dispatch(readInboxMessages({messageId: res.data.messageDetails.id}))
-        dispatch(reloadNotifications())
-      })
-    }
+    // const readMessage = async () => {
+    //   await instance.patch(`messages/${currentMessageId}/read`, {isRead: true})
+    //   .then((res) => {
+    //     console.log(inbox, res.data.messageDetails);
+    //     // dispatch(readInboxMessages({messageId: res.data.messageDetails.id}))
+    //     dispatch(reloadNotifications())
+    //   })
+    // }
 
-    if (params.id) {
+    if (currentMessageId) {
       getMessage()
-
-      if (!location.state?.isRead && location.state?.isInbox) {
-        readMessage()
-      }
+     
+      // if (location.state?.isRead === 0 && location.state?.isInbox) {
+      //   console.log(location);
+      //   readMessage()
+      // }
     
     }
 
-  }, [params?.id])
-
-  useEffect(() => {
-
-    console.log(location);
-
-  }, [location])
+  }, [currentMessageId])
 
   const isValidJson = (string) => {
     try {
@@ -93,15 +126,45 @@ const SingleMessage = ({socket}) => {
     }
   }
 
-  useEffect(()=> {
-    if(location.state?.auto) {
-      let mySubString = singleMessage?.quill_message?.substring(
-        singleMessage?.quill_message.indexOf("(") + 1, 
-        singleMessage?.quill_message.lastIndexOf(")")
-      );
+  function isMessageFormat(str) {
 
+    const pattern = /^(Activity|List) ID \((\d{1,9}|[1-9]\d{1,8}|1000000000)\)$/;
+
+    return pattern.test(str);
+  }
+
+  useEffect(()=> {
+    // if(location.state?.auto) {
+    //   let mySubString = singleMessage?.quill_message?.substring(
+    //     singleMessage?.quill_message.indexOf("(") + 1, 
+    //     singleMessage?.quill_message.lastIndexOf(")")
+    //   );
+
+    //   setActivityId(parseInt(mySubString))
+    // }
+
+    if (isMessageFormat(singleMessage?.message)) {
+ 
+      let mySubString = singleMessage?.message?.substring(
+        singleMessage?.message?.indexOf("(") + 1, 
+        singleMessage?.message?.lastIndexOf(")")
+      );
+  
       setActivityId(parseInt(mySubString))
+    } else {
+      setActivityId(null)
     }
+    // let text
+    // text = isActivityIDFormat(singleMessage?.message) ? singleMessage?.message : singleMessage?.quill_message
+   
+    // let mySubString = text?.substring(
+    //   text?.indexOf("(") + 1, 
+    //   text?.lastIndexOf(")")
+    // );
+
+    // console.log(text, mySubString);
+
+    // setActivityId(parseInt(mySubString))
 
     if(singleMessage?.quill_message) {
       if (isValidJson(singleMessage?.quill_message)) {
@@ -109,7 +172,13 @@ const SingleMessage = ({socket}) => {
 
         // var html = converter.convert();
 
-        setContent(DeltaToStringConverter(JSON.parse(singleMessage?.quill_message).ops))
+        // setContent(DeltaToStringConverter(JSON.parse(singleMessage?.quill_message).ops))
+        if (JSON.parse(singleMessage?.quill_message).ops) {
+          setContent(deltaToString(JSON.parse(singleMessage?.quill_message).ops))
+        } else {
+          setContent(singleMessage?.quill_message)
+        }
+        // setContent(deltaToString(JSON.parse(singleMessage?.quill_message).ops))
 
         // if (html) {
         //   setContent(html)
@@ -187,6 +256,21 @@ const SingleMessage = ({socket}) => {
     }
   }
 
+  const renderSentBy = (senderId) => {
+    if (senderId === null) {
+      return  <Typography variant='h7'>
+                <b>Sent By</b> : Auto Generated
+              </Typography>
+    } else {
+    return    <Typography variant='h7'>
+                <b>Sent By</b> : &nbsp;&nbsp;
+                { getImage(singleMessage?.sender_id) } &nbsp;&nbsp;
+                {allUsers?.find((a) => a.id === senderId)?.name}
+                ({allUsers?.find((a) => a.id === senderId)?.email})
+              </Typography>
+    }
+  }
+
   return (
     <>
       {
@@ -208,7 +292,18 @@ const SingleMessage = ({socket}) => {
           {
             !replyMode &&
             <Tooltip title="Back to Messages" placement="top">
-              <Button onClick={() => navigate("/messages", {state: {isInbox: location?.state?.isInbox}})}>
+              <Button 
+                onClick={() => {
+                  dispatch(setShowSingleMessage({showSingleMessage: false}))
+                  if (fromBell) {
+                    dispatch(setPage({page: 1}))
+                  }
+
+                  dispatch(setFromBell({fromBell: false}))
+                  // dispatch(setPage({page: 1}))
+                  // navigate("/messages", {state: {isInbox: location?.state?.isInbox}})
+                }}
+              >
                 <ArrowBack />
               </Button>
             </Tooltip>
@@ -233,14 +328,7 @@ const SingleMessage = ({socket}) => {
                     <Typography variant='h7'>
                       <b>Sent By</b> : Auto Generated
                     </Typography>
-                    ) : (
-                    <Typography variant='h7'>
-                      <b>Sent By</b> : &nbsp;&nbsp;
-                      { getImage(singleMessage?.sender_id) } &nbsp;&nbsp;
-                      {allUsers?.find((a) => a.id === singleMessage?.sender_id)?.name}
-                      ({allUsers?.find((a) => a.id === singleMessage?.sender_id)?.email})
-                    </Typography>
-                    )
+                    ) : renderSentBy(singleMessage?.sender_id)
                   }
                     <p></p>
                   </>
