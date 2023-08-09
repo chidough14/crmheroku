@@ -6,7 +6,7 @@ import { Button } from '@mui/material';
 import { QuillDeltaToHtmlConverter } from 'quill-delta-to-html';
 import { useSelector } from 'react-redux';
 
-const CommentFormQill = ({ saveComment, allUsers, parentId, editMode, childCommentContent, updateComment }) => {
+const CommentFormQill = ({ saveComment, allUsers, parentId, editMode, childCommentContent, updateComment, reply, handleClose }) => {
   const [value, setValue] = useState()
   const [users, setUsers] = useState([])
   const { id } = useSelector(state => state.user)
@@ -64,8 +64,9 @@ const CommentFormQill = ({ saveComment, allUsers, parentId, editMode, childComme
     { id: 4, value: "Patrik Sjölin 2" }
   ];
   return (
-    <div>
-       <ReactQuill 
+    <>
+      <div style={{marginBottom: "50px"}}>
+        <ReactQuill 
           theme="snow" 
           value={value} 
           onChange={saveData}
@@ -104,8 +105,9 @@ const CommentFormQill = ({ saveComment, allUsers, parentId, editMode, childComme
           }
           }
         />
+      </div>
 
-
+      <div style={{display: 'flex', justifyContent: 'space-between'}}>
         <Button 
           size='small' 
           color="primary" 
@@ -116,13 +118,29 @@ const CommentFormQill = ({ saveComment, allUsers, parentId, editMode, childComme
             } else {
               save()
             }
-         
+        
           }}
           style={{borderRadius: "30px"}}
         >
           Save
         </Button>
-    </div>
+        
+        { 
+          reply &&
+          <Button 
+            size='small' 
+            color="warning" 
+            variant="contained" 
+            onClick={() => {
+              handleClose()
+            }}
+            style={{borderRadius: "30px"}}
+          >
+            Cancel
+          </Button>
+        }
+      </div>
+    </>
   )
 }
 
