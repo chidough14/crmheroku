@@ -13,6 +13,7 @@ import CommentFormQill from './CommentFormQill';
 // import { QuillDeltaToHtmlConverter } from 'quill-delta-to-html';
 // import { DeltaToStringConverter } from '../../services/DeltaToStringConverter';
 import deltaToString from "delta-to-string-converter"
+import Popover from '@mui/material/Popover';
 
 
 const Comment = ({ 
@@ -31,9 +32,29 @@ const Comment = ({
   handleDownvote,
   handleUpvote,
   upvotes,
-  downvotes 
+  downvotes,
+  setShowForm 
 }) => {
   const navigate = useNavigate()
+
+  const [anchorEl, setAnchorEl] = useState(null);
+
+
+  const handlePopoverOpen = (event) => {
+    if (!comment.likers.length) {
+
+    } else {
+      setAnchorEl(event.currentTarget);
+     // setShowForm(false)
+    }
+  
+  };
+
+  const handlePopoverClose = () => {
+    setAnchorEl(null);
+  };
+
+  const open = Boolean(anchorEl);
 
   let row = allUsers?.find((a) => a.id === comment?.user_id)
 
@@ -79,6 +100,49 @@ const Comment = ({
     )
   }
 
+  const renderProfileImage = (row) => {
+    if (row.profile_pic === "" || row.profile_pic === null) {
+      return (
+        <div 
+          style={{
+            display: "inline-block",
+            backgroundColor: "gray" ,
+            borderRadius: "50%",
+            cursor: "pointer",
+            marginRight: "10px"
+          }}
+          onClick={() => navigate(`/profile/${row?.id}`)}
+        >
+          <p 
+            style={{
+              color: "white",
+              display: "table-cell",
+              verticalAlign: "middle",
+              textAlign: "center",
+              textDecoration: "none",
+              height: "30px",
+              width: "30px",
+              fontSize: "15px"
+            }}
+          >
+            {getInitials(row?.name)}
+          </p>
+        </div>
+      )
+    } else {
+       return (
+        <img 
+          width="30px" 
+          height="30px" 
+          src={row.profile_pic}  
+          alt='profile_pic' 
+          style={{borderRadius: "50%", cursor: "pointer", marginRight: "10px"}} 
+          onClick={() => navigate(`/profile/${row?.id}`)}
+        />
+       )
+    }
+  }
+
   return (
    
     <Card sx={{marginBottom: "20px"}}>
@@ -95,41 +159,7 @@ const Comment = ({
               <div style={{display: "flex", justifyContent: "space-between"}}>
                 <Typography variant="caption" color="textSecondary">
                   {
-                    (row.profile_pic === "" || row.profile_pic === null) ? (
-                    <div 
-                      style={{
-                        display: "inline-block",
-                        backgroundColor: "gray" ,
-                        borderRadius: "50%",
-                        cursor: "pointer",
-                      }}
-                      onClick={() => navigate(`/profile/${row?.id}`)}
-                    >
-                      <p 
-                        style={{
-                          color: "white",
-                          display: "table-cell",
-                          verticalAlign: "middle",
-                          textAlign: "center",
-                          textDecoration: "none",
-                          height: "30px",
-                          width: "30px",
-                          fontSize: "15px"
-                        }}
-                      >
-                        {getInitials(row?.name)}
-                      </p>
-                    </div>
-                    ) : (
-                      <img 
-                        width="30px" 
-                        height="30px" 
-                        src={row.profile_pic}  
-                        alt='profile_pic' 
-                        style={{borderRadius: "50%", cursor: "pointer"}} 
-                        onClick={() => navigate(`/profile/${row?.id}`)}
-                      />
-                    )
+                    renderProfileImage(row)
                   }
       
                   {
@@ -144,9 +174,46 @@ const Comment = ({
                 <div style={{display: "flex"}}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <span>{comment.upvotes}</span>
-                    <IconButton color={upvotes.includes(comment.id) ? "warning" : "primary"} onClick={() => handleUpvote(comment.id)}>
+                    <IconButton 
+                      color={upvotes.includes(comment.id) ? "warning" : "primary"} 
+                      onClick={() => {
+                        handleUpvote(comment.id)
+                        // setShowForm(false)
+                      }}
+                      onMouseEnter={handlePopoverOpen}
+                      onMouseLeave={handlePopoverClose}
+                    >
                       <ThumbUp />
                     </IconButton>
+                    <Popover
+                      id="mouse-over-popover"
+                      sx={{
+                        pointerEvents: 'none',
+                      }}
+                      open={open}
+                      anchorEl={anchorEl}
+                      anchorOrigin={{
+                        vertical: 'bottom',
+                        horizontal: 'left',
+                      }}
+                      transformOrigin={{
+                        vertical: 'top',
+                        horizontal: 'left',
+                      }}
+                      onClose={handlePopoverClose}
+                      disableRestoreFocus
+                    >
+                       &nbsp;Liked by &nbsp; &nbsp;
+                      {
+                        comment?.likers?.slice(0, 3).map((a) => renderProfileImage(a))
+                      }
+
+                      {
+                        comment?.likers?.length > 3 ? (
+                          <span>... and {comment?.likers?.length - 3} others</span>
+                        ) : null
+                      }
+                    </Popover>
                     {/* <Typography variant="body1">
                       {comment.upvotes - comment.downvotes}
                     </Typography>
@@ -165,6 +232,7 @@ const Comment = ({
                       setEditMode(false)
                       setParentId(comment.id)
                       setOpenModal(true)
+                      setShowForm(false)
                     }}
                   >
                     <ReplyOutlined />
@@ -178,6 +246,7 @@ const Comment = ({
                           setEditMode(true)
                           setOpenModal(true)
                           dispatch(setChildCommentContent({content: comment.content}))
+                          setShowForm(false)
                         }}
                       >
                         <EditOutlined />
@@ -191,6 +260,7 @@ const Comment = ({
                         onClick={() => {
                           setCommentId(comment.id)
                           setOpenDeleteDialog(true)
+                          setShowForm(false)
                         }}
                       >
                         <DeleteOutline />
@@ -226,6 +296,7 @@ const Comment = ({
               handleUpvote={handleUpvote}
               upvotes={upvotes}
               downvotes={downvotes}
+              setShowForm={setShowForm}
             />
           ))}
         </div>
@@ -239,6 +310,7 @@ const Comments = ({comments, activityId, socket}) => {
   const { upvotes, downvotes } = useSelector(state => state.activity)
   const dispatch = useDispatch()
   const [openModal, setOpenModal] = useState(false)
+  const [showForm, setShowForm] = useState(false)
   const [parentId, setParentId] = useState(null)
   const [editMode, setEditMode] = useState(false)
   const [hide, setHide] = useState()
@@ -274,7 +346,9 @@ const Comments = ({comments, activityId, socket}) => {
   const handleUpvote = async (id) => {
     await instance.get(`comment/${id}/upvote`)
     .then((res) => {
+      res.data.comment.content = deltaToString(res.data.comment.content.ops)
       socket.emit('comment_upvoted', { activityId, comment: JSON.stringify(res.data.comment) });
+      
       dispatch(editComment({comment: res.data.comment}))
       dispatch(editUpVotes({id: res.data.comment.id}))
     })
@@ -365,16 +439,6 @@ const Comments = ({comments, activityId, socket}) => {
 
 
       socket.emit('comment_added', { activityId, comment: JSON.stringify(res.data.comment) });
-
-      // if(names.length > 0) {
-      //   let data = {
-      //     ...res.data.comment,
-      //     content: replaceUsernames(res.data.comment.content)
-      //   }
-      //   dispatch(addComments({comment: data}))
-      // } else {
-      //   dispatch(addComments({comment: res.data.comment}))
-      // }
      
       dispatch(setCommentContent({content: ""}))
       dispatch(setChildCommentContent({content: ""}))
@@ -408,18 +472,6 @@ const Comments = ({comments, activityId, socket}) => {
       socket.emit('comment_edited', { activityId, comment: JSON.stringify(res.data.comment) });
 
       dispatch(editComment({comment: res.data.comment}))
-
-      // if(names.length > 0) {
-      //   let data = {
-      //     ...res.data.comment,
-      //     content: replaceUsernames(res.data.comment.content)
-      //   }
-      //   dispatch(editComment({comment: data}))
-      // } else {
-      //   dispatch(editComment({comment: res.data.comment}))
-      // }
-
-      // dispatch(editComment({comment: res.data.comment}))
       dispatch(setChildCommentContent({content: ""}))
       setCommentId(null)
       setOpenModal(false)
@@ -465,17 +517,36 @@ const Comments = ({comments, activityId, socket}) => {
           handleUpvote={handleUpvote}
           upvotes={upvotes}
           downvotes={downvotes}
+          setShowForm={setShowForm}
         />
       ))}
 
       {/* <CommentForm
         saveComment={saveComment}
       />  */}
-
-      <CommentFormQill
-       saveComment={saveComment2}
-       allUsers={allUsers}
-      />
+      
+      {
+        showForm && (
+          <CommentFormQill
+            saveComment={saveComment2}
+            allUsers={allUsers}
+            setShowForm={setShowForm}
+          />
+        )
+      }
+    
+      {
+        !showForm && (
+          <Button
+            variant='contained' 
+            onClick={() => setShowForm(true)}
+            style={{marginTop: "10px"}}
+          >
+            Add Comment
+          </Button>
+        )
+      }
+   
 
       <AddCommentModal
         open={openModal}

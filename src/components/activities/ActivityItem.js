@@ -7,7 +7,7 @@ import moment from 'moment';
 import PhoneIcon from '@mui/icons-material/Phone';
 import EmailIcon from '@mui/icons-material/Email';
 import ChatIcon from '@mui/icons-material/Chat';
-import {  ArrowDownwardOutlined, ArrowUpwardOutlined, CopyAllOutlined, DeleteOutlined, EditOutlined, MoreVert, MoveUpOutlined, RestoreFromTrash, ViewListOutlined } from '@mui/icons-material';
+import {  ArrowDownwardOutlined, ArrowUpwardOutlined, ChatBubbleOutline, ChatOutlined, CommentBankRounded, CommentOutlined, CopyAllOutlined, DeleteOutlined, EditOutlined, MoreVert, MoveUpOutlined, RestoreFromTrash, ViewListOutlined } from '@mui/icons-material';
 import { useState } from 'react';
 import ActivityModal from './ActivityModal';
 import instance from '../../services/fetchApi';
@@ -319,6 +319,14 @@ const ActivityItem = ({activity, index, socket, showTrash}) => {
                       ${activity.total}
                   </Typography>
 
+                  <Typography sx={{ fontSize: 14, mb: -2 }} >
+                     <Tooltip title="Comments">
+                       <CommentOutlined style={{fontSize: 18, marginBottom: "-5px", marginRight: "3px"}} /> 
+                     </Tooltip>
+                    
+                     {activity.comments?.length}
+                  </Typography>
+
                   {
                     Boolean(activity.decreased_probability)  && (
                       <Tooltip title='Decreased Probability'>
@@ -339,6 +347,14 @@ const ActivityItem = ({activity, index, socket, showTrash}) => {
                      (activity.decreased_probability === null && activity.probability !== "Closed") && (
                         <Chip label="New" color="primary"  size="small"/>
                      )
+                  }
+
+                  {
+                    activity.probability === "Closed" && (
+                      <Typography sx={{ fontSize: 14, mb: -2, color: "blue" }} >
+                      
+                      </Typography>
+                    )
                   }
                 
                 </div>

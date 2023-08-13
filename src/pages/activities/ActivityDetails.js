@@ -592,7 +592,12 @@ const ActivityDetails = ({socket}) => {
           </Box>
 
           <div>
-            <Typography variant='h6'>Comments</Typography>
+            <Typography variant='h6'>
+              Comments &nbsp; &nbsp;
+              {
+                `(${activity?.comments.length})`
+              }
+            </Typography>
             <Comments
               comments={activity?.comments}
               activityId={activity?.id}

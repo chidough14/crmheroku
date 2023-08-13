@@ -24,6 +24,7 @@ import DeleteDialog from './DeleteDialog';
 import instance from '../../services/fetchApi';
 import { massReadInboxMessages, readInboxMessages, reloadNotifications, removeMessage, removeMessages, setCurrentMessageId, setInboxMessages, setPage, setReloadMessages, setShowDeleteNotification, setShowSingleMessage, setShowUpdateNotification } from '../../features/MessagesSlice';
 import MuiAlert from '@mui/material/Alert';
+import deltaToString from "delta-to-string-converter"
 
 
 const Alert = React.forwardRef(function Alert(props, ref) {
@@ -365,6 +366,40 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
     return true;
   }
 
+  const isValidJson = (string) => {
+    try {
+      JSON.parse(string)
+      return true
+    } catch (error) {
+      return false
+    }
+  }
+
+  const renderMessageColumn = (row) => {
+    let msg = row?.quill_message;
+    let content = "";
+  
+    if (isValidJson(msg)) {
+      if (JSON.parse(msg).ops) {
+        content = deltaToString(JSON.parse(msg).ops);
+      }
+    } else {
+      content = msg;
+    }
+
+    content =   content.length > 15 ?
+                `${content.substring(0, 15)}.....` :
+                content
+  
+    if (isInbox) {
+      return (
+        <TableCell style={{ width: 160 }}>
+          <div dangerouslySetInnerHTML={{ __html: content }} />
+        </TableCell>
+      );
+    }
+  };
+
 
 
   return (
@@ -597,14 +632,8 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
                             </TableCell>
                           }
 
-                          { isInbox &&
-                            <TableCell style={{ width: 160 }} >
-                              {
-                                row.message.length > 15 ?
-                                `${row.message.substring(0, 15)}.....` :
-                                row.message
-                              }
-                            </TableCell>
+                          {
+                            renderMessageColumn(row)
                           }
                         
                           <TableCell style={{ width: 160 }} >
