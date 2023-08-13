@@ -2,28 +2,47 @@ import React, { useEffect, useRef, useState } from 'react'
 import ReactQuill, { Quill } from 'react-quill';
 import "quill-mention";
 import 'react-quill/dist/quill.snow.css';
-import { Button } from '@mui/material';
+import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
 import { QuillDeltaToHtmlConverter } from 'quill-delta-to-html';
 import { useSelector } from 'react-redux';
 
-const CommentFormQill = ({ saveComment, allUsers, parentId, editMode, childCommentContent, updateComment, reply, handleClose }) => {
+const CommentFormQill = ({ saveComment, allUsers, parentId, editMode, childCommentContent, updateComment, reply, handleClose, setShowForm }) => {
   const [value, setValue] = useState()
+  const [quillValue, setQuillValue] = useState(undefined)
   const [users, setUsers] = useState([])
+  const [openDialog, setOpenDialog] = useState(false)
   const { id } = useSelector(state => state.user)
   const myInputRef = useRef()
 
   const saveData = (e,f,g,h) => {
     // console.log(h.getContents())
-    // setValue(h.getContents())
-    // setQuillValue(h.getContents())
+    // setValue(e)
+    //setQuillValue(h.getContents())
   }
 
   const save = (values) => {
-    let arr = myInputRef.current.getEditor().getContents().ops
 
-    let names = arr.filter((a) => typeof a.insert === 'object').map((b) => b.insert.mention.value)
+    // Get the Quill editor instance from the ref
+    const quillEditor = myInputRef.current.getEditor();
 
-    saveComment(myInputRef.current.getEditor().getContents(), names, parentId)
+    // Get the text content of the editor
+    const editorContents = quillEditor.getText().trim();
+
+    if (editorContents === '') {
+      // setOpenDialog(true)
+      alert("Enter message contents")
+    } else {
+      // Submit the form or perform your action
+      let arr = myInputRef.current.getEditor().getContents().ops
+
+      let names = arr.filter((a) => typeof a.insert === 'object').map((b) => b.insert.mention.value)
+  
+      saveComment(myInputRef.current.getEditor().getContents(), names, parentId)
+
+      setShowForm(false)
+    }
+
+
   }
 
   const update = () => {
@@ -34,12 +53,13 @@ const CommentFormQill = ({ saveComment, allUsers, parentId, editMode, childComme
     updateComment(myInputRef.current.getEditor().getContents(), names)
   }
 
+  // const isEditorEmpty = value?.trim().length === 0;
+
   useEffect(() => {
     if (editMode) {
       
       const quill = myInputRef.current.getEditor();
-      console.log(childCommentContent, quill.clipboard.convert(childCommentContent));
-      const newValue = 'New editor value!';
+      // const newValue = 'New editor value!';
       quill.setContents(quill.clipboard.convert(childCommentContent));
 
       
@@ -63,6 +83,7 @@ const CommentFormQill = ({ saveComment, allUsers, parentId, editMode, childComme
     { id: 3, value: "Fredrik Sundqvist 2" },
     { id: 4, value: "Patrik Sjölin 2" }
   ];
+  
   return (
     <>
       <div style={{marginBottom: "50px"}}>
@@ -80,7 +101,7 @@ const CommentFormQill = ({ saveComment, allUsers, parentId, editMode, childComme
             mention: {
               allowedChars: /^[A-Za-z\sÅÄÖåäö]*$/,
               mentionDenotationChars: ["@", "#"],
-              source: function(searchTerm, renderList, mentionChar) {
+              source: (searchTerm, renderList, mentionChar) => {
                 let values;
         
                 if (mentionChar === "@") {
@@ -112,6 +133,7 @@ const CommentFormQill = ({ saveComment, allUsers, parentId, editMode, childComme
           size='small' 
           color="primary" 
           variant="contained" 
+          // disabled={isEditorEmpty}
           onClick={() => {
             if (editMode) {
               update()
@@ -140,6 +162,28 @@ const CommentFormQill = ({ saveComment, allUsers, parentId, editMode, childComme
           </Button>
         }
       </div>
+
+
+
+      <Dialog
+        open={openDialog}
+        onClose={() => setOpenDialog(false)}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">
+          Empty Content!
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            You have to add a message before submiting!
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
+        
+        </DialogActions>
+      </Dialog>
     </>
   )
 }
