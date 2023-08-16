@@ -145,7 +145,7 @@ const Comment = ({
 
   return (
    
-    <Card sx={{marginBottom: "20px"}}>
+    <Card sx={{marginBottom: "20px", borderLeft: "4px solid grey"}}>
       <CardContent>
         {
           comment?.isDeleted === "Yes" ? (
@@ -531,6 +531,7 @@ const Comments = ({comments, activityId, socket}) => {
             saveComment={saveComment2}
             allUsers={allUsers}
             setShowForm={setShowForm}
+            mode="normal"
           />
         )
       }

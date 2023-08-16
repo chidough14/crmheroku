@@ -1,5 +1,5 @@
 import {  Box, Button, Chip, CircularProgress, FormControlLabel, InputLabel, MenuItem, OutlinedInput, Select, Snackbar, Switch, TextField, Typography } from '@mui/material'
-import React from 'react'
+import React, { useRef } from 'react'
 import { useFormik } from 'formik';
 import * as yup from 'yup';
 import { useDispatch, useSelector } from 'react-redux';
@@ -46,7 +46,7 @@ const validationSchema = yup.object({
 });
 
 
-const ComposeMessage = ({replyMode, singleMessage, socket, state, sendingMessage}) => {
+const ComposeMessage = ({replyMode, singleMessage, socket, state, sendingMessage, editMode, singleDraft}) => {
   const user = useSelector((state) => state.user)
   const [openAlert, setOpenAlert] = useState(false)
   const [text, setText] = useState("")
@@ -54,7 +54,9 @@ const ComposeMessage = ({replyMode, singleMessage, socket, state, sendingMessage
   const [checked, setChecked] = useState(false)
   const [usersValue, setUsersValue] = useState([]);
   const [value, setValue] = useState('')
+  const [sending, setSending] = useState(false)
   const dispatch = useDispatch()
+  const myInputRef = useRef()
  
   const handleCloseAlert = () => {
     setOpenAlert(false)
@@ -138,7 +140,7 @@ const ComposeMessage = ({replyMode, singleMessage, socket, state, sendingMessage
 
             socket.emit('sendNotification', { recipientId: receiverId, message: "New Message" });
           })
-          .catch(() => {
+          .catch((e) => {
             dispatch(setSendingMessage({isSending: false}))
             showAlert("Ooops an error was encountered", "error")
           })
@@ -174,6 +176,19 @@ const ComposeMessage = ({replyMode, singleMessage, socket, state, sendingMessage
   }, [replyMode])
 
   useEffect(() => {
+    if (editMode) {
+
+      formik.setFieldValue("subject", `${singleDraft.subject}`)
+
+         
+      const quill = myInputRef.current.getEditor();
+
+      quill.setContents(quill.clipboard.convert(singleDraft.message));
+    }
+
+  }, [editMode])
+
+  useEffect(() => {
     if (state?.populateEmail) {
       let userEmail = user?.allUsers?.find((a)=> a.id === parseInt(state?.id))?.email
       formik.setFieldValue("email", userEmail)
@@ -185,12 +200,27 @@ const ComposeMessage = ({replyMode, singleMessage, socket, state, sendingMessage
     setValue(e.getContents())
   }
 
+  const saveAsDraft = async () => {
+    setSending(true)
+    await instance.post(`drafts`, {message: value, subject: formik.values.subject})
+    .then(() => {
+      setSending(false)
+      setValue("")
+      showAlert("Draft saved", "success")
+      formik.resetForm()
+    })
+  }
+
   return (
     <div>
       <Box sx={style}>
         <form onSubmit={formik.handleSubmit}>
           <Typography variant='h7' style={{marginBottom: "10px"}}>
-            <b>Compose Message</b>
+            <b>
+              {
+                editMode ? "Edit Draft" : "Compose Message"
+              }
+            </b>
           </Typography>
           <p></p>
           {
@@ -294,6 +324,7 @@ const ComposeMessage = ({replyMode, singleMessage, socket, state, sendingMessage
             value={value} 
             onChange={(e,f,g,h) => saveData(h)}
             style={{height: "300px"}} 
+            ref={myInputRef} 
           />
 
           <p></p>
@@ -310,10 +341,29 @@ const ComposeMessage = ({replyMode, singleMessage, socket, state, sendingMessage
 
             <Button 
               size='small' 
+              color="success" 
+              variant="contained" 
+              onClick={() => {
+                saveAsDraft()
+              }}
+              style={{borderRadius: "30px"}}
+            >
+               {
+                sending ? (
+                  <Box sx={{ display: 'flex' }}>
+                    <CircularProgress size={24} color="inherit" />
+                  </Box>
+                ) : "Save as draft"
+              }
+            </Button>
+
+            <Button 
+              size='small' 
               color="error" 
               variant="contained" 
               onClick={() => {
                 formik.resetForm()
+                setValue("")
               }}
               style={{borderRadius: "30px"}}
             >
