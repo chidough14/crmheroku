@@ -1,12 +1,12 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import ReactQuill, { Quill } from 'react-quill';
 import "quill-mention";
 import 'react-quill/dist/quill.snow.css';
-import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
+import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, ListItem, ListItemText } from '@mui/material';
 import { QuillDeltaToHtmlConverter } from 'quill-delta-to-html';
 import { useSelector } from 'react-redux';
 
-const CommentFormQill = ({ saveComment, allUsers, parentId, editMode, childCommentContent, updateComment, reply, handleClose, setShowForm }) => {
+const CommentFormQill = ({ saveComment, allUsers, parentId, editMode, childCommentContent, updateComment, reply, handleClose, setShowForm, mode }) => {
   const [value, setValue] = useState()
   const [quillValue, setQuillValue] = useState(undefined)
   const [users, setUsers] = useState([])
@@ -101,27 +101,39 @@ const CommentFormQill = ({ saveComment, allUsers, parentId, editMode, childComme
             mention: {
               allowedChars: /^[A-Za-z\sÅÄÖåäö]*$/,
               mentionDenotationChars: ["@", "#"],
-              source: (searchTerm, renderList, mentionChar) => {
-                let values;
-        
-                if (mentionChar === "@") {
-                  values = atValues;
-                } else {
-                  values = hashValues;
-                }
-        
-                if (searchTerm.length === 0) {
-                  renderList(values, searchTerm);
-                } else {
-                  const matches = [];
-                  for (let i = 0; i < values.length; i++)
-                    if (
-                      ~values[i].value.toLowerCase().indexOf(searchTerm.toLowerCase())
-                    )
-                      matches.push(values[i]);
-                  renderList(matches, searchTerm);
-                }
-              }
+              source: useCallback(
+                (searchTerm, renderList, mentionChar) => {
+                  let values;
+                  if (mentionChar === "@") {
+                    values = atValues;
+                  } else {
+                    values = hashValues;
+                  }
+         
+                  if (searchTerm.length === 0) {
+                    renderList(values, searchTerm);
+                  } else if (values) {
+                    const matches = [];
+                    for (let i = 0; i < values.length; i += 1)
+                      if (
+                        values[i].value.toLowerCase().indexOf(searchTerm.toLowerCase())
+                      )
+                        matches.push(`{${values[i]}`);
+                    renderList(matches, searchTerm);
+                  }
+                },
+                []
+              ),
+              // renderItem: useCallback(
+              //   (item, searchTerm) => {
+              //     return (
+              //       <ListItem button>
+              //         <ListItemText primary={item.value} />
+              //       </ListItem>
+              //     );
+              //   },
+              //   []
+              // )
             }
           }
           }
@@ -146,21 +158,24 @@ const CommentFormQill = ({ saveComment, allUsers, parentId, editMode, childComme
         >
           Save
         </Button>
-        
-        { 
-          reply &&
-          <Button 
-            size='small' 
-            color="warning" 
-            variant="contained" 
-            onClick={() => {
+
+        <Button 
+          size='small' 
+          color="warning" 
+          variant="contained" 
+          onClick={() => {
+          
+           
+            if (mode === "normal") {
+              setShowForm(false)
+            } else {
               handleClose()
-            }}
-            style={{borderRadius: "30px"}}
-          >
-            Cancel
-          </Button>
-        }
+            }
+          }}
+          style={{borderRadius: "30px"}}
+        >
+          Cancel
+        </Button>
       </div>
 
 
