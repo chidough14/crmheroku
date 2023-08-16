@@ -16,6 +16,8 @@ const initialState = {
   page: 1,
   currentMessageId: undefined,
   fromBell: false,
+  drafts: undefined,
+  singleDraft: undefined,
 }
 
 export const MessageSlice = createSlice({
@@ -108,6 +110,12 @@ export const MessageSlice = createSlice({
     },
     setFromBell: (state, action) => {
       state.fromBell = action.payload.fromBell
+    },
+    setDrafts: (state, action) => {
+      state.drafts = action.payload.drafts
+    },
+    setSingleDraft: (state, action) => {
+      state.singleDraft = action.payload.singleDraft
     }
   },
 })
@@ -134,7 +142,9 @@ export const {
   setShowSingleMessage,
   setPage,
   setCurrentMessageId,
-  setFromBell
+  setFromBell,
+  setDrafts,
+  setSingleDraft
 } = MessageSlice.actions
 
 export default MessageSlice.reducer
