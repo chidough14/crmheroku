@@ -12,10 +12,11 @@ import { setInboxMessages, setOutboxMessages, setPage } from '../../features/Mes
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getToken } from '../../services/LocalStorageService';
-import { CreateOutlined, InboxOutlined, OutboxOutlined } from '@mui/icons-material';
+import { CreateOutlined, DraftsOutlined, InboxOutlined, OutboxOutlined } from '@mui/icons-material';
 import { Snackbar, Tooltip } from '@mui/material';
 import MuiAlert from '@mui/material/Alert';
 import SingleMessage from './SingleMessage';
+import Drafts from './Drafts';
 
 
 const Alert = React.forwardRef(function Alert(props, ref) {
@@ -170,6 +171,7 @@ const UserMessages = ({socket}) => {
         <>
           <SingleMessage
             currentMessageId={currentMessageId}
+            socket={socket}
           />
         </>
       ) :
@@ -188,6 +190,7 @@ const UserMessages = ({socket}) => {
           <Tab icon={<Tooltip title="Inbox"><InboxOutlined /></Tooltip>}  {...a11yProps(0)} />
           <Tab icon={<Tooltip title="Outbox"><OutboxOutlined /></Tooltip>}  {...a11yProps(1)} />
           <Tab icon={<Tooltip title="Compose"><CreateOutlined /></Tooltip>} {...a11yProps(2)} />
+          <Tab icon={<Tooltip title="Drafts"><DraftsOutlined /></Tooltip>} {...a11yProps(2)} />
         </Tabs>
         <TabPanel value={value} index={0}>
           <UserMessagesTable messages={inbox} isInbox={true} getInboxMessages={getInboxMessages} loading={inboxLoading} />
@@ -197,6 +200,9 @@ const UserMessages = ({socket}) => {
         </TabPanel>
         <TabPanel value={value} index={2}>
           <ComposeMessage socket={socket} state={state} sendingMessage={sendingMessage} />
+        </TabPanel>
+        <TabPanel value={value} index={3}>
+          <Drafts setValue={setValue} />
         </TabPanel>
       </Box>
       }
