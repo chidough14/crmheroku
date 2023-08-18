@@ -5,10 +5,11 @@ import * as yup from 'yup';
 import { useDispatch, useSelector } from 'react-redux';
 import instance from '../../services/fetchApi';
 import { useState } from 'react';
-import { addNewMessage, setSendingMessage } from '../../features/MessagesSlice';
+import { addNewMessage, setSendingMessage, updateDraft } from '../../features/MessagesSlice';
 import { useEffect } from 'react';
 import MuiAlert from '@mui/material/Alert';
 import ReactQuill from 'react-quill';
+import deltaToString from "delta-to-string-converter"
 import 'react-quill/dist/quill.snow.css';
 
 
@@ -178,12 +179,12 @@ const ComposeMessage = ({replyMode, singleMessage, socket, state, sendingMessage
   useEffect(() => {
     if (editMode) {
 
-      formik.setFieldValue("subject", `${singleDraft.subject}`)
+      formik.setFieldValue("subject", `${singleDraft?.subject}`)
 
          
       const quill = myInputRef.current.getEditor();
 
-      quill.setContents(quill.clipboard.convert(singleDraft.message));
+      quill.setContents(quill.clipboard.convert(singleDraft?.message));
     }
 
   }, [editMode])
@@ -201,14 +202,63 @@ const ComposeMessage = ({replyMode, singleMessage, socket, state, sendingMessage
   }
 
   const saveAsDraft = async () => {
-    setSending(true)
-    await instance.post(`drafts`, {message: value, subject: formik.values.subject})
-    .then(() => {
-      setSending(false)
-      setValue("")
-      showAlert("Draft saved", "success")
-      formik.resetForm()
-    })
+    const quillEditor = myInputRef.current.getEditor();
+
+    const editorContents = quillEditor.getText().trim();
+
+    if (editorContents === "" || !formik.values.subject) {
+      showAlert("You need to add a subject and message before saving as draft", "warning")
+    } else {
+      setSending(true)
+      await instance.post(`drafts`, {message: value, subject: formik.values.subject})
+      .then(() => {
+        setSending(false)
+        setValue("")
+        showAlert("Draft saved", "success")
+        formik.resetForm()
+      })
+    }
+  }
+
+  const renderSaveText = () => {
+    if (editMode) {
+     return "Save"
+    } else {
+      return "Save as draft"
+    }
+  }
+
+  const isValidJson = (string) => {
+    try {
+      JSON.parse(string)
+      return true
+    } catch (error) {
+      return false
+    }
+  }
+
+  const editDraft = async () => {
+    const quillEditor = myInputRef.current.getEditor();
+
+    const editorContents = quillEditor.getText().trim();
+    
+    if (editorContents === "" || !formik.values.subject) {
+      showAlert("You need to add a subject and message before saving as draft", "warning")
+    } else {
+      setSending(true)
+      await instance.patch(`/drafts/${singleDraft.id}`, {subject: formik.values.subject, message: myInputRef.current.getEditor().getContents()})
+      .then((res) => {
+        let msg = isValidJson(res.data.draft.message) ? deltaToString(JSON.parse(res.data.draft.message).ops) : res.data.draft.message
+        res.data.draft.message = msg
+  
+        dispatch(updateDraft({draft: res.data.draft}))
+        setSending(false)
+        setValue("")
+        showAlert("Draft saved", "success")
+        formik.resetForm()
+      })
+    }
+   
   }
 
   return (
@@ -344,7 +394,12 @@ const ComposeMessage = ({replyMode, singleMessage, socket, state, sendingMessage
               color="success" 
               variant="contained" 
               onClick={() => {
-                saveAsDraft()
+                if (editMode) {
+                   editDraft()
+                } else {
+                  saveAsDraft()
+                }
+                
               }}
               style={{borderRadius: "30px"}}
             >
@@ -353,7 +408,7 @@ const ComposeMessage = ({replyMode, singleMessage, socket, state, sendingMessage
                   <Box sx={{ display: 'flex' }}>
                     <CircularProgress size={24} color="inherit" />
                   </Box>
-                ) : "Save as draft"
+                ) : renderSaveText()
               }
             </Button>
 
@@ -373,6 +428,7 @@ const ComposeMessage = ({replyMode, singleMessage, socket, state, sendingMessage
         
         </form>
       </Box>
+      
 
       <Snackbar open={openAlert} autoHideDuration={6000} onClose={handleCloseAlert}>
         <Alert onClose={handleCloseAlert} severity={alertType} sx={{ width: '100%' }}>
