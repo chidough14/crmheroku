@@ -116,6 +116,16 @@ export const MessageSlice = createSlice({
     },
     setSingleDraft: (state, action) => {
       state.singleDraft = action.payload.singleDraft
+    },
+    removeDraft: (state, action) => {
+      state.drafts.data = state.drafts.data.filter((a) => a.id !== action.payload.draftId)
+    },
+    bulkRemoveDrafts: (state, action) => {
+      state.drafts.data = state.drafts.data.filter((a) => !action.payload.draftIds.includes(a.id))
+    },
+    updateDraft: (state, action) => {
+      let idx = state.drafts.data.findIndex((a) => a.id === action.payload.draft.id)
+      state.drafts.data[idx] = action.payload.draft 
     }
   },
 })
@@ -144,7 +154,11 @@ export const {
   setCurrentMessageId,
   setFromBell,
   setDrafts,
-  setSingleDraft
+  setSingleDraft,
+  bulkRemoveDrafts,
+  removeDraft,
+  editDraft,
+  updateDraft
 } = MessageSlice.actions
 
 export default MessageSlice.reducer

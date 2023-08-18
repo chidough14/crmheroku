@@ -202,7 +202,7 @@ const UserMessages = ({socket}) => {
           <ComposeMessage socket={socket} state={state} sendingMessage={sendingMessage} />
         </TabPanel>
         <TabPanel value={value} index={3}>
-          <Drafts setValue={setValue} />
+          <Drafts setValue={setValue}  socket={socket} sendingMessage={sendingMessage} />
         </TabPanel>
       </Box>
       }
