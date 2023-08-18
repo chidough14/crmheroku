@@ -27,6 +27,7 @@ import { setProductAdding } from '../../features/ProductSlice';
 import Comments from '../comments/Comments';
 // import { DeltaToStringConverter } from '../../services/DeltaToStringConverter';
 import deltaToString from "delta-to-string-converter"
+import LineChart from '../../components/activities/LineChart';
 const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
 });
@@ -445,6 +446,7 @@ const ActivityDetails = ({socket}) => {
                 <Tab label="Details" {...a11yProps(0)} />
                 <Tab label="Products" {...a11yProps(1)} />
                 <Tab label="Invoices" {...a11yProps(2)} />
+                <Tab label="Movements" {...a11yProps(3)} />
               </Tabs>
             </Box>
             <TabPanel value={value} index={0}>
@@ -589,21 +591,32 @@ const ActivityDetails = ({socket}) => {
                 user={user}
               />
             </TabPanel>
+
+            <TabPanel value={value} index={3}>
+              <LineChart
+                data={activity?.movements}
+              />
+            </TabPanel>
           </Box>
 
-          <div>
-            <Typography variant='h6'>
-              Comments &nbsp; &nbsp;
-              {
-                `(${activity?.comments.length})`
-              }
-            </Typography>
-            <Comments
-              comments={activity?.comments}
-              activityId={activity?.id}
-              socket={socket}
-            />
-          </div>
+         {
+          value === 0 && (
+            <div>
+              <Typography variant='h6'>
+                Comments &nbsp; &nbsp;
+                {
+                  `(${activity?.comments.length})`
+                }
+              </Typography>
+              
+              <Comments
+                comments={activity?.comments}
+                activityId={activity?.id}
+                socket={socket}
+              />
+            </div>
+          )
+         }
         </>
         )
       }
