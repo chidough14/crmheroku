@@ -2,6 +2,7 @@ import React, { useState, useCallback, useMemo, useEffect } from 'react'
 import PropTypes from 'prop-types'
 import { Calendar,  DateLocalizer, momentLocalizer } from 'react-big-calendar'
 import moment from 'moment';
+import mnt from 'moment-timezone';
 import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop'
 import 'react-big-calendar/lib/addons/dragAndDrop/styles.css'
 import "react-big-calendar/lib/css/react-big-calendar.css";
@@ -23,7 +24,8 @@ const Alert = React.forwardRef(function Alert(props, ref) {
 
 
 const DnDCalendar = withDragAndDrop(Calendar)
-const localizer = momentLocalizer(moment);
+mnt.tz.setDefault('Africa/Lagos');
+const localizer = momentLocalizer(mnt);
 
 const CalendarEvents = ({socket}) => {
   const {events, openMask} = useSelector(state => state.event)
@@ -121,14 +123,14 @@ const CalendarEvents = ({socket}) => {
 
   const updateCalendarEvent = async (e) => {
     const body = {
-      start: e.start,
-      end: e.end
+      start: moment(e.start).format(),
+      end: moment(e.end).format()
     }
 
     dispatch(updateEvent({event: {
       ...e.event,
-      start: e.start,
-      end: e.end
+      start: moment(e.start).format(),
+      end: moment(e.end).format()
     }}))
 
     await instance.patch(`events/${e.event.id}`, body)

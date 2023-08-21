@@ -1,7 +1,9 @@
 const express = require('express');
+const cron = require('node-cron');
 const app = express();
 const axios = require('axios');
 const path = require('path');
+const moment = require('moment');
 require("dotenv").config(); 
 // const PORT = process.env.PORT || 4000;
 
@@ -203,7 +205,40 @@ app.get('/api', (req, res) => {
   });
 });
 
+const calculateTimeDifference = (eventStartTime, now) => {
+  const eventStart = moment(eventStartTime); // Event start time
+
+  const difference = eventStart.diff(now, 'minutes'); // Calculate the difference in minutes
+
+  return difference;
+};
+
 // stripe 0047664744
+const fetchEvents = async () => {
+  try {
+    const res = await axios.get('http://127.0.0.1:8000/api/events-within-hour');
+    console.log(arr, res.data); // Log the data property of the response
+
+    for (let i=0; i < res.data.events.length; i++) {
+      const title = res.data.events[i].title
+      const message = `Your event ${title} will begin in ${calculateTimeDifference(res.data.events[i].start, res.data.now)} minutes`
+
+      let userId = arr.find((a)=> a.userId === res.data.events[i].user_id)?.id
+
+      if (userId) {
+        socketIO.to(userId).emit('event_reminder', message);
+      }
+      // socketIO.emit('event_reminder', "test"); 
+    }
+
+  } catch (error) {
+    console.error('Error fetching events:', error.message);
+  }
+};
+
+cron.schedule('*/10 * * * * *', async () => {
+  await fetchEvents();
+});
 
 app.post("/api/create-checkout-session", async (req, res) => { 
 
