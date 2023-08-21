@@ -182,6 +182,7 @@ export default function AppLayout({socket}) {
   const {fetchNotifications, page} = useSelector(state => state.message)
   const {activities} = useSelector(state=> state.activity)
   const [openAlert, setOpenAlert] = React.useState(false)
+  const [eventReminder, setEventReminder] = React.useState(false)
   const [text, setText] = React.useState("")
   const [message, setMessgae] = React.useState("")
   const [alertType, setAlertType] = React.useState("")
@@ -386,6 +387,12 @@ export default function AppLayout({socket}) {
 
     socket.on('bulk_activity_deleted', (data) => {
       showFollowersNotification(data)
+    });
+
+    socket.on('event_reminder', (message) => {
+      setEventReminder(true)
+      setAlertType("success")
+      setText(message)
     });
   }, [socket])
 
@@ -867,12 +874,20 @@ export default function AppLayout({socket}) {
         socket={socket}
       />
 
-
-      <Snackbar open={openAlert} autoHideDuration={6000} onClose={handleCloseAlert}>
-        <Alert onClose={handleCloseAlert} severity={alertType} sx={{ width: '100%' }}>
-          {text}
-        </Alert>
-      </Snackbar>
+    <Snackbar
+      open={openAlert || eventReminder}
+      autoHideDuration={6000}
+      onClose={() => {
+        handleCloseAlert();
+        setEventReminder(false);
+      }}
+      anchorOrigin={eventReminder ? { vertical: "top", horizontal: "right" } : undefined}
+      key={eventReminder ? "top" + "right" : undefined}
+    >
+      <Alert onClose={handleCloseAlert} severity={alertType} sx={{ width: '100%' }}>
+        {text}
+      </Alert>
+    </Snackbar>
 
       <Snackbar
         anchorOrigin={{ vertical, horizontal }}
