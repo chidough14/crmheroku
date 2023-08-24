@@ -144,7 +144,7 @@ const EventModal = ({ open, setOpen, startTime, endTime, activities, user, activ
             socket.emit('sendNotification', { recipientId: xx.id, message: "You have been invited to a meeting" });
           }
         } else {
-          socket.emit('sendConferenceNotification', { message: "You have been invited to a meeting" });
+          socket.emit('sendConferenceNotification', { message: "You have been invited to a meeting", userId: body.user_id });
         }
 
       
