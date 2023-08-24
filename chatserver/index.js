@@ -119,9 +119,11 @@ socketIO.on('connection', (socket) => {
   });
 
   socket.on('sendConferenceNotification', (data) => {
-    for (let i=0; i<arr.length; i++) {
+    let newArray = arr.filter((a) => a.userId !== data.userId)
+
+    for (let i=0; i<newArray.length; i++) {
       const { message } = data;
-      socketIO.to(arr[i].id).emit('receiveNotification', message);
+      socketIO.to(newArray[i].id).emit('receiveNotification', message);
     }
   });
 
@@ -202,38 +204,53 @@ app.get('/api', (req, res) => {
   });
 });
 
-const calculateTimeDifference = (eventStartTime, now) => {
-  const eventStart = moment(eventStartTime); // Event start time
-
-  const difference = eventStart.diff(now, 'minutes'); // Calculate the difference in minutes
-
-  return difference;
-};
-
 // stripe 0047664744
 const fetchEvents = async () => {
   try {
     const res = await axios.get('http://127.0.0.1:8000/api/events-within-hour');
-    console.log(arr, res.data); // Log the data property of the response
+    console.log(arr, res.data.events);
 
     for (let i=0; i < res.data.events.length; i++) {
+      let message, userId, invitedUsersId
       const title = res.data.events[i].title
-      const message = `Your event ${title} will begin in ${calculateTimeDifference(res.data.events[i].start, res.data.now)} minutes`
+      message = `Your event ${title} will begin in ${res.data.events[i].difference} minutes`
 
-      let userId = arr.find((a)=> a.userId === res.data.events[i].user_id)?.id
+      userId = arr.find((a)=> a.userId === res.data.events[i].user_id)?.id
 
       if (userId) {
         socketIO.to(userId).emit('event_reminder', message);
       }
-      // socketIO.emit('event_reminder', "test"); 
+
+      // console.log(res.data.events[i].meeting);
+      let invitedUsersArray = Object.values( res.data.events[i].meeting.invitedUsers)
+
+      if (invitedUsersArray.length) {
+        message = `Your meeting ${res.data.events[i].meeting.meetingName} will begin in ${res.data.events[i].difference} minutes`
+
+        res.data.events[i].meeting.invitedUsers = invitedUsersArray
+   
+        for (let j=0; j < invitedUsersArray.length; j++) {
+          invitedUsersId = arr.find((a)=> a.userId === invitedUsersArray[j].id)?.id
+
+          if (invitedUsersId) {
+            socketIO.to(invitedUsersId).emit('event_reminder', message);
+          }
+        }
+
+      }
+
+      if (res.data.events[i].meeting && res.data.events[i].meeting?.meetingType === "Anyone-can-join") {
+        message = `Your meeting ${res.data.events[i]?.meeting?.meetingName} will begin in ${res.data.events[i]?.difference} minutes`
+        socketIO.emit('all_event_reminder', {message, userId: res.data.events[i]?.meeting?.user_id});
+      }
     }
 
   } catch (error) {
-    console.error('Error fetching events:', error.message);
+    console.error('Error fetching events:', error);
   }
 };
 
-cron.schedule('*/10 * * * * *', async () => {
+cron.schedule('*/15 * * * *', async () => {  // run task every 30 minutes
   await fetchEvents();
 });
 

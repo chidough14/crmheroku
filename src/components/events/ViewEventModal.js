@@ -45,7 +45,7 @@ const validationSchema = yup.object({
     .required('End time is required'),
 });
 
-const ViewEventModal = ({ open, setOpen, event, relatedActivity, showForm, dashboard }) => {
+const ViewEventModal = ({ open, setOpen, event, relatedActivity, showForm, dashboard, socket }) => {
   const [openAlert, setOpenAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
   const [severity, setSeverity] = useState("");
@@ -54,6 +54,7 @@ const ViewEventModal = ({ open, setOpen, event, relatedActivity, showForm, dashb
   const [openDialog, setOpenDialog] = useState(false);
   const user = useSelector(state=> state.user)
   const { showSendingSpinner, showDeletingNotification } = useSelector(state => state.event)
+  const { allUsers } = useSelector(state => state.user)
   const dispatch = useDispatch()
 
   const handleCloseAlert = (event, reason) => {
@@ -80,6 +81,27 @@ const ViewEventModal = ({ open, setOpen, event, relatedActivity, showForm, dashb
     setSeverity(sev)
   }
 
+  const sendReminders = (event, type) => {
+    let msg
+    msg = type === "update" ? `Your meeting ${event.meeting.meetingName} has been changed. The new time is ${moment(event.start).format('MMMM Do YYYY, h:mm a')}-D`
+                            : `Your meeting ${event.meeting.meetingName} has been deleted-D`
+
+    if (event.meeting) {
+      if (event.meeting.invitedUsers.length) {
+        let invitedUsersArray = event.meeting.invitedUsers
+        for (let i=0; i<invitedUsersArray.length; i++) {
+          let xx = allUsers.find((a) => a.email === invitedUsersArray[i])
+          socket.emit('sendNotification', { recipientId: xx.id, message: msg });
+        }
+      }
+
+      if (event.meeting.meetingType === "Anyone-can-join") {
+        socket.emit('sendConferenceNotification', { message: msg, userId: event.user_id });
+      }
+     
+    } 
+  }
+
   const formik = useFormik({
     initialValues: {
       title: '',
@@ -102,6 +124,8 @@ const ViewEventModal = ({ open, setOpen, event, relatedActivity, showForm, dashb
         if (showForm) {
           dispatch(updateActivityEvent({event: res.data.event}))
         }
+
+        sendReminders(res.data.event, "update")
 
         showAlert("Event updated successfully", "success")
         dispatch(updateEvent({event: res.data.event}))
@@ -143,6 +167,9 @@ const ViewEventModal = ({ open, setOpen, event, relatedActivity, showForm, dashb
 
     await instance.delete(`events/${event.id}`)
     .then((res)=> {
+
+      sendReminders(event, "delete") 
+      
       showAlert("Event deleted successfully", "success")
       dispatch(deleteEvent({eventId: event.id}))
       setOpenDialog(false)

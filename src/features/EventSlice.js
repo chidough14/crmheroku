@@ -4,7 +4,8 @@ const initialState = {
   events: [],
   openMask: false,
   showSendingSpinner: false,
-  showDeletingNotification: false
+  showDeletingNotification: false,
+  reloadEvents: false
 }
 
 export const EventSlice = createSlice({
@@ -44,6 +45,9 @@ export const EventSlice = createSlice({
     setOpenMask: (state, action) => {
       state.openMask = action.payload.openMask
     },
+    setReloadEvents: (state, action) => {
+      state.reloadEvents = !state.reloadEvents
+    }
   },
 })
 
@@ -54,7 +58,8 @@ export const {
   deleteEvent,
   setOpenMask,
   setShowSendingSpinner,
-  setShowDeletingNotification
+  setShowDeletingNotification,
+  setReloadEvents
 } = EventSlice.actions
 
 export default EventSlice.reducer
