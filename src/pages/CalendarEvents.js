@@ -28,7 +28,7 @@ mnt.tz.setDefault('Africa/Lagos');
 const localizer = momentLocalizer(mnt);
 
 const CalendarEvents = ({socket}) => {
-  const {events, openMask} = useSelector(state => state.event)
+  const {events, openMask, reloadEvents} = useSelector(state => state.event)
   const [myEvents, setMyEvents] = useState([])
   const [open, setOpen] = useState(false);
   const [openViewEventModal, setOpenViewEventModal] = useState(false);
@@ -75,23 +75,27 @@ const CalendarEvents = ({socket}) => {
     [setStartTime, setEndTime, setOpen]
   )
 
+  const getEventsResult = async () => {
+    dispatch(setOpenMask({openMask: true}))
+
+    await instance.get(`events`)
+    .then((res)=> {
+      dispatch(setOpenMask({openMask: false}))
+      dispatch(setEvents({events: res.data.events}))
+    })
+    .catch((err)=> {
+      showAlert("An error was encountered", "error")
+      dispatch(setOpenMask({openMask: false}))
+    })
+  }
+
+  // useEffect(()=> {
+  //   getEventsResult()
+  // }, [])
+
   useEffect(()=> {
-    const getEventsResult = async () => {
-      dispatch(setOpenMask({openMask: true}))
-
-      await instance.get(`events`)
-      .then((res)=> {
-        dispatch(setOpenMask({openMask: false}))
-        dispatch(setEvents({events: res.data.events}))
-      })
-      .catch((err)=> {
-        showAlert("An error was encountered", "error")
-        dispatch(setOpenMask({openMask: false}))
-      })
-    }
-
     getEventsResult()
-  }, [])
+  }, [reloadEvents])
 
   
   useEffect(()=> {
@@ -134,13 +138,39 @@ const CalendarEvents = ({socket}) => {
     }}))
 
     await instance.patch(`events/${e.event.id}`, body)
-    .then(() => {
-       showAlert("Event updated successfully", "success")
+    .then((res) => {
+
+      if (res.data.event.meeting) {
+        let msg = `Your meeting ${res.data.event.meeting.meetingName} has been changed. The new time is ${moment(res.data.event.start).format('MMMM Do YYYY, h:mm a')}-D`
+
+        if (res.data.event.meeting.invitedUsers.length) {
+          let invitedUsersArray = res.data.event.meeting.invitedUsers
+          for (let i=0; i<invitedUsersArray.length; i++) {
+            let xx = user?.allUsers.find((a) => a.email === invitedUsersArray[i])
+            socket.emit('sendNotification', { recipientId: xx.id, message: msg });
+          }
+        }
+
+        if (res.data.event.meeting.meetingType === "Anyone-can-join") {
+          socket.emit('sendConferenceNotification', { message: msg, userId: res.data.event.user_id });
+        }
+       
+      }
+
+      showAlert("Event updated successfully", "success")
     })
     .catch((err)=> {
       showAlert("An error was encountered", "error")
     })
   }
+
+  const userOwnsEvent = (event) => {
+    if (event.user_id === user.id) {
+      return true
+    } else {
+      return false
+    }
+  };
 
   return (
     <div style={{width: "100%"}}>
@@ -162,7 +192,7 @@ const CalendarEvents = ({socket}) => {
               border: "none"
             };
       
-            if (event.isMine){
+            if (event.user_id !== user.id){
               newStyle.backgroundColor = "lightgreen"
             }
       
@@ -172,8 +202,11 @@ const CalendarEvents = ({socket}) => {
             };
           }
         }
-        draggableAccessor={(event) => true}
-        onDragStart={(e)=> console.log("drag", e)}
+        draggableAccessor={(event) => userOwnsEvent(event)}
+        resizableAccessor={(event) => userOwnsEvent(event)}
+        onDragStart={(e)=> {
+          console.log("drag", e)
+        }}
         onEventDrop={(e)=> updateCalendarEvent(e)}
         onEventResize={(e)=> updateCalendarEvent(e)}
       />
@@ -193,6 +226,7 @@ const CalendarEvents = ({socket}) => {
         setOpen={setOpenViewEventModal}
         event={eventObj}
         relatedActivity={activities.find((a) => a.id === eventObj?.activity_id)}
+        socket={socket} 
       />
 
       <Snackbar open={openAlert} autoHideDuration={6000} onClose={handleCloseAlert}>
