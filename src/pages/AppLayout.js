@@ -38,6 +38,7 @@ import { setInboxMessages, setReloadMessages, setShowSingleMessage } from '../fe
 import { Stack } from '@mui/system';
 import FollowersNotification from '../components/FollowersNotification';
 import { setReloadActivities } from '../features/ActivitySlice';
+import { setReloadEvents } from '../features/EventSlice';
 
 
 const Alert = React.forwardRef(function Alert(props, ref) {
@@ -186,7 +187,7 @@ export default function AppLayout({socket}) {
   const [text, setText] = React.useState("")
   const [message, setMessgae] = React.useState("")
   const [alertType, setAlertType] = React.useState("")
-  // const [followersData, setFollowersData] = React.useState([])
+  const [msgArray, setMsgArray] = React.useState([])
   const navigate = useNavigate()
 
   const handleOpen = () => setOpenActivityModal(true);
@@ -202,12 +203,13 @@ export default function AppLayout({socket}) {
     openFollowersNotification: false,
     vertical: 'top',
     horizontal: 'center',
-    showFollowersActivity: false
+    showFollowersActivity: false,
+    msg: ""
   });
-  const { vertical, horizontal, openNotification, showFollowersActivity, openFollowersNotification } = state;
+  const { vertical, horizontal, openNotification, showFollowersActivity, openFollowersNotification, msg } = state;
 
   const handleCloseNotification = () => {
-    setState({ ...state, openNotification: false,  openFollowersNotification: false });
+    setState({ ...state, openNotification: false,  openFollowersNotification: false, msg: "" });
     // setFollowersData(null)
     // dispatch(emptyFollowersData())
   };
@@ -258,14 +260,18 @@ export default function AppLayout({socket}) {
     }
   }, [isListPage?.pathnameBase])
 
-  const getNotifications = async (value) => {
+  const getNotifications = async (value, msg) => {
+    
+    let formattedMessage
+    formattedMessage = msg.endsWith("-D") ? msg.slice(0, -2) : msg
+
     await instance.get(`notifications`)
     .then((res) => {
        setInboxData(res.data.inbox)
        setInvitedMeetingsData(res.data.invitedMeetings)
 
        if (value === "showNotification") {
-        setState({ ...state, openNotification: true });
+        setState({ ...state, openNotification: true, msg: formattedMessage });
        }
     })
   }
@@ -302,7 +308,7 @@ export default function AppLayout({socket}) {
   }
 
   React.useEffect(()=> {
-     getNotifications("none")
+     getNotifications("none", "")
      reloadInbox()
   }, [loggedIn, fetchNotifications])
 
@@ -322,13 +328,14 @@ export default function AppLayout({socket}) {
   const showFollowersNotification = (data) => {
     dispatch(setFollowersData({followersData: { id: generateRandomId(), message: data.message, sender: data.sender }}))
 
-    setState({ ...state, openFollowersNotification: true});
+    setState({ ...state, openFollowersNotification: true, msg: "You have a new followers notification"});
   }
 
   React.useEffect(()=> {
+  
     socket.on('receiveNotification', (message) => {
       dispatch(setReloadMessages({reloadMessages: true}))
-      getNotifications("showNotification")
+      getNotifications("showNotification", message)
 
       // Decide whether to reload lists if the transfer is a list
       if(message === "Activity Transfer" || message === "Activities Transfer" ) {
@@ -337,6 +344,10 @@ export default function AppLayout({socket}) {
 
       if(message === "List transfer" ) {
         dispatch(setReloadLists({reloadLists: true}))
+      }
+
+      if (message === "You have been invited to a meeting" || message.endsWith("-D")){
+        dispatch(setReloadEvents())
       }
       
       
@@ -390,11 +401,44 @@ export default function AppLayout({socket}) {
     });
 
     socket.on('event_reminder', (message) => {
+ 
       setEventReminder(true)
-      setAlertType("success")
-      setText(message)
+
+      const newAlert = {
+        id: new Date().getTime(),
+        message,
+        severity: "info",
+      };
+
+      setMsgArray(prev => [...prev, newAlert])
     });
+
+   
   }, [socket])
+
+  React.useEffect(() => {
+    socket.on('all_event_reminder', (data) => {
+    
+      if (id) {
+        if (data?.userId === id) {
+
+        } else {
+          setEventReminder(true)
+  
+          const newAlert = {
+            id: new Date().getTime(),
+            message: data?.message,
+            severity: "info",
+          };
+    
+          setMsgArray(prev => [...prev, newAlert])
+        }
+      }
+    
+ 
+     
+    });
+  }, [socket, id])
 
   const handleDrawerOpen = () => {
     setOpen(prev => !prev)
@@ -594,6 +638,10 @@ export default function AppLayout({socket}) {
 
     })
   }
+
+  const handleAlertClose = (alertId) => {
+    setMsgArray((prevAlerts) => prevAlerts.filter((alert) => alert.id !== alertId));
+  };
 
   return (
     <div
@@ -874,20 +922,32 @@ export default function AppLayout({socket}) {
         socket={socket}
       />
 
-    <Snackbar
-      open={openAlert || eventReminder}
-      autoHideDuration={6000}
-      onClose={() => {
-        handleCloseAlert();
-        setEventReminder(false);
-      }}
-      anchorOrigin={eventReminder ? { vertical: "top", horizontal: "right" } : undefined}
-      key={eventReminder ? "top" + "right" : undefined}
-    >
-      <Alert onClose={handleCloseAlert} severity={alertType} sx={{ width: '100%' }}>
-        {text}
-      </Alert>
-    </Snackbar>
+      <Snackbar
+        open={openAlert}
+        autoHideDuration={6000}
+        onClose={() => {
+          handleCloseAlert();
+        }}
+      >
+        <Alert onClose={handleCloseAlert} severity={alertType} sx={{ width: '100%' }}>
+          {text}
+        </Alert>
+      </Snackbar>
+
+      {msgArray?.map((alert, index) => (
+        <Snackbar
+          key={alert.id}
+          open={eventReminder}
+          autoHideDuration={5000}
+          onClose={() => handleAlertClose(alert.id)}
+          anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+          style={{ top: `${index * 65}px` }} // Adjust the vertical spacing between alerts   style={{ marginTop: 10 }} // Add margin to create a gap between alerts
+        >
+          <Alert onClose={() => handleAlertClose(alert.id)} severity={alert.severity}>
+            {alert.message}
+          </Alert>
+        </Snackbar>
+      ))}
 
       <Snackbar
         anchorOrigin={{ vertical, horizontal }}
@@ -897,7 +957,8 @@ export default function AppLayout({socket}) {
       >
         <Alert onClose={handleCloseNotification} severity="success" sx={{ width: '100%' }}>
           
-        You have a new notification
+      
+        { msg }
           
         </Alert>
       </Snackbar>
