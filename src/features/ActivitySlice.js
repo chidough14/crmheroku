@@ -18,7 +18,8 @@ const initialState = {
   childCommentContent: "",
   upvotes: [],
   downvotes: [],
-  reloadActivities: false
+  reloadActivities: false,
+  commentFiles: []
 }
 
 export const ActivitySlice = createSlice({
@@ -174,6 +175,15 @@ export const ActivitySlice = createSlice({
     setReloadActivities: (state, action) => {
       state.reloadActivities = action.payload.reloadActivities
     },
+    setCommentFiles: (state, action) => {
+      state.commentFiles = action.payload.commentFiles
+    },
+    removeCommentFile: (state, action) => {
+      state.commentFiles = state.commentFiles.filter((a) => a !== action.payload.file)
+    },
+    addCommentFile: (state, action) => {
+      state.commentFiles = [...state.commentFiles, action.payload.file]
+    },
   },
 })
 
@@ -217,7 +227,10 @@ export const {
   setUpvotes,
   editUpVotes,
   editDownVotes,
-  setReloadActivities
+  setReloadActivities,
+  setCommentFiles,
+  removeCommentFile,
+  addCommentFile
 } = ActivitySlice.actions
 
 export default ActivitySlice.reducer
