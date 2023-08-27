@@ -31,5 +31,26 @@ const checkEmptyString = (obj) => {
   return false;
 }
 
-export { arraysHaveSameContents, checkEmptyString }
+function checkFileType(fileName) {
+  const imageExtensions = ['jpg', 'jpeg', 'png', 'gif'];
+  const pdfExtensions = ['pdf'];
+  const csvExtensions = ['csv'];
+  const excelExtensions = ['xls', 'xlsx'];
+
+  const fileExtension = fileName?.split('.').pop().toLowerCase();
+
+  if (imageExtensions.includes(fileExtension)) {
+    return 'image';
+  } else if (pdfExtensions.includes(fileExtension)) {
+    return 'pdf';
+  } else if (csvExtensions.includes(fileExtension)) {
+    return 'csv';
+  } else if (excelExtensions.includes(fileExtension)) {
+    return 'excel';
+  } else {
+    return 'unknown';
+  }
+}
+
+export { arraysHaveSameContents, checkEmptyString, checkFileType }
 
