@@ -2,22 +2,26 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 import ReactQuill, { Quill } from 'react-quill';
 import "quill-mention";
 import 'react-quill/dist/quill.snow.css';
-import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, ListItem, ListItemText } from '@mui/material';
-import { QuillDeltaToHtmlConverter } from 'quill-delta-to-html';
-import { useSelector } from 'react-redux';
+import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
+import { useDispatch, useSelector } from 'react-redux';
+import instance from '../../services/fetchApi';
+import { DeleteOutlined, FilePresent } from '@mui/icons-material';
+import { checkFileType } from '../../services/checkers';
+import { addCommentFile, removeCommentFile } from '../../features/ActivitySlice';
 
 const CommentFormQill = ({ saveComment, allUsers, parentId, editMode, childCommentContent, updateComment, reply, handleClose, setShowForm, mode }) => {
   const [value, setValue] = useState()
-  const [quillValue, setQuillValue] = useState(undefined)
-  const [users, setUsers] = useState([])
   const [openDialog, setOpenDialog] = useState(false)
+  const [paths, setPaths] = useState([])
   const { id } = useSelector(state => state.user)
+  const { commentFiles } = useSelector(state => state.activity)
+  const dispatch = useDispatch()
   const myInputRef = useRef()
 
   const saveData = (e,f,g,h) => {
-    // console.log(h.getContents())
-    // setValue(e)
-    //setQuillValue(h.getContents())
+    if (g === 'user') {
+      setValue(e);
+    }
   }
 
   const save = (values) => {
@@ -37,7 +41,7 @@ const CommentFormQill = ({ saveComment, allUsers, parentId, editMode, childComme
 
       let names = arr.filter((a) => typeof a.insert === 'object').map((b) => b.insert.mention.value)
   
-      saveComment(myInputRef.current.getEditor().getContents(), names, parentId)
+      saveComment(myInputRef.current.getEditor().getContents(), names, paths, parentId)
 
       setShowForm(false)
     }
@@ -50,7 +54,7 @@ const CommentFormQill = ({ saveComment, allUsers, parentId, editMode, childComme
 
     let names = arr.filter((a) => typeof a.insert === 'object').map((b) => b.insert.mention.value)
 
-    updateComment(myInputRef.current.getEditor().getContents(), names)
+    updateComment(myInputRef.current.getEditor().getContents(), names, commentFiles)
   }
 
   // const isEditorEmpty = value?.trim().length === 0;
@@ -62,7 +66,9 @@ const CommentFormQill = ({ saveComment, allUsers, parentId, editMode, childComme
       // const newValue = 'New editor value!';
       quill.setContents(quill.clipboard.convert(childCommentContent));
 
-      
+      setValue(childCommentContent)
+
+      // setPaths(commentFiles)
     }
   }, [editMode])
 
@@ -83,6 +89,85 @@ const CommentFormQill = ({ saveComment, allUsers, parentId, editMode, childComme
     { id: 3, value: "Fredrik Sundqvist 2" },
     { id: 4, value: "Patrik Sjölin 2" }
   ];
+
+  const handleImageUpload = useCallback(async () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*, application/pdf, application/vnd.ms-excel, text/csv'; // Updated accept attribute
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const formData = new FormData();
+        formData.append('file', file); // Use a generic 'file' key in FormData
+  
+        try {
+          const response = await instance.post('/upload-files', formData); // Change the endpoint as needed
+          const uploadedFilePath = response.data.filePath;
+          if (mode === "normal") {
+            setPaths(prev => [...prev, uploadedFilePath]); // Update the file path state
+          } else {
+            if(editMode) {
+              dispatch(addCommentFile({file: uploadedFilePath}))
+            } else {
+              setPaths(prev => [...prev, uploadedFilePath]);
+            }
+         
+          }
+        
+        } catch (error) {
+          console.error('Error uploading file:', error);
+        }
+      }
+    };
+    input.click();
+  }, []);
+
+
+  const renderFiles = (files, type) => {
+    return files.map((a) => {
+      const isImage = checkFileType(a) === "image";
+  
+      return (
+        <div
+          key={a} // Add a unique key for each rendered element
+          style={{
+            marginRight: "20px",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            flexDirection: "column",
+            marginTop: "40px",
+          }}
+        >
+          <div>
+            {isImage ? (
+              <img
+                src={`${process.env.REACT_APP_BASE_URL}${a}`}
+                alt="Image"
+                style={{ height: "30px" }}
+              />
+            ) : (
+              <FilePresent />
+            )}
+            <span
+              style={{ marginLeft: "6px", color: "red", cursor: "pointer" }}
+              onClick={() => {
+                if (type === "normal") {
+                  setPaths(paths.filter((b) => b !== a));
+                } else {
+                  dispatch(removeCommentFile({ file: a }));
+                }
+              }}
+            >
+              <DeleteOutlined />
+            </span>
+          </div>
+          <p>{a.replace("files/", "")}</p>
+        </div>
+      );
+    });
+  };
+  
   
   return (
     <>
@@ -95,9 +180,15 @@ const CommentFormQill = ({ saveComment, allUsers, parentId, editMode, childComme
           ref={myInputRef} 
           modules= {
           {
-            toolbar: [
-              ['bold', 'italic', 'underline', 'strike', 'link']
-            ],
+            toolbar: {
+              container: [
+                ['bold', 'italic', 'underline', 'strike', 'link'],
+                [{ 'image': 'Upload Image' }],
+              ],
+              handlers: {
+                image: handleImageUpload, // Directly reference the callback
+              },
+            },
             mention: {
               allowedChars: /^[A-Za-z\sÅÄÖåäö]*$/,
               mentionDenotationChars: ["@", "#"],
@@ -158,6 +249,13 @@ const CommentFormQill = ({ saveComment, allUsers, parentId, editMode, childComme
         >
           Save
         </Button>
+
+        
+        <div style={{height: "20px", display: "flex"}}>
+          {
+            editMode ? renderFiles(commentFiles, "modal") : renderFiles(paths, "normal")
+          }
+        </div>
 
         <Button 
           size='small' 

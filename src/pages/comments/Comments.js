@@ -4,8 +4,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import moment from 'moment';
 import CommentForm from './CommentForm';
 import instance from '../../services/fetchApi';
-import { addComments, editComment, editDownVotes, editUpVotes, setChildCommentContent, setCommentContent } from '../../features/ActivitySlice';
-import { DeleteOutline, EditOutlined, ReplyOutlined, ThumbDown, ThumbUp } from '@mui/icons-material';
+import { addComments, editComment, editDownVotes, editUpVotes, setChildCommentContent, setCommentContent, setCommentFiles } from '../../features/ActivitySlice';
+import { DeleteOutline, DownloadOutlined, EditOutlined, FilePresent, ReplyOutlined, ThumbDown, ThumbUp } from '@mui/icons-material';
 import AddCommentModal from './AddCommentModal';
 import { useNavigate } from 'react-router';
 import { Box } from '@mui/system';
@@ -14,6 +14,7 @@ import CommentFormQill from './CommentFormQill';
 // import { DeltaToStringConverter } from '../../services/DeltaToStringConverter';
 import deltaToString from "delta-to-string-converter"
 import Popover from '@mui/material/Popover';
+import { checkFileType } from '../../services/checkers';
 
 
 const Comment = ({ 
@@ -38,6 +39,7 @@ const Comment = ({
   const navigate = useNavigate()
 
   const [anchorEl, setAnchorEl] = useState(null);
+  const [currentPath, setCurrentPath] = useState("");
 
 
   const handlePopoverOpen = (event) => {
@@ -143,6 +145,25 @@ const Comment = ({
     }
   }
 
+  const downloadFile = async (filename) => {
+    try {
+      const response = await instance.get(`download-file/${filename}`, {
+        responseType: 'blob', // Important for binary data
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename); // Change the filename as needed
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+    } catch (error) {
+      console.error('Error downloading file:', error);
+    }
+  };
+  
+
   return (
    
     <Card sx={{marginBottom: "20px", borderLeft: "4px solid grey"}}>
@@ -154,6 +175,85 @@ const Comment = ({
             <>
               {
                 renderCommentContent(comment)
+              }
+              
+              {
+                comment?.files?.length &&
+                <div style={{display: "flex"}}>
+                  {
+                    comment.files.map((a) => {
+                      if (checkFileType(a) === "image") {
+                        return  (
+                          <div 
+                            style={{
+                              marginRight: "20px", 
+                              display: "flex", 
+                              justifyContent: "center", 
+                              alignItems: "center", 
+                              flexDirection: "column", 
+                              marginTop: "40px",
+                              cursor: "pointer"
+                            }}
+                            onClick={() => downloadFile(a.replace("files/", ""))}
+                            onMouseEnter={() => {
+                              setCurrentPath(a)
+                            }}
+                            onMouseLeave={() => {
+                              setCurrentPath("")
+                            }}
+                          >
+                            
+                              <div>
+                                <img src={`${process.env.REACT_APP_BASE_URL}${a}`} alt="Image" style={{height: "30px"}} />
+                                {
+                                  currentPath === a && (
+                                    <span style={{marginLeft: "6px", color: "lightblue"}}>
+                                      <DownloadOutlined />
+                                    </span>
+                                  )
+                                }
+                              </div>
+                              <p>{a.replace("files/", "")}</p>
+                          </div>
+                        )
+                      
+                      } else {
+                        return (
+                          <div 
+                            style={{
+                              marginRight: "20px", 
+                              display: "flex", 
+                              justifyContent: "center", 
+                              alignItems: "center", 
+                              flexDirection: "column", 
+                              marginTop: "40px",
+                              cursor: "pointer"
+                            }}
+                            onClick={() => downloadFile(a.replace("files/", ""))}
+                            onMouseEnter={() => {
+                              setCurrentPath(a)
+                            }}
+                            onMouseLeave={() => {
+                              setCurrentPath("")
+                            }}
+                          >
+                              <div>
+                                <FilePresent />  
+                                {
+                                  currentPath === a && (
+                                    <span style={{marginLeft: "6px", color: "lightblue"}}>
+                                      <DownloadOutlined />
+                                    </span>
+                                  )
+                                }
+                              </div>
+                              <p>{a.replace("files/", "")}</p>
+                          </div>
+                        )
+                      }
+                    })
+                  }
+                </div>
               }
           
               <div style={{display: "flex", justifyContent: "space-between"}}>
@@ -246,6 +346,7 @@ const Comment = ({
                           setEditMode(true)
                           setOpenModal(true)
                           dispatch(setChildCommentContent({content: comment.content}))
+                          dispatch(setCommentFiles({commentFiles: comment.files}))
                           setShowForm(false)
                         }}
                       >
@@ -362,72 +463,17 @@ const Comments = ({comments, activityId, socket}) => {
     })
   };
 
-  const extractNames = (input) => {
-    const regex = /\(([^)]+)\)/g; // Regular expression to match text inside normal brackets
-    const namesArray = [];
-    let match;
-    
-    while ((match = regex.exec(input)) !== null) {
-      namesArray.push(match[1]);
-    }
-  
-    return namesArray;
-  };
-
-  const replaceUsernames = (input) => {
-    const regex = /@\[([^)]+)\]\([^)]+\)/g;
-    return input.replace(regex, (match, username) => username);
-  }
-
-
-
-  const saveComment = async (content, parent_id = null) => {
-    let names = extractNames(content)
-
-    let body = {
-      content,
-      activity_id: activityId,
-      parent_id,
-      mentions: names
-    }
-    
-    await instance.post(`comment`, body)
-    .then((res) => {
-      socket.emit('comment_added', { activityId, comment: JSON.stringify(res.data.comment) });
-
-      if(names.length > 0) {
-        let data = {
-          ...res.data.comment,
-          content: replaceUsernames(res.data.comment.content)
-        }
-        dispatch(addComments({comment: data}))
-      } else {
-        dispatch(addComments({comment: res.data.comment}))
-      }
-     
-      dispatch(setCommentContent({content: ""}))
-      dispatch(setChildCommentContent({content: ""}))
-      setOpenModal(false)
-
-      for (let i=0; i<names.length; i++) {
-        let username = names[i] 
-
-        let userInfo  = allUsers?.find((a) => a.name === username)
-        socket.emit('sendNotification', { recipientId: userInfo.id, message: `You were mentioned by ${name}` });  
-      }
-      
-    })
-  }
   
 
-  const saveComment2 = async (content, names, parent_id = null) => {
+  const saveComment2 = async (content, names, paths, parent_id = null) => {
 
 
     let body = {
       content,
       activity_id: activityId,
       parent_id,
-      mentions: names
+      mentions: names,
+      paths
     }
 
     
@@ -456,12 +502,13 @@ const Comments = ({comments, activityId, socket}) => {
   }
 
 
-  const updateComment = async (content, names) => {
+  const updateComment = async (content, names, paths) => {
     // let names = extractNames(content)
 
     let body = {
       content,
-      mentions: names
+      mentions: names,
+      paths
     }
 
     await instance.patch(`comment/${commentId}`, body)
