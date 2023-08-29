@@ -8,7 +8,7 @@ import Typography from '@mui/material/Typography';
 import moment from 'moment';
 import { Checkbox, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, Menu, MenuItem, Snackbar } from '@mui/material';
 import MuiAlert from '@mui/material/Alert';
-import { CopyAllOutlined, DeleteOutlined, EditOutlined, MoreVert, MoveUpOutlined, Restore } from '@mui/icons-material';
+import { CopyAllOutlined, DeleteOutlined, EditOutlined, ImportExport, MoreVert, MoveUpOutlined, Restore } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
 import { getToken } from '../../services/LocalStorageService';
 import { useNavigate } from 'react-router-dom';
@@ -144,6 +144,28 @@ const ListCard = ({list, socket, showSpinner, showTrash}) => {
     })
   };
 
+  const exportToCsv = (data) => {
+    if (!data?.companies?.length) {
+      dispatch(showAlert({alertMessage: "List is empty", severity: "info"}))
+    } else {
+      const csvContent = "name,email\n" + data.companies.map(item => `${item.name},${item.email}`).join("\n");
+    
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `${data.name}.csv`);
+        link.style.visibility = "hidden";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    }
+ 
+  }
+
+  
   return (
     <>
       <Card 
@@ -220,6 +242,20 @@ const ListCard = ({list, socket, showSpinner, showTrash}) => {
                     disabled={(list.user_id !== user.id) && (list.type === "private")}
                   >
                     <MoveUpOutlined /> Transfer
+                  </MenuItem>
+                )
+              }
+
+              {
+                showTrash ? null : (
+                  <MenuItem 
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      exportToCsv(list)
+                    }} 
+                    disabled={(list.user_id !== user.id) && (list.type === "private")}
+                  >
+                    <ImportExport /> Export
                   </MenuItem>
                 )
               }

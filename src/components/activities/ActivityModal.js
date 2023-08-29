@@ -1,15 +1,17 @@
-import { Box, Button, InputLabel, Modal, Select, TextField, Typography, MenuItem, Snackbar, CircularProgress } from '@mui/material'
+import { Box, Button, InputLabel, Modal, Select, TextField, Typography, MenuItem, Snackbar, CircularProgress, Tooltip } from '@mui/material'
 import MuiAlert from '@mui/material/Alert';
 import { useFormik } from 'formik';
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import * as yup from 'yup';
-import { addActivity, editActivity, setOpenPrompt, setShowCompanySearchNotification, setShowSendingSpinner, setSingleActivity } from '../../features/ActivitySlice';
+import { addActivity, addPaths, editActivity, emptyPaths, removePaths, setFilePaths, setOpenPrompt, setPaths, setShowCompanySearchNotification, setShowSendingSpinner, setSingleActivity } from '../../features/ActivitySlice';
 import { addActivityToCompany, setCompany, setSearchResults } from '../../features/companySlice';
 import { addEvent } from '../../features/EventSlice';
 import instance from '../../services/fetchApi';
 import SearchBar from '../SearchBar';
+import { DeleteOutlined, FilePresent, UploadFileOutlined } from '@mui/icons-material';
+import { checkFileType } from '../../services/checkers';
 
 const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
@@ -20,7 +22,7 @@ const style = {
   top: '50%',
   left: '50%',
   transform: 'translate(-50%, -50%)',
-  width: 400,
+  width: 700,
   bgcolor: 'background.paper',
   border: '2px solid #000',
   boxShadow: 24,
@@ -51,19 +53,23 @@ const ActivityModal = ({open, setOpen, companyObject, openActivityModal, activit
   const [alertMessage, setAlertMessage] = useState("");
   const [severity, setSeverity] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentFile, setCurrentFile] = useState("")
   const [companyId, setCompanyId] = useState();
+  const [paths, setPaths] = useState([]);
   const [formerPobability, setFormerProbability] = useState(activity?.probability);
   const [showEmptyResultsNotification, setShowEmptyResultsNotification] = useState(false);
 
   const user = useSelector((state) => state.user)
   const dispatch = useDispatch()
   const {searchResults} = useSelector(state=> state.company)
-  const { showCompanySearchNotification, showSendingSpinner } = useSelector(state=> state.activity)
+  const { showCompanySearchNotification, showSendingSpinner, filePaths } = useSelector(state=> state.activity)
   const navigate = useNavigate()
 
   const handleClose = () => {
     setOpen(false)
     setShowEmptyResultsNotification(false)
+    setPaths([])
+    dispatch(emptyPaths())
   }
 
   const showAlert = (msg, sev) => {
@@ -89,9 +95,13 @@ const ActivityModal = ({open, setOpen, companyObject, openActivityModal, activit
   }, [openActivityModal])
 
   useEffect(() => {
-    if (editMode && activity) {
+    if (open && editMode && activity) {
       formik.setValues(activity)
       setFormerProbability(activity?.probability)
+      if(activity.files && activity.files.length) {
+        dispatch(setFilePaths({filePaths: activity.files}))
+      }
+     
     }
    
   }, [open, activity])
@@ -181,10 +191,15 @@ const ActivityModal = ({open, setOpen, companyObject, openActivityModal, activit
       if (editMode) {
         dispatch(setShowSendingSpinner({showSendingSpinner: true}))
 
-        values.earningEstimate = parseInt(values.earningEstimate)
-        delete values.decreased_probability
+        const updatedValues = {
+          ...values,
+          earningEstimate: parseInt(values.earningEstimate),
+          files: filePaths,
+        };
+      
+        delete updatedValues.decreased_probability;
         
-        await instance.patch(`activities/${activity.id}`, values)
+        await instance.patch(`activities/${activity.id}`, updatedValues)
         .then((res) => {
 
           sendNotificationToFollowers(res.data.activity, `${user?.name} edited ${activity.label}`, "activity_edited")
@@ -216,6 +231,7 @@ const ActivityModal = ({open, setOpen, companyObject, openActivityModal, activit
         values.user_id = user.id
         values.earningEstimate = parseInt(values.earningEstimate)
         values.status = "private"
+        values.files = paths
         
         await instance.post(`activities`, values)
         .then((res) => {
@@ -260,6 +276,92 @@ const ActivityModal = ({open, setOpen, companyObject, openActivityModal, activit
       return text
     }
   }
+
+  const handleFileUpload = useCallback(async () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*, application/pdf, application/vnd.ms-excel, text/csv'; // Updated accept attribute
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const formData = new FormData();
+        formData.append('file', file); // Use a generic 'file' key in FormData
+  
+        try {
+          const response = await instance.post('/upload-files', formData); // Change the endpoint as needed
+          const uploadedFilePath = response.data.filePath;
+
+          if (editMode) {
+            dispatch(addPaths({filePath: uploadedFilePath}))
+          } else {
+            setPaths((prev) => [...prev, uploadedFilePath]);
+          }
+        
+        } catch (error) {
+          console.error('Error uploading file:', error);
+        }
+      }
+    };
+    input.click();
+  }, []);
+
+  const renderFiles = (files, type) => {
+    return files?.map((a) => {
+      const isImage = checkFileType(a) === "image";
+  
+      return (
+        <div
+          key={a} // Add a unique key for each rendered element
+          style={{
+            marginRight: "20px",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            flexDirection: "column",
+            marginTop: "40px",
+          }}
+          onMouseEnter={() => {
+            setCurrentFile(a)
+          }}
+          onMouseLeave={() => {
+            setCurrentFile("")
+          }}
+        >
+          <div>
+            {isImage ? (
+              <img
+                src={`${process.env.REACT_APP_BASE_URL}${a}`}
+                alt="Image"
+                style={{ height: "30px" }}
+              />
+            ) : (
+              <FilePresent />
+            )}
+
+            {
+              currentFile === a && (
+                <span
+                  style={{ marginLeft: "6px", color: "red", cursor: "pointer" }}
+                  onClick={() => {
+                    if (editMode) {
+                      dispatch(removePaths({ filePath: a }));
+                    } else {
+                      setPaths(paths.filter((b) => b !== a));
+                    }
+                  }}
+                >
+                  <DeleteOutlined />
+                </span>
+              )
+            }
+         
+          </div>
+          <p style={{marginTop: "-10px", fontSize: "13px"}}>{a.replace("files/", "")}</p>
+        </div>
+      );
+    });
+  };
+
 
   return (
     <>
@@ -397,8 +499,23 @@ const ActivityModal = ({open, setOpen, companyObject, openActivityModal, activit
               <MenuItem value="Email">Email</MenuItem>
               <MenuItem value="Meeting">Meeting</MenuItem>
             </Select>
-            <p></p>
+
             <div style={{display: "flex", justifyContent: "space-between"}}>
+              <Tooltip title="Upload file">
+                <UploadFileOutlined
+                  style={{marginTop: "10px" , color: "lightblue", cursor: "pointer", fontSize: "28px"}}
+                  onClick={() => handleFileUpload()}
+                />
+              </Tooltip>
+
+              <div style={{height: "15px", display: "flex", marginTop: "10px"}}>
+                { !editMode ? renderFiles(paths, "normal") : renderFiles(filePaths, "normal")}
+              </div>
+            </div>
+           
+
+            <p></p>
+            <div style={{display: "flex", justifyContent: "space-between", marginTop: "29px"}}>
               <Button size='small' color="primary" variant="contained"  type="submit" style={{borderRadius: "30px"}}>
                 {editMode ? showText("Save") : showText("Add") }
               </Button>
