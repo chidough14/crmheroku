@@ -12,6 +12,7 @@ import { addCommentFile, removeCommentFile } from '../../features/ActivitySlice'
 const CommentFormQill = ({ saveComment, allUsers, parentId, editMode, childCommentContent, updateComment, reply, handleClose, setShowForm, mode }) => {
   const [value, setValue] = useState()
   const [openDialog, setOpenDialog] = useState(false)
+  const [currentFile, setCurrentFile] = useState("")
   const [paths, setPaths] = useState([])
   const { id } = useSelector(state => state.user)
   const { commentFiles } = useSelector(state => state.activity)
@@ -138,6 +139,12 @@ const CommentFormQill = ({ saveComment, allUsers, parentId, editMode, childComme
             flexDirection: "column",
             marginTop: "40px",
           }}
+          onMouseEnter={() => {
+            setCurrentFile(a)
+          }}
+          onMouseLeave={() => {
+            setCurrentFile("")
+          }}
         >
           <div>
             {isImage ? (
@@ -149,18 +156,24 @@ const CommentFormQill = ({ saveComment, allUsers, parentId, editMode, childComme
             ) : (
               <FilePresent />
             )}
-            <span
-              style={{ marginLeft: "6px", color: "red", cursor: "pointer" }}
-              onClick={() => {
-                if (type === "normal") {
-                  setPaths(paths.filter((b) => b !== a));
-                } else {
-                  dispatch(removeCommentFile({ file: a }));
-                }
-              }}
-            >
-              <DeleteOutlined />
-            </span>
+
+            {
+              currentFile === a && (
+                <span
+                  style={{ marginLeft: "6px", color: "red", cursor: "pointer" }}
+                  onClick={() => {
+                    if (type === "normal") {
+                      setPaths(paths.filter((b) => b !== a));
+                    } else {
+                      dispatch(removeCommentFile({ file: a }));
+                    }
+                  }}
+                >
+                  <DeleteOutlined />
+                </span>
+              )
+            }
+         
           </div>
           <p>{a.replace("files/", "")}</p>
         </div>

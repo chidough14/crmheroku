@@ -28,6 +28,7 @@ import Comments from '../comments/Comments';
 // import { DeltaToStringConverter } from '../../services/DeltaToStringConverter';
 import deltaToString from "delta-to-string-converter"
 import LineChart from '../../components/activities/LineChart';
+import ActivityFiles from './ActivityFiles';
 const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
 });
@@ -191,6 +192,7 @@ const ActivityDetails = ({socket}) => {
   }, [openPrompt])
 
   useEffect(()=> {
+    
     let arr = []
     activity?.products?.map((a) => {
        let total = a.price * a.pivot.quantity
@@ -447,6 +449,7 @@ const ActivityDetails = ({socket}) => {
                 <Tab label="Products" {...a11yProps(1)} />
                 <Tab label="Invoices" {...a11yProps(2)} />
                 <Tab label="Movements" {...a11yProps(3)} />
+                <Tab label="Attachments" {...a11yProps(4)} />
               </Tabs>
             </Box>
             <TabPanel value={value} index={0}>
@@ -597,6 +600,10 @@ const ActivityDetails = ({socket}) => {
                 data={activity?.movements}
               />
             </TabPanel>
+
+            <TabPanel value={value} index={4}>
+              <ActivityFiles files={activity?.files} />
+            </TabPanel>
           </Box>
 
          {
@@ -605,7 +612,7 @@ const ActivityDetails = ({socket}) => {
               <Typography variant='h6'>
                 Comments &nbsp; &nbsp;
                 {
-                  `(${activity?.comments.length})`
+                  `(${activity?.comments?.length})`
                 }
               </Typography>
               
