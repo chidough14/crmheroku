@@ -18,7 +18,7 @@ import ListItemText from '@mui/material/ListItemText';
 import { Link, matchPath, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { getToken } from "../services/LocalStorageService";
-import { AddOutlined, DashboardOutlined, DensitySmallOutlined, MeetingRoomOutlined, MessageOutlined, PeopleOutline, SettingsOutlined, ShoppingCartOutlined } from '@mui/icons-material';
+import { AddOutlined, DashboardOutlined, DensitySmallOutlined, ImportExportSharp, MeetingRoomOutlined, MessageOutlined, PeopleOutline, SettingsOutlined, ShoppingCartOutlined } from '@mui/icons-material';
 import ListIcon from '@mui/icons-material/List';
 import PointOfSaleIcon from '@mui/icons-material/PointOfSale';
 import CalendarMonthIcon from '@mui/icons-material/CalendarViewMonth';
@@ -643,6 +643,27 @@ export default function AppLayout({socket}) {
     setMsgArray((prevAlerts) => prevAlerts.filter((alert) => alert.id !== alertId));
   };
 
+  const exportToCsv = (data) => {
+    if (!data?.companies?.length) {
+      showAlert("List is empty", "info")
+    } else {
+      const csvContent = "name,email\n" + data.companies.map(item => `${item.name},${item.email}`).join("\n");
+    
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `${data.name}.csv`);
+        link.style.visibility = "hidden";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    }
+ 
+  }
+
   return (
     <div
     style={{
@@ -773,6 +794,14 @@ export default function AppLayout({socket}) {
                                         </Typography>
                                       )
                                     }
+
+                                    <Tooltip title={`Export as ${list?.name}.csv`}>
+                                      <ImportExportSharp
+                                        style={{cursor: "pointer" }} 
+                                        onClick={() => exportToCsv(list)}
+                                      />
+                                    </Tooltip>
+                               
 
 
                                     <ListIcon style={{cursor: "pointer", opacity: open ? 1 : 0 }} onClick={() => navigate("/lists")} />
