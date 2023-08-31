@@ -1,4 +1,4 @@
-import { ArrowBack } from '@mui/icons-material'
+import { ArrowBack, DownloadOutlined, FilePresent } from '@mui/icons-material'
 import { Box, Button, CircularProgress, Snackbar, Tooltip, Typography } from '@mui/material'
 import moment from 'moment'
 import React, {useEffect, useState} from 'react'
@@ -9,9 +9,8 @@ import instance from '../../services/fetchApi'
 import { getToken } from '../../services/LocalStorageService'
 import ComposeMessage from './ComposeMessage'
 import MuiAlert from '@mui/material/Alert';
-// import { DeltaToStringConverter } from '../../services/DeltaToStringConverter'
-// import { QuillDeltaToHtmlConverter } from 'quill-delta-to-html';
 import deltaToString from "delta-to-string-converter"
+import { checkFileType } from '../../services/checkers'
 
 const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
@@ -31,6 +30,7 @@ const SingleMessage = ({socket, currentMessageId}) => {
   const [openAlert, setOpenAlert] = useState(false)
   const [severity, setSeverity] = useState("")
   const [content, setContent] = useState("")
+  const [currentFile, setCurrentFile] = useState("")
   const [text, setText] = useState("")
 
   const token = getToken()
@@ -250,6 +250,77 @@ const SingleMessage = ({socket, currentMessageId}) => {
     }
   }
 
+  const renderFiles = (files, type) => {
+    return files.map((a) => {
+      const isImage = checkFileType(a) === "image";
+  
+      return (
+        <div
+          key={a} // Add a unique key for each rendered element
+          style={{
+            marginRight: "20px",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            flexDirection: "column",
+            marginTop: "40px",
+          }}
+          onMouseEnter={() => {
+            setCurrentFile(a)
+          }}
+          onMouseLeave={() => {
+            setCurrentFile("")
+          }}
+        >
+          <div>
+            {isImage ? (
+              <img
+                src={`${process.env.REACT_APP_BASE_URL}${a}`}
+                alt="Image"
+                style={{ height: "30px" }}
+              />
+            ) : (
+              <FilePresent />
+            )}
+
+            {
+              currentFile === a && (
+                <span
+                  style={{ marginLeft: "6px", color: "green", cursor: "pointer" }}
+                  onClick={() => downloadFile(a.replace("files/", ""))}
+                >
+                  <DownloadOutlined />
+                </span>
+              )
+            }
+         
+          </div>
+          <p style={{ marginTop: "-7px", fontSize: "14px" }}>{a.replace("files/", "")}</p>
+        </div>
+      );
+    });
+  };
+
+
+  
+  const downloadFile = async (filename) => {
+    try {
+      const response = await instance.get(`download-file/${filename}`, {
+        responseType: 'blob', // Important for binary data
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename); // Change the filename as needed
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+    } catch (error) {
+      console.error('Error downloading file:', error);
+    }
+  };
+
   return (
     <>
       {
@@ -350,6 +421,17 @@ const SingleMessage = ({socket, currentMessageId}) => {
                    }
                 </div>
                 <p></p>
+
+                <div style={{display: "flex"}}>
+                  {
+                    singleMessage?.files?.length && renderFiles(singleMessage?.files)
+                  }
+                  
+                  {
+                    singleDraft?.files?.length && renderFiles(singleDraft?.files)
+                  }
+                </div>
+            
                 
                 {
                   location.state?.isInbox && (
