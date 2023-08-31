@@ -124,7 +124,10 @@ const Drafts = ({setValue, socket, sendingMessage}) => {
 
     
         <>
+         
           <div style={{display: "flex"}}>
+            <Typography variant='h7'><b>Drafts</b></Typography>
+            
             {
               messageIds.length ? (
                 <div style={{marginLeft: "30px"}}>
