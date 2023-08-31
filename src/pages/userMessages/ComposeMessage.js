@@ -1,5 +1,5 @@
 import {  Box, Button, Chip, CircularProgress, FormControlLabel, InputLabel, MenuItem, OutlinedInput, Select, Snackbar, Switch, TextField, Typography } from '@mui/material'
-import React, { useRef } from 'react'
+import React, { useCallback, useRef } from 'react'
 import { useFormik } from 'formik';
 import * as yup from 'yup';
 import { useDispatch, useSelector } from 'react-redux';
@@ -11,6 +11,8 @@ import MuiAlert from '@mui/material/Alert';
 import ReactQuill from 'react-quill';
 import deltaToString from "delta-to-string-converter"
 import 'react-quill/dist/quill.snow.css';
+import { DeleteOutlined, FilePresent } from '@mui/icons-material';
+import { checkFileType } from '../../services/checkers';
 
 
 const Alert = React.forwardRef(function Alert(props, ref) {
@@ -47,14 +49,24 @@ const validationSchema = yup.object({
 });
 
 
-const ComposeMessage = ({replyMode, singleMessage, socket, state, sendingMessage, editMode, singleDraft}) => {
+const ComposeMessage = ({
+  replyMode, 
+  singleMessage, 
+  socket, 
+  state, 
+  sendingMessage, 
+  editMode, 
+  singleDraft
+}) => {
   const user = useSelector((state) => state.user)
   const [openAlert, setOpenAlert] = useState(false)
   const [text, setText] = useState("")
   const [alertType, setAlertType] = useState("")
   const [checked, setChecked] = useState(false)
   const [usersValue, setUsersValue] = useState([]);
+  const [paths, setPaths] = useState([]);
   const [value, setValue] = useState('')
+  const [currentFile, setCurrentFile] = useState("")
   const [sending, setSending] = useState(false)
   const dispatch = useDispatch()
   const myInputRef = useRef()
@@ -92,10 +104,11 @@ const ComposeMessage = ({replyMode, singleMessage, socket, state, sendingMessage
       
         let body = {
           subject: values.subject,
-          message: values.message,
+          message: "testing",
           sender_id: user.id,
           receiver_id: ids,
-          quill_message: value
+          quill_message: value,
+          files: paths
         }
   
         await instance.post(`messages`, body)
@@ -107,6 +120,7 @@ const ComposeMessage = ({replyMode, singleMessage, socket, state, sendingMessage
              socket.emit('sendNotification', { recipientId: res.data.createdMessages[i].receiver_id, message: "New Message" });
           }
           showAlert("Messages sent", "success")
+          setPaths([])
           setValue("")
           resetForm()
           setUsersValue([])
@@ -121,14 +135,15 @@ const ComposeMessage = ({replyMode, singleMessage, socket, state, sendingMessage
         dispatch(setSendingMessage({isSending: true}))
 
         let receiverId = user?.allUsers?.find((a) => a.email === values.email)?.id
-
+    
         if (receiverId) {
           let body = {
             subject: values.subject,
             message: "testing",
             sender_id: user.id,
             receiver_id: receiverId,
-            quill_message: value
+            quill_message: value,
+            files: paths
           }
     
           await instance.post(`messages`, body)
@@ -136,6 +151,7 @@ const ComposeMessage = ({replyMode, singleMessage, socket, state, sendingMessage
             dispatch(setSendingMessage({isSending: false}))
             //dispatch(addNewMessage({message: res.data.createdMessage}))
             setValue("")
+            setPaths([])
             showAlert("Message sent", "success")
             resetForm()
 
@@ -185,6 +201,8 @@ const ComposeMessage = ({replyMode, singleMessage, socket, state, sendingMessage
       const quill = myInputRef.current.getEditor();
 
       quill.setContents(quill.clipboard.convert(singleDraft?.message));
+
+      setPaths(singleDraft?.files)
     }
 
   }, [editMode])
@@ -210,10 +228,11 @@ const ComposeMessage = ({replyMode, singleMessage, socket, state, sendingMessage
       showAlert("You need to add a subject and message before saving as draft", "warning")
     } else {
       setSending(true)
-      await instance.post(`drafts`, {message: value, subject: formik.values.subject})
+      await instance.post(`drafts`, {message: value, subject: formik.values.subject, paths})
       .then(() => {
         setSending(false)
         setValue("")
+        setPaths([])
         showAlert("Draft saved", "success")
         formik.resetForm()
       })
@@ -246,7 +265,7 @@ const ComposeMessage = ({replyMode, singleMessage, socket, state, sendingMessage
       showAlert("You need to add a subject and message before saving as draft", "warning")
     } else {
       setSending(true)
-      await instance.patch(`/drafts/${singleDraft.id}`, {subject: formik.values.subject, message: myInputRef.current.getEditor().getContents()})
+      await instance.patch(`/drafts/${singleDraft.id}`, {subject: formik.values.subject, message: myInputRef.current.getEditor().getContents(), paths})
       .then((res) => {
         let msg = isValidJson(res.data.draft.message) ? deltaToString(JSON.parse(res.data.draft.message).ops) : res.data.draft.message
         res.data.draft.message = msg
@@ -254,12 +273,91 @@ const ComposeMessage = ({replyMode, singleMessage, socket, state, sendingMessage
         dispatch(updateDraft({draft: res.data.draft}))
         setSending(false)
         setValue("")
+        setPaths([])
         showAlert("Draft saved", "success")
         formik.resetForm()
       })
     }
    
   }
+
+  const handleImageUpload = useCallback(async () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*, application/pdf, application/vnd.ms-excel, text/csv'; // Updated accept attribute
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const formData = new FormData();
+        formData.append('file', file); // Use a generic 'file' key in FormData
+  
+        try {
+          const response = await instance.post('/upload-files', formData); // Change the endpoint as needed
+          const uploadedFilePath = response.data.filePath;
+
+          setPaths(prev => [...prev, uploadedFilePath]);
+        
+        } catch (error) {
+          console.error('Error uploading file:', error);
+        }
+      }
+    };
+    input.click();
+  }, []);
+
+  const renderFiles = (files, type) => {
+    return files.map((a) => {
+      const isImage = checkFileType(a) === "image";
+  
+      return (
+        <div
+          key={a} // Add a unique key for each rendered element
+          style={{
+            marginRight: "20px",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            flexDirection: "column",
+            marginTop: "40px",
+          }}
+          onMouseEnter={() => {
+            setCurrentFile(a)
+          }}
+          onMouseLeave={() => {
+            setCurrentFile("")
+          }}
+        >
+          <div>
+            {isImage ? (
+              <img
+                src={`${process.env.REACT_APP_BASE_URL}${a}`}
+                alt="Image"
+                style={{ height: "30px" }}
+              />
+            ) : (
+              <FilePresent />
+            )}
+
+            {
+              currentFile === a && (
+                <span
+                  style={{ marginLeft: "6px", color: "red", cursor: "pointer" }}
+                  onClick={() => {
+                    setPaths(paths.filter((b) => b !== a));
+                 
+                  }}
+                >
+                  <DeleteOutlined />
+                </span>
+              )
+            }
+         
+          </div>
+          <p style={{ marginTop: "-7px", fontSize: "14px" }}>{a.replace("files/", "")}</p>
+        </div>
+      );
+    });
+  };
 
   return (
     <div>
@@ -354,28 +452,40 @@ const ComposeMessage = ({replyMode, singleMessage, socket, state, sendingMessage
             helperText={formik.touched.subject && formik.errors.subject}
           />
           <p></p>
-          {/* <TextField
-            required
-            size='small'
-            fullWidth
-            multiline
-            rows={6}
-            id="message"
-            name="message"
-            label="message"
-            value={formik.values.message}
-            onChange={formik.handleChange}
-            error={formik.touched.message && Boolean(formik.errors.message)}
-            helperText={formik.touched.message && formik.errors.message}
-          /> */}
 
           <ReactQuill 
             theme="snow" 
             value={value} 
             onChange={(e,f,g,h) => saveData(h)}
             style={{height: "300px"}} 
-            ref={myInputRef} 
+            ref={myInputRef}
+            modules= {
+              {
+                toolbar: {
+                  container: [
+                    ['bold', 'italic', 'underline', 'strike', 'link'],
+                    [{ 'image': 'Upload Image' }],
+                  ],
+                  handlers: {
+                    image: handleImageUpload, // Directly reference the callback
+                  },
+                }
+              }
+            } 
           />
+
+          <p></p>
+
+          {
+            paths.length ? (
+              <div style={{height: "20px", display: "flex", marginTop: "50px"}}>
+                {
+                  renderFiles(paths, "normal")
+                }
+              </div>
+            ) : null
+          }
+        
 
           <p></p>
           <div style={{display: "flex", justifyContent: "space-between", marginTop: "50px"}}>
@@ -419,6 +529,7 @@ const ComposeMessage = ({replyMode, singleMessage, socket, state, sendingMessage
               onClick={() => {
                 formik.resetForm()
                 setValue("")
+                setPaths([])
               }}
               style={{borderRadius: "30px"}}
             >
