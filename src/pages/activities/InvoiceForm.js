@@ -49,7 +49,7 @@ const randomString = (length, chars) => {
   return result;
 }
 
-const InvoiceForm = ({activityId, invoice, editMode, showCreatingInvoiceSpinner}) => {
+const InvoiceForm = ({activityId, invoice, editMode, showCreatingInvoiceSpinner, socket}) => {
   const user = useSelector((state) => state.user)
   const [openAlert, setOpenAlert] = useState(false)
   const [message, setMessage] = useState("")
@@ -123,6 +123,8 @@ const InvoiceForm = ({activityId, invoice, editMode, showCreatingInvoiceSpinner}
           resetForm()
           dispatch(addInvoiceToActivity({invoice: res.data.invoice}))
           dispatch(setShowCreatingInvoiceSpinner({showCreatingInvoiceSpinner: false}))
+
+          socket.emit('activity_closed', { message: "Activity closed" });
         })
         .catch(() => {
           showAlert("Oops an error was encountered", "error")

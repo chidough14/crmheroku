@@ -446,10 +446,10 @@ const ActivityDetails = ({socket}) => {
             <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
               <Tabs value={value} onChange={handleChange} aria-label="basic tabs example">
                 <Tab label="Details" {...a11yProps(0)} />
-                <Tab label="Products" {...a11yProps(1)} />
-                <Tab label="Invoices" {...a11yProps(2)} />
+                <Tab label={`Products (${activity?.products?.length || 0})`} {...a11yProps(1)} />
+                <Tab label={`Invoices (${activity?.invoices?.length || 0})`} {...a11yProps(2)} />
                 <Tab label="Movements" {...a11yProps(3)} />
-                <Tab label="Attachments" {...a11yProps(4)} />
+                <Tab label={`Attachments (${activity?.files?.length || 0})`} {...a11yProps(4)} />
               </Tabs>
             </Box>
             <TabPanel value={value} index={0}>
@@ -576,7 +576,11 @@ const ActivityDetails = ({socket}) => {
                 {
                   openForm && (
                     <div>
-                      <InvoiceForm activityId={activity?.id} showCreatingInvoiceSpinner={showCreatingInvoiceSpinner} />
+                      <InvoiceForm 
+                        activityId={activity?.id} 
+                        showCreatingInvoiceSpinner={showCreatingInvoiceSpinner} 
+                        socket={socket}
+                      />
                     </div>
                   )
                 }
@@ -602,7 +606,10 @@ const ActivityDetails = ({socket}) => {
             </TabPanel>
 
             <TabPanel value={value} index={4}>
-              <ActivityFiles files={activity?.files} />
+              <ActivityFiles 
+                files={activity?.files} 
+                activityUserId={activity?.user_id}
+              />
             </TabPanel>
           </Box>
 
@@ -620,6 +627,7 @@ const ActivityDetails = ({socket}) => {
                 comments={activity?.comments}
                 activityId={activity?.id}
                 socket={socket}
+                params={params}
               />
             </div>
           )
