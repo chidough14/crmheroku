@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Card, CardContent, Typography, Divider, Button, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, IconButton } from '@mui/material'
 import { useDispatch, useSelector } from 'react-redux';
 import moment from 'moment';
@@ -34,13 +34,48 @@ const Comment = ({
   handleUpvote,
   upvotes,
   downvotes,
-  setShowForm 
+  setShowForm,
+  socket 
 }) => {
   const navigate = useNavigate()
 
   const [anchorEl, setAnchorEl] = useState(null);
   const [currentPath, setCurrentPath] = useState("");
+  const [usersTyping, setUsersTyping] = useState([]);
 
+  const usersTypingSet = new Set(usersTyping);
+
+  useEffect(() => {
+    // Listen for 'user typing' events from the server
+    socket.on('user typing reply', (data) => {
+      if (comment.id === data.commentId) {
+        if (!usersTypingSet.has(data.name)) {
+          usersTypingSet.add(data.name);
+          // Convert the Set back to an array and update the state
+          setUsersTyping(Array.from(usersTypingSet));
+        }
+      }
+   
+
+    });
+  
+    // Listen for 'user stopped typing' events from the server
+    socket.on('user stopped typing reply', (data) => {
+
+      if (comment.id === data.commentId) {
+        usersTypingSet.delete(data.name);
+        // Convert the Set back to an array and update the state
+        setUsersTyping(Array.from(usersTypingSet));
+      }
+    
+    });
+  
+    // Clean up event listeners when the component unmounts
+    return () => {
+      socket.off('user typing reply');
+      socket.off('user stopped typing reply');
+    };
+  }, []);
 
   const handlePopoverOpen = (event) => {
     if (!comment.likers.length) {
@@ -178,7 +213,7 @@ const Comment = ({
               }
               
               {
-                comment?.files?.length &&
+                comment?.files?.length ?
                 <div style={{display: "flex"}}>
                   {
                     comment.files.map((a) => {
@@ -253,7 +288,7 @@ const Comment = ({
                       }
                     })
                   }
-                </div>
+                </div> : null
               }
           
               <div style={{display: "flex", justifyContent: "space-between"}}>
@@ -331,6 +366,7 @@ const Comment = ({
                     onClick={() => {
                       setEditMode(false)
                       setParentId(comment.id)
+                      setCommentId(comment.id)
                       setOpenModal(true)
                       setShowForm(false)
                     }}
@@ -369,6 +405,18 @@ const Comment = ({
                     )
                   }
                 </div>
+
+                {
+                  usersTyping?.length ? (
+                   <div>
+                     {
+                        usersTyping.map((user) => (
+                          <p key={user}>{user} is typing a reply...</p>
+                        ))
+                     }
+                   </div>
+                  ) : null
+                }
               </div>
             </>
           )
@@ -398,6 +446,7 @@ const Comment = ({
               upvotes={upvotes}
               downvotes={downvotes}
               setShowForm={setShowForm}
+              socket={socket}
             />
           ))}
         </div>
@@ -406,7 +455,7 @@ const Comment = ({
   );
 };
 
-const Comments = ({comments, activityId, socket}) => {
+const Comments = ({comments, activityId, socket, params}) => {
   const { allUsers, id, name } = useSelector(state => state.user)
   const { upvotes, downvotes } = useSelector(state => state.activity)
   const dispatch = useDispatch()
@@ -485,10 +534,12 @@ const Comments = ({comments, activityId, socket}) => {
 
 
       socket.emit('comment_added', { activityId, comment: JSON.stringify(res.data.comment) });
+      // socket.emit('user stopped typing reply',  {name, commentId: res.data.comment.id}); 
      
       dispatch(setCommentContent({content: ""}))
       dispatch(setChildCommentContent({content: ""}))
       setOpenModal(false)
+      setCommentId(null)
       setParentId(null)
 
       for (let i=0; i<names.length; i++) {
@@ -565,6 +616,7 @@ const Comments = ({comments, activityId, socket}) => {
           upvotes={upvotes}
           downvotes={downvotes}
           setShowForm={setShowForm}
+          socket={socket}
         />
       ))}
 
@@ -579,6 +631,9 @@ const Comments = ({comments, activityId, socket}) => {
             allUsers={allUsers}
             setShowForm={setShowForm}
             mode="normal"
+            socket={socket}
+            activityId={activityId}
+            params={params}
           />
         )
       }
@@ -606,6 +661,8 @@ const Comments = ({comments, activityId, socket}) => {
         updateComment={updateComment}
         dispatch={dispatch}
         editMode={editMode}
+        commentId={commentId}
+        socket={socket}
       />
 
       <Dialog
