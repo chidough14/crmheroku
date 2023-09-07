@@ -9,12 +9,28 @@ import { DeleteOutlined, FilePresent } from '@mui/icons-material';
 import { checkFileType } from '../../services/checkers';
 import { addCommentFile, removeCommentFile } from '../../features/ActivitySlice';
 
-const CommentFormQill = ({ saveComment, allUsers, parentId, editMode, childCommentContent, updateComment, reply, handleClose, setShowForm, mode }) => {
+const CommentFormQill = ({ 
+  saveComment, 
+  allUsers, 
+  parentId, 
+  editMode, 
+  childCommentContent, 
+  updateComment, 
+  reply, 
+  handleClose, 
+  setShowForm, 
+  mode,
+  socket,
+  params,
+  activityId,
+  commentId 
+}) => {
   const [value, setValue] = useState()
   const [openDialog, setOpenDialog] = useState(false)
   const [currentFile, setCurrentFile] = useState("")
   const [paths, setPaths] = useState([])
-  const { id } = useSelector(state => state.user)
+  const [usersTyping, setUsersTyping] = useState([]);
+  const { id, name } = useSelector(state => state.user)
   const { commentFiles } = useSelector(state => state.activity)
   const dispatch = useDispatch()
   const myInputRef = useRef()
@@ -46,6 +62,8 @@ const CommentFormQill = ({ saveComment, allUsers, parentId, editMode, childComme
 
       setShowForm(false)
     }
+
+    handleStoppedTyping()
 
 
   }
@@ -180,7 +198,57 @@ const CommentFormQill = ({ saveComment, allUsers, parentId, editMode, childComme
       );
     });
   };
+
+  const usersTypingSet = new Set(usersTyping);
+
+  useEffect(() => {
+    // Listen for 'user typing' events from the server
+    socket.on('user typing', (data) => {
+      if (parseInt(params.id) === data.activityId) {
+        if (!usersTypingSet.has(data.name)) {
+          usersTypingSet.add(data.name);
+          // Convert the Set back to an array and update the state
+          setUsersTyping(Array.from(usersTypingSet));
+        }
+      }
+   
+
+    });
   
+    // Listen for 'user stopped typing' events from the server
+    socket.on('user stopped typing', (data) => {
+      if (parseInt(params.id) === data.activityId) {
+        usersTypingSet.delete(data.name);
+        // Convert the Set back to an array and update the state
+        setUsersTyping(Array.from(usersTypingSet));
+      }
+    
+    });
+  
+    // Clean up event listeners when the component unmounts
+    return () => {
+      socket.off('user typing');
+      socket.off('user stopped typing');
+    };
+  }, []);
+  
+  const handleTyping = () => {
+    if (mode === "modal") {
+      socket.emit('user typing reply', {name, commentId});
+    } else {
+      socket.emit('user typing', {name, activityId}); // Replace 'Fred' with the user's name
+    }
+   
+  };
+  
+  const handleStoppedTyping = () => {
+    if (mode === "modal") {
+      socket.emit('user stopped typing reply',  {name, commentId}); 
+    } else {
+      socket.emit('user stopped typing',  {name, activityId}); // Replace 'Fred' with the user's name
+    }
+  
+  };
   
   return (
     <>
@@ -241,7 +309,15 @@ const CommentFormQill = ({ saveComment, allUsers, parentId, editMode, childComme
             }
           }
           }
+          onKeyUp={handleTyping}
+          onBlur={handleStoppedTyping}
         />
+      </div>
+
+      <div>
+        {usersTyping?.length && usersTyping.map((user) => (
+          <p key={user}>{user} is typing...</p>
+        ))}
       </div>
 
       <div style={{display: 'flex', justifyContent: 'space-between'}}>

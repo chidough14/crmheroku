@@ -24,14 +24,24 @@ const style = {
   p: 4,
 };
 
-const AddCommentModal = ({open, setOpen, parentId, saveComment, editMode, updateComment}) => {
+const AddCommentModal = ({
+  open, 
+  setOpen, 
+  parentId, 
+  saveComment, 
+  editMode, 
+  updateComment, 
+  commentId,
+  socket
+}) => {
   const { childCommentContent } = useSelector(state => state.activity)
   const dispatch = useDispatch()
-  const { allUsers } = useSelector(state => state.user)
+  const { allUsers, name } = useSelector(state => state.user)
   const [mentions, setMentions] = useState([]);
 
   const handleClose = (e) => {
     setOpen(false)
+    socket.emit('user stopped typing reply',  {name, commentId}); 
     dispatch(setChildCommentContent({content: ""}))
   }
 
@@ -54,86 +64,25 @@ const AddCommentModal = ({open, setOpen, parentId, saveComment, editMode, update
             transform: 'translate(-50%, -50%)',
           }}
         >
-          {/* <Box sx={style}> */}
-            <form>
-              <Typography variant='h6' style={{marginBottom: "10px"}}>
-                  {editMode ? "Edit" : "Add"} Comment
-              </Typography>
+          <form>
+            <Typography variant='h6' style={{marginBottom: "10px"}}>
+                {editMode ? "Edit" : "Add"} Comment
+            </Typography>
 
-              <CommentFormQill
-                saveComment={saveComment}
-                allUsers={allUsers}
-                parentId={parentId}
-                editMode={editMode}
-                childCommentContent={childCommentContent}
-                updateComment={updateComment}
-                reply={true}
-                handleClose={handleClose}
-                mode="modal"
-              />
-
-              {/* <TextField
-                style={{marginBottom: "12px"}}
-                required
-                size='small'
-                fullWidth
-                multiline
-                rows={4}
-                id="content"
-                name="content"
-                label="Content"
-                value={childCommentContent}
-                onChange={handleChange}
-              />  */}
-
-              {/* <MentionsInput 
-                style={defaultStyle} 
-                value={childCommentContent}
-                onChange={handleChange}
-                placeholder={"Mention people using '@'"}
-                a11ySuggestionsListLabel={"Suggested mentions"}
-              >
-                <Mention
-                  trigger="@"
-                  style={defaultMentionStyles}
-                  data={fetchUsers}
-                />
-              </MentionsInput>
-
-
-              <p></p>
-              <div style={{display: "flex", justifyContent: "space-between"}}>
-                <Button 
-                  size='small' 
-                  color="primary" 
-                  variant="contained" 
-                  onClick={() => {
-                    if(editMode) {
-                      updateComment(childCommentContent)
-                    } else {
-                      saveComment(childCommentContent, parentId)
-                    }
-                    
-                  }}
-                  style={{borderRadius: "30px"}}
-                >
-                  Save
-                </Button>
-
-                <Button 
-                  size='small' 
-                  color="error" 
-                  variant="contained" 
-                  onClick={() => {
-                    handleClose()
-                  }}
-                  style={{borderRadius: "30px"}}
-                >
-                  Cancel
-                </Button>
-              </div> */}
-            </form>
-          {/* </Box> */}
+            <CommentFormQill
+              saveComment={saveComment}
+              allUsers={allUsers}
+              parentId={parentId}
+              editMode={editMode}
+              childCommentContent={childCommentContent}
+              updateComment={updateComment}
+              reply={true}
+              handleClose={handleClose}
+              mode="modal"
+              commentId={commentId}
+              socket={socket}
+            />
+          </form>
         </Paper>
       </Modal>
     </>
