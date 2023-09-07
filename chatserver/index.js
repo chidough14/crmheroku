@@ -75,6 +75,10 @@ socketIO.on('connection', (socket) => {
     socketIO.emit('messageResponse', data);
   });
 
+  socket.on('activity_closed', (data) => {
+    socketIO.emit('activity_closed', data);
+  });
+
   //sends the message to specific user on the server
   socket.on('sendNotification', (data) => {
     let xx = arr.find((a)=> a.userId === data.recipientId)
@@ -165,6 +169,22 @@ socketIO.on('connection', (socket) => {
 
   socket.on('comment_upvoted', (data) => {
     socket.broadcast.emit('comment_upvoted', data);
+  });
+
+  socket.on('user typing', (data) => {
+    socket.broadcast.emit('user typing', data);
+  });
+
+  socket.on('user stopped typing', (data) => {
+    socket.broadcast.emit('user stopped typing', data);
+  });
+
+  socket.on('user typing reply', (data) => {
+    socket.broadcast.emit('user typing reply', data);
+  });
+
+  socket.on('user stopped typing reply', (data) => {
+    socket.broadcast.emit('user stopped typing reply', data);
   });
 
   socket.on('logout', () => {

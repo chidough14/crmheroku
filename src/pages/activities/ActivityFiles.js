@@ -8,13 +8,14 @@ import { useDispatch, useSelector } from 'react-redux';
 import { setSingleActivity } from '../../features/ActivitySlice';
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
 
-const ActivityFiles = ({files}) => {
+const ActivityFiles = ({files, activityUserId}) => {
   const [currentFile, setCurrentFile] = useState("")
   const [uploadFile, setUploadFile] = useState("")
   const [loading, setLoading] = useState(false)
   const [showDeleteNotification, setShowDeleteNotification] = useState(false)
   const [open, setOpen] = useState(false)
   const { activity } = useSelector(state => state.activity)
+  const { id } = useSelector(state => state.user)
   const dispatch = useDispatch()
 
   const handleCloseDialog = () => {
@@ -115,7 +116,7 @@ const ActivityFiles = ({files}) => {
               )}
 
               {
-                currentFile === a && (
+                (currentFile === a && activityUserId === id) && (
                   <>
                     <span
                       style={{ marginLeft: "6px", color: "lightgreen", cursor: "pointer" }}
@@ -148,10 +149,15 @@ const ActivityFiles = ({files}) => {
   return (
     <>
       <div style={{display: "flex"}}>
-        <UploadFileOutlined
-          style={{fontSize: "28px", cursor: "pointer"}}
-          onClick={() => handleFileUpload()}
-        />
+        {
+          activityUserId === id && (
+            <UploadFileOutlined
+              style={{fontSize: "28px", cursor: "pointer"}}
+              onClick={() => handleFileUpload()}
+            />
+          )
+        }
+      
 
    
         {

@@ -125,6 +125,14 @@ const Dashboard = ({socket}) => {
     socket.on('new_announcement_created', (arr) => {
       getAnnouncements()
     });
+
+    socket.on('activity_closed', (arr) => {
+      let arg = `dashboard-total-products/${owner}`
+      let arg2 = measurement === 'salespersons' ? 'dashboard-total-sales-users' : 'dashboard-total-sales-topproducts'
+
+      getTotalProductsSales(arg)
+      getDoughnutChartResults(arg2)
+    });
   }, [socket])
 
   useEffect(() => {
@@ -233,67 +241,40 @@ const Dashboard = ({socket}) => {
                 <DashboardCard type="activity" />
               </div>
             </div>
-      
-            <div style={{display: "flex", justifyContent: "space-between",  columnGap: "10px", }}>
-              {
-                setting?.dashboard_mode === "show_graphs" && (
-                  <>
-                  <div style={{width: "50%"}}>
-                    <BarChart 
-                      results={results} 
-                      owner={owner} 
-                      setOwner={setOwner} 
-                      showBarGraphLoadingNotification={showBarGraphLoadingNotification} 
-                    />
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', columnGap: '10px' }}>
+              {setting && (
+                <>
+                  <div style={{ width: setting.dashboard_mode === 'show_doughnut_graph' ? '40%' : '50%' }}>
+                    {setting.dashboard_mode === 'show_graphs' && (
+                      <BarChart
+                        results={results}
+                        owner={owner}
+                        setOwner={setOwner}
+                        showBarGraphLoadingNotification={showBarGraphLoadingNotification}
+                      />
+                    )}
+                    {setting.dashboard_mode === 'show_bar_graph' && (
+                      <BarChart
+                        results={results}
+                        owner={owner}
+                        setOwner={setOwner}
+                        showBarGraphLoadingNotification={showBarGraphLoadingNotification}
+                      />
+                    )}
                   </div>
-                  <div style={{width: "35%"}}>
-                    <DoughnutChart 
-                      results={doughnutResults} 
-                      measurement={measurement} 
-                      setMeasurement={setMeasurement} 
-                      showDoughnutGraphLoadingNotification={showDoughnutGraphLoadingNotification}  
-                    />
+                  <div style={{ width: setting.dashboard_mode === 'show_doughnut_graph' ? '30%' : '35%' }}>
+                    {setting.dashboard_mode === 'show_graphs' && (
+                      <DoughnutChart
+                        results={doughnutResults}
+                        measurement={measurement}
+                        setMeasurement={setMeasurement}
+                        showDoughnutGraphLoadingNotification={showDoughnutGraphLoadingNotification}
+                      />
+                    )}
                   </div>
-                  </>
-                )
-              }
-      
-              {
-                setting?.dashboard_mode === "show_bar_graph" && (
-                  <>
-                  <div style={{width: "50%"}}>
-                    <BarChart 
-                      results={results} 
-                      owner={owner} 
-                      setOwner={setOwner} 
-                      showBarGraphLoadingNotification={showBarGraphLoadingNotification}  
-                    />
-                  </div>
-                  <div style={{width: "30%"}}>
-                    
-                  </div>
-                  </>
-                )
-              }
-      
-              {
-                setting?.dashboard_mode === "show_doughnut_graph" && (
-                  <>
-                  <div style={{width: "40%"}}>
-                    <DoughnutChart 
-                      results={doughnutResults} 
-                      measurement={measurement} 
-                      setMeasurement={setMeasurement} 
-                      showDoughnutGraphLoadingNotification={showDoughnutGraphLoadingNotification} 
-                    />
-                  </div>
-                  <div style={{width: "30%"}}>
-                  
-                  </div>
-                  </>
-                )
-              }
-            
+                </>
+              )}
             </div>
 
             {

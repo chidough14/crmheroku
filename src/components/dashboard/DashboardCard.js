@@ -38,6 +38,7 @@ export default function DashboardCard({type, events, list}) {
   const [mediumActivities, setMediumActivities] = useState({count: 0, amount: 0})
   const [highActivities, setHighActivities] = useState({count: 0, amount: 0})
   const [closedActivities, setClosedActivities] = useState({count: 0, amount: 0})
+  const { id } = useSelector(state => state.user)
 
   useEffect(() => {
     if(activities && activities.length) {
@@ -122,7 +123,7 @@ export default function DashboardCard({type, events, list}) {
                         border: "none"
                       };
                 
-                      if (event.isMine){
+                      if (event.user_id !== id){
                         newStyle.backgroundColor = "lightgreen"
                       }
                 
