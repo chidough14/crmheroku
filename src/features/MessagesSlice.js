@@ -18,6 +18,13 @@ const initialState = {
   fromBell: false,
   drafts: undefined,
   singleDraft: undefined,
+  requests: [],
+  adminchats: [],
+  recipientId: undefined,
+  conversations: [],
+  isUserViewingPage: false,
+  chatContinue: false,
+  newChat: false
 }
 
 export const MessageSlice = createSlice({
@@ -126,7 +133,24 @@ export const MessageSlice = createSlice({
     updateDraft: (state, action) => {
       let idx = state.drafts.data.findIndex((a) => a.id === action.payload.draft.id)
       state.drafts.data[idx] = action.payload.draft 
-    }
+    },
+    setChatRequests: (state, action) => {
+      state.requests = [...state.requests, action.payload.request ]
+      state.recipientId = action.payload.request.userId 
+ 
+    },
+    setAdminChats: (state, action) => {
+      state.adminchats = action.payload.adminchats
+    },
+    setConversations: (state, action) => {
+      state.conversations = action.payload.conversations
+    },
+    setIsUserViewingPage: (state, action) => {
+      state.isUserViewingPage = action.payload.isUserViewingPage
+    },
+    setNewChat: (state, action) => {
+      state.newChat = action.payload.newChat
+    },
   },
 })
 
@@ -158,7 +182,12 @@ export const {
   bulkRemoveDrafts,
   removeDraft,
   editDraft,
-  updateDraft
+  updateDraft,
+  setChatRequests,
+  setAdminChats,
+  setConversations,
+  setIsUserViewingPage,
+  setNewChat
 } = MessageSlice.actions
 
 export default MessageSlice.reducer
