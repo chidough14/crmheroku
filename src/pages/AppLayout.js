@@ -18,7 +18,7 @@ import ListItemText from '@mui/material/ListItemText';
 import { Link, matchPath, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { getToken } from "../services/LocalStorageService";
-import { AddOutlined, DashboardOutlined, DensitySmallOutlined, ImportExportSharp, MeetingRoomOutlined, MessageOutlined, PeopleOutline, SettingsOutlined, ShoppingCartOutlined } from '@mui/icons-material';
+import { AddOutlined, ChatBubbleRounded, DashboardOutlined, DensitySmallOutlined, ImportExportSharp, MeetingRoomOutlined, MessageOutlined, PeopleOutline, SettingsOutlined, ShoppingCartOutlined } from '@mui/icons-material';
 import ListIcon from '@mui/icons-material/List';
 import PointOfSaleIcon from '@mui/icons-material/PointOfSale';
 import CalendarMonthIcon from '@mui/icons-material/CalendarViewMonth';
@@ -32,13 +32,13 @@ import { setReloadLists, setSelectedCompanyId } from '../features/listSlice';
 import MuiAlert from '@mui/material/Alert';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
-import { emptyFollowersData, reloadFollowers, removeFollowersData, setFollowersData, setFollwed, setFollwers, setOnlineUsers } from '../features/userSlice';
+import { setFollowersData, setFollwed, setFollwers, setOnlineUsers } from '../features/userSlice';
 import ActivityModal from '../components/activities/ActivityModal';
-import { setInboxMessages, setReloadMessages, setShowSingleMessage } from '../features/MessagesSlice';
-import { Stack } from '@mui/system';
+import { setChatRequests, setInboxMessages, setReloadMessages, setShowSingleMessage } from '../features/MessagesSlice';
 import FollowersNotification from '../components/FollowersNotification';
 import { setReloadActivities } from '../features/ActivitySlice';
 import { setReloadEvents } from '../features/EventSlice';
+import ChatRequestNotification from '../components/ChatRequestNotification';
 
 
 const Alert = React.forwardRef(function Alert(props, ref) {
@@ -169,7 +169,7 @@ export default function AppLayout({socket}) {
   const [openActivityModal, setOpenActivityModal] = React.useState(false);
 
   const token = getToken()
-  const {id, name, allUsers, profile_pic, onlineUsers, showLogoutNotification, followersData} = useSelector(state => state.user)
+  const {id, role, name, allUsers, profile_pic, onlineUsers, showLogoutNotification, followersData} = useSelector(state => state.user)
   const {list, loadingCompanies} = useSelector(state => state.list)
   const [loggedIn, setLoggedIn] = React.useState(false)
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -179,17 +179,16 @@ export default function AppLayout({socket}) {
   const {selectedCompanyId} = useSelector(state => state.list)
   const [inboxData, setInboxData] = React.useState([])
   const [invitedMeetingsData, setInvitedMeetingsData] = React.useState([])
-  const { invitedMeetings } = useSelector((state) => state.meeting) 
-  const {fetchNotifications, page} = useSelector(state => state.message)
+  const {fetchNotifications, page, isUserViewingPage} = useSelector(state => state.message)
   const {activities} = useSelector(state=> state.activity)
   const [openAlert, setOpenAlert] = React.useState(false)
   const [eventReminder, setEventReminder] = React.useState(false)
   const [text, setText] = React.useState("")
-  const [message, setMessgae] = React.useState("")
   const [alertType, setAlertType] = React.useState("")
   const [msgArray, setMsgArray] = React.useState([])
   const navigate = useNavigate()
 
+  const location = useLocation()
   const handleOpen = () => setOpenActivityModal(true);
 
   const [openUsersMenu, setOpenUsersMenu] = React.useState(false);
@@ -211,7 +210,6 @@ export default function AppLayout({socket}) {
   const handleCloseNotification = () => {
     setState({ ...state, openNotification: false,  openFollowersNotification: false, msg: "" });
     // setFollowersData(null)
-    // dispatch(emptyFollowersData())
   };
 
   const isListPage = matchPath("/listsview/*", pathname)
@@ -364,7 +362,6 @@ export default function AppLayout({socket}) {
     });
 
     socket.on('reloadFollowers', (data) => {
-    //  dispatch(reloadFollowers({reload: true}))
       getFollwed()
       getFollwers()
       
@@ -411,6 +408,16 @@ export default function AppLayout({socket}) {
       };
 
       setMsgArray(prev => [...prev, newAlert])
+    });
+
+    socket.on('chat_request', (data) => {
+      data.mode = "null"
+      dispatch(setChatRequests({request: data}))
+    });
+
+    socket.on('chat_request_continue', (data) => {
+      data.mode = "continue"
+      dispatch(setChatRequests({request: data}))
     });
 
    
@@ -692,15 +699,23 @@ export default function AppLayout({socket}) {
               )
             }&nbsp;&nbsp;&nbsp;&nbsp;
 
-              {
-                loggedIn && (
-                  <FollowersNotification
-                    data={followersData}
-                    allUsers={allUsers}
-                    deleteFollowerMessage={deleteFollowerMessage}
-                  />
-                )
-              }&nbsp;&nbsp;&nbsp;&nbsp;
+            {
+              loggedIn && (
+                <FollowersNotification
+                  data={followersData}
+                  allUsers={allUsers}
+                  deleteFollowerMessage={deleteFollowerMessage}
+                />
+              )
+            }&nbsp;&nbsp;&nbsp;&nbsp;
+
+            
+            {
+              (loggedIn && (role === "super admin" || role === "admin" )) ? (
+                <ChatRequestNotification
+                />
+              ) : null
+            }&nbsp;&nbsp;&nbsp;&nbsp;
 
             {
                 loggedIn && (
