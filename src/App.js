@@ -36,6 +36,10 @@ import MyAccount from "./pages/auth/MyAccount";
 import socketIO from 'socket.io-client';
 import CheckoutSuccess from "./components/CheckoutSuccess";
 import Announcements from "./pages/announcements/Announcements";
+import ChatButton from "./components/ChatButton";
+import { Popover, Typography } from "@mui/material";
+import ChatWidget from "./components/ChatWidget";
+import Conversations from "./components/Conversations";
 // import SessionTimer from "./services/SessionTimer";
 
 const socket = socketIO('');
@@ -51,7 +55,7 @@ function App() {
   useEffect(() => {
    
     if(data?.user?.id) {
-      socket.emit('userId', data?.user?.id);
+      socket.emit('userId', {id: data?.user?.id, role: data?.user?.role});
     }
   }, [data])
 
@@ -129,6 +133,18 @@ function App() {
   
   }, [auth?.token])
 
+  const renderChatButton = () => {
+    if (!data) {
+      return null
+    } else {
+      if (data?.user?.role === "super admin" || data?.user?.role === "admin") {
+        return null
+      } else {
+        return  <ChatButton socket={socket} />
+      }
+    }
+  }
+
   return (
     <>
       {/* <SessionTimer socket={socket} /> */}
@@ -157,9 +173,16 @@ function App() {
             <Route path="/orders" element={<Orders  />} /> 
             <Route path="/checkout-success" element={<CheckoutSuccess />} />
             <Route path="/announcements" element={<Announcements />} />
+            <Route path="/conversations/:id" element={<Conversations socket={socket}/>} />
           </Route>
           <Route path="*" element={<h1>Error 404 Page not found !!</h1>} />
         </Routes>
+
+        {
+          renderChatButton()
+        }
+       
+    
       {/* </BrowserRouter> */}
     </>
   );

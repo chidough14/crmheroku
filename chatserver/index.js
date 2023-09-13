@@ -61,11 +61,11 @@ let arr = []
 socketIO.on('connection', (socket) => {
   console.log(`: ${socket.id} user just connected!`);
  
-  socket.on('userId', (userId) => {
-    console.log(`User ${userId} connected`);
+  socket.on('userId', (data) => {
+    console.log(`User ${data.id} connected`);
     let ids =  arr.map((a) => a.userId)
 
-    arr.push({id: socket.id, userId: userId})
+    arr.push({id: socket.id, userId: data.id, role: data.role})
     socketIO.emit('newUserResponse', arr);
    
   });
@@ -185,6 +185,47 @@ socketIO.on('connection', (socket) => {
 
   socket.on('user stopped typing reply', (data) => {
     socket.broadcast.emit('user stopped typing reply', data);
+  });
+
+  socket.on('chat_request', (data) => {
+
+    let newArray = arr.filter((a) => a.role === "super admin" || a.role === "admin")
+    for (let i=0; i<newArray.length; i++) {
+
+      socketIO.to(newArray[i].id).emit('chat_request', data);
+    }
+  });
+
+  socket.on('chat_request_continue', (data) => {
+
+    let newArray = arr.filter((a) => a.role === "super admin" || a.role === "admin")
+    for (let i=0; i<newArray.length; i++) {
+
+      socketIO.to(newArray[i].id).emit('chat_request_continue', data);
+    }
+  });
+
+
+
+  socket.on('new_chat_message', (data) => {
+
+    if (data.recipientId) {
+      let xx = arr.find((a)=> a.userId === data.recipientId)
+
+      if(xx) {
+        socketIO.to(xx.id).emit('new_chat_message', data);
+      }
+    } 
+
+    let newArray = arr.filter((a) => a.role === "super admin" || a.role === "admin")
+
+    for (let i=0; i<newArray.length; i++) {
+      socketIO.to(newArray[i].id).emit('new_chat_message', data);
+    }
+    
+
+
+   
   });
 
   socket.on('logout', () => {
