@@ -139,6 +139,10 @@ export const MessageSlice = createSlice({
       state.recipientId = action.payload.request.userId 
  
     },
+    removeChatRequest: (state, action) => {
+      state.requests = state.requests.filter((a) => a.conversationId !== action.payload.requestId)
+ 
+    },
     setAdminChats: (state, action) => {
       state.adminchats = action.payload.adminchats
     },
@@ -187,7 +191,8 @@ export const {
   setAdminChats,
   setConversations,
   setIsUserViewingPage,
-  setNewChat
+  setNewChat,
+  removeChatRequest
 } = MessageSlice.actions
 
 export default MessageSlice.reducer
