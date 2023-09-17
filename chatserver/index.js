@@ -202,6 +202,47 @@ socketIO.on('connection', (socket) => {
     }
   });
 
+  socket.on('typing_message', (data) => {
+
+    if (data.recipientId) {
+      let xx = arr.find((a)=> a.userId === data.recipientId)
+
+      if(xx) {
+        socketIO.to(xx.id).emit('typing_message', data);
+      }
+    } 
+
+    let newArray = arr.filter((a) => a.role === "super admin" || a.role === "admin")
+
+    for (let i=0; i<newArray.length; i++) {
+      socketIO.to(newArray[i].id).emit('typing_message', data);
+    }
+    
+
+
+   
+  });
+
+  socket.on('stopped_typing_message', (data) => {
+
+    if (data.recipientId) {
+      let xx = arr.find((a)=> a.userId === data.recipientId)
+
+      if(xx) {
+        socketIO.to(xx.id).emit('stopped_typing_message', data);
+      }
+    } 
+
+    let newArray = arr.filter((a) => a.role === "super admin" || a.role === "admin")
+
+    for (let i=0; i<newArray.length; i++) {
+      socketIO.to(newArray[i].id).emit('stopped_typing_message', data);
+    }
+    
+
+
+   
+  });
 
 
   socket.on('new_chat_message', (data) => {

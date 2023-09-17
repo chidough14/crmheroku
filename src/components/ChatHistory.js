@@ -10,45 +10,12 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Box, Button, CircularProgress } from '@mui/material';
 import { setNewChat } from '../features/MessagesSlice';
 
-const ChatHistory = ({getChats, loading, setIsPopupOpen}) => {
+const ChatHistory = ({getChats, loading, setIsPopupOpen, setShowPreviousChats}) => {
   const { conversations } = useSelector(state => state.message)
   const dispatch = useDispatch()
 
   return (
     <>
-    {/* <TableContainer component={Paper}>
-      <Table sx={{ minWidth: 650 }} aria-label="simple table">
-        <TableHead>
-          <TableRow>
-            <TableCell>Name</TableCell>
-            <TableCell>String</TableCell>
-            <TableCell>Created</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {
-            loading ?
-            conversations?.map((row) => (
-              <TableRow
-                key={row.id}
-                sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-                onClick={() => getChats(row.id)}
-                style={{cursor: "pointer"}}
-              >
-                <TableCell component="th" scope="row">
-                  {row.user_id}
-                </TableCell>
-                <TableCell>{row.conversation_string}</TableCell>
-                <TableCell>{row.created_at}</TableCell>
-              </TableRow>
-            )) : 
-            <Box sx={{ display: 'flex', marginLeft: "70%" }}>
-              <CircularProgress />
-            </Box> 
-          }
-        </TableBody>
-      </Table>
-    </TableContainer> */}
     {
       loading ? (
         <Box sx={{ display: 'flex', marginLeft: "50%" }}>
@@ -71,7 +38,7 @@ const ChatHistory = ({getChats, loading, setIsPopupOpen}) => {
                 <TableRow
                   key={row.id}
                   sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-                  onClick={() => getChats(row.id)}
+                  onClick={() => getChats(row)}
                   style={{cursor: "pointer"}}
                 >
                   <TableCell component="th" scope="row">
@@ -92,6 +59,7 @@ const ChatHistory = ({getChats, loading, setIsPopupOpen}) => {
     color='error'
     onClick={() => {
       setIsPopupOpen(false)
+      setShowPreviousChats(false)
       dispatch(setNewChat({newChat: false}))
     }}
   >

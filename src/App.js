@@ -37,8 +37,6 @@ import socketIO from 'socket.io-client';
 import CheckoutSuccess from "./components/CheckoutSuccess";
 import Announcements from "./pages/announcements/Announcements";
 import ChatButton from "./components/ChatButton";
-import { Popover, Typography } from "@mui/material";
-import ChatWidget from "./components/ChatWidget";
 import Conversations from "./components/Conversations";
 // import SessionTimer from "./services/SessionTimer";
 

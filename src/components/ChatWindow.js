@@ -5,18 +5,43 @@ import instance from '../services/fetchApi';
 import { useParams } from 'react-router';
 import { setNewChat } from '../features/MessagesSlice';
 
-const ChatWindow = ({scrollToBottom, setIsPopupOpen, conversationId, mode, socket, recipientId, disableButton, setDisableButton, loading}) => {
+const ChatWindow = ({
+  scrollToBottom, 
+  setIsPopupOpen, 
+  conversationId, 
+  mode, 
+  socket, 
+  recipientId, 
+  disableButton, 
+  setDisableButton, 
+  loading, 
+  conversationString,
+  setShowPreviousChats
+}) => {
 
   const [message, setMessage] = useState('');
-  const [chat, setChat] = useState([
-    { user: 'Admin', message: 'Hello! How can I assist you?' },
-    // { user: 'user', text: 'Hi there! I have a question.' },
-    // { user: 'admin', text: 'Sure, what is your question?' },
-  ]);
   const { id, name,  role, allUsers } = useSelector(state => state.user) 
+  const [chat, setChat] = useState([
+    { user: 'Admin', message: 'Hello! How can I assist you?' }
+  ]);
+  const [usersTyping, setUsersTyping] = useState([]);
   const { adminchats, newChat } = useSelector(state => state.message) 
   const params = useParams()
   const dispatch = useDispatch()
+
+  const adminMessage =  {
+    backgroundColor: 'lightblue',
+    // alignSelf: 'flex-start', // Align other user's messages to the left
+    marginBottom: "8px",
+    padding: "10px"
+  }
+
+  const myMessage = {
+    backgroundColor: 'lightgreen',
+    // alignSelf: 'flex-end', // Align your messages to the right
+    marginBottom: "8px",
+    padding: "10px"
+  }
 
   useEffect(() => {
     if (!newChat) {
@@ -29,6 +54,8 @@ const ChatWindow = ({scrollToBottom, setIsPopupOpen, conversationId, mode, socke
         })
         setChat(newArr);
       }
+    } else {
+      setChat([{ user: 'Admin', message: 'Hello! How can I assist you?' }])
     }
   
   }, [adminchats, newChat])
@@ -37,7 +64,6 @@ const ChatWindow = ({scrollToBottom, setIsPopupOpen, conversationId, mode, socke
     let body = {
       message,
       conversation_id: parseInt(conversationId),
-      // user_id: role === "super admin" || role === "admin" ? null : id,
       user_id: id
     }
     await instance.post(`/adminchats`, body)
@@ -66,7 +92,8 @@ const ChatWindow = ({scrollToBottom, setIsPopupOpen, conversationId, mode, socke
           } else {
             let newObj = {
               user: allUsers.find((a) => a.id === data.userId)?.name,
-              message: data.message
+              message: data.message,
+              userId: data.userId
             }
             setChat(prev => [...prev, newObj]);
           }
@@ -78,10 +105,60 @@ const ChatWindow = ({scrollToBottom, setIsPopupOpen, conversationId, mode, socke
 
   }, [socket, conversationId])
 
+  const renderName = (user) => {
+     let userRole = allUsers.find((a) => a.id === user.userId)?.role
+
+     if (userRole === "admin" || userRole === "super admin") {
+       return <Typography variant="h7">{`${user.user} - Admin`}</Typography> 
+     } else {
+      return <Typography variant="h7">{`${user.user}`}</Typography> 
+     }
+  }
+
   const resumeChat = () => {
-    socket.emit("chat_request_continue", {userId: id, username: name, conversationId})
+    socket.emit("chat_request_continue", {userId: id, username: name, conversationId, conversationString})
     setDisableButton(false)
   }
+
+  const usersTypingSet = new Set(usersTyping);
+
+  useEffect(() => {
+    // Listen for 'user typing' events from the server
+    socket.on('typing_message', (data) => {
+      if (data.userId !== id && data.conversationString === conversationString) {
+        if (!usersTypingSet.has(data.name)) {
+          usersTypingSet.add(allUsers.find((a) => a.id === data.userId)?.name);
+          // Convert the Set back to an array and update the state
+          setUsersTyping(Array.from(usersTypingSet));
+        }
+      }
+
+    });
+  
+    // Listen for 'user stopped typing' events from the server
+    socket.on('stopped_typing_message', (data) => {
+      if (data.userId !== id && data.conversationString === conversationString) {
+        usersTypingSet.delete(allUsers.find((a) => a.id === data.userId)?.name);
+        // Convert the Set back to an array and update the state
+        setUsersTyping(Array.from(usersTypingSet));
+      }
+    });
+  
+    // Clean up event listeners when the component unmounts
+    return () => {
+      socket.off('typing_message');
+      socket.off('stopped_typing_message');
+    };
+  }, [conversationString]);
+  
+  const handleTyping = () => {
+    socket.emit("typing_message", {userId: id, recipientId: recipientId, conversation_id: conversationId, conversationString})
+  };
+  
+  const handleStoppedTyping = () => {
+    socket.emit("stopped_typing_message", {userId: id, recipientId: recipientId, conversation_id: conversationId, conversationString})
+  
+  };
 
   return (
       <Paper elevation={3} style={{ padding: '16px', minHeight: '400px' }}>
@@ -93,19 +170,37 @@ const ChatWindow = ({scrollToBottom, setIsPopupOpen, conversationId, mode, socke
           ) : (
 
             <>
-              <List>
+
+              <div 
+                style={{
+                  width: '100%',
+                  maxWidth: 400,
+                  margin: '0 auto',
+                  padding: "10px",
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-end', // Align messages to the right
+                }}
+              >
+                <Typography style={{margin: "auto"}} variant="h6">{conversationString}</Typography> 
                 {chat.map((message, index) => (
-                  <React.Fragment key={index}>
-                    <ListItem alignItems="flex-start">
-                      <ListItemText
-                        primary={message.user}
-                        secondary={message.message}
-                      />
-                    </ListItem>
-                    <Divider variant="inset" component="li" />
-                  </React.Fragment>
+                  <div  style={{alignSelf: message.user === name || (message.user === "Admin" && role === "super admin") ? "flex-end" : "flex-start"}}>
+                    {
+                      renderName(message)
+                    }
+                    <Paper
+                      key={index}
+                      style={message.user === name || (message.user === "Admin" && role === "super admin")  ? myMessage : adminMessage}
+                      elevation={3}
+                    >
+              
+                      <Typography variant="body1">{message.message}</Typography>
+
+                    </Paper>
+                  </div>
                 ))}
-              </List>
+              </div>
+
               <div style={{ display: 'flex', marginTop: '16px', marginBottom: "10px" }}>
                 <TextField
                   label="Type a message"
@@ -113,14 +208,36 @@ const ChatWindow = ({scrollToBottom, setIsPopupOpen, conversationId, mode, socke
                   fullWidth
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
+                  onKeyUp={handleTyping}
+                  onBlur={handleStoppedTyping}
                 />
-                <Button variant="contained" color="primary" onClick={handleSend} style={{ marginLeft: '8px' }} disabled={disableButton}>
+
+                <div>
+                  {usersTyping?.length && usersTyping.map((user) => (
+                    <p key={user}>{user} is typing...</p>
+                  ))}
+                </div>
+
+
+                <Button 
+                  variant="contained" 
+                  color="primary" 
+                  onClick={handleSend} 
+                  style={{ marginLeft: '8px', borderRadius: "30px",  }} 
+                  disabled={disableButton}
+                >
                   Send
                 </Button>
 
                 {
                   disableButton && (
-                    <Button variant="contained" size='small' color="info" onClick={resumeChat} style={{ marginLeft: '8px' }} >
+                    <Button 
+                      variant="contained" 
+                      size='small' 
+                      color="info" 
+                      onClick={resumeChat} 
+                      style={{ marginLeft: '8px', borderRadius: "30px",  }} 
+                    >
                       Resume Chat
                     </Button>
                   )
@@ -138,8 +255,10 @@ const ChatWindow = ({scrollToBottom, setIsPopupOpen, conversationId, mode, socke
             color='error'
             onClick={() => {
               setIsPopupOpen(false)
+              setShowPreviousChats(false)
               dispatch(setNewChat({newChat: false}))
             }}
+            style={{ borderRadius: "30px",  }} 
           >
           Cancel
           </Button>
