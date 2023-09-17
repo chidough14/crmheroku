@@ -1,13 +1,13 @@
-import { ChatBubble, Group } from '@mui/icons-material'
+import { ChatBubble } from '@mui/icons-material'
 import { Alert, Badge, Menu } from '@mui/material'
 import React, { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
-import { removeFollowersData } from '../features/userSlice';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { removeChatRequest, setNewChat } from '../features/MessagesSlice';
 
 const ChatRequestNotification = ({data, deleteFollowerMessage, allUsers}) => {
   const [anchorEl, setAnchorEl] = useState(null);
-  const { requests, chatContinue } = useSelector(state => state.message)
+  const { requests } = useSelector(state => state.message)
   const open = Boolean(anchorEl);
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
@@ -16,7 +16,6 @@ const ChatRequestNotification = ({data, deleteFollowerMessage, allUsers}) => {
     setAnchorEl(null);
   };
   const dispatch = useDispatch()
-  const navigate = useNavigate()
 
   const getInitials = (string) => {
     let names = string?.split(' '),
@@ -149,7 +148,7 @@ const ChatRequestNotification = ({data, deleteFollowerMessage, allUsers}) => {
             ) : 
             requests?.map((a) => (
               <>
-                <Link to={`/conversations/${a.conversationId}`} >
+                <Link to={`/conversations/${a.conversationId}`} state={{conversationString: a.conversationString}}>
                 <Alert 
                   onClose={(e) => {
                     e.preventDefault()
@@ -157,6 +156,14 @@ const ChatRequestNotification = ({data, deleteFollowerMessage, allUsers}) => {
                   }} 
                   severity="info" 
                   sx={{ width: '100%' }}
+                  onClick={()=> {
+                    dispatch(removeChatRequest({requestId: a.conversationId}))
+                    if (a.mode === "null") {
+                      dispatch(setNewChat({newChat: true}))
+                    } else {
+                      dispatch(setNewChat({newChat: false}))
+                    }
+                  }}
                 >
                   {/* {getImage(a)} */}
 

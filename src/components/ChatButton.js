@@ -13,6 +13,7 @@ function ChatButton({socket}) {
   const [showPreviousChats, setShowPreviousChats] = useState(false);
   const [disableButton, setDisableButton] = useState(false);
   const [conversationId, setConversationId] = useState();
+  const [conversationString, setConversationString] = useState();
   const [recipientId, setRecipientId] = useState();
   const [loading, setLoading] = useState(false);
   const { id, name } = useSelector(state => state.user)
@@ -58,10 +59,10 @@ function ChatButton({socket}) {
 
     await instance.post(`conversations`, body)
     .then((res) => {
-       console.log(res);
        setConversationId(res.data.conversation.id)
        setRecipientId(res.data.conversation.user_id)
-       socket.emit("chat_request", {userId: res.data.conversation.user_id, username: name, conversationId: res.data.conversation.id})
+       setConversationString(res.data.conversation.conversation_string)
+       socket.emit("chat_request", {userId: res.data.conversation.user_id, username: name, conversationId: res.data.conversation.id, conversationString: res.data.conversation.conversation_string })
       // socket.emit("chat_request", {sender: id,  conversationId: res.data.conversation.id})
 
     })
@@ -71,20 +72,20 @@ function ChatButton({socket}) {
     setLoading(true)
     await instance.get(`conversations`)
     .then((res) => {
-       console.log(res);
        dispatch(setConversations({conversations: res.data.conversations}))
        setLoading(false)
 
     })
   }
 
-  const getChats = async (conversation_id) => {
+  const getChats = async (row) => {
     setLoading(true)
     setShowPreviousChats(false)
-    setConversationId(conversation_id)
+    setConversationId(row.id)
     setDisableButton(true)
+    setConversationString(row.conversation_string)
 
-    await instance.get(`adminchats/${conversation_id}`)
+    await instance.get(`adminchats/${row.id}`)
     .then((res) => {
        dispatch(setAdminChats({adminchats: res.data.chats}))
        setLoading(false)
@@ -110,7 +111,19 @@ function ChatButton({socket}) {
           cursor: 'pointer',
         }}
         onClick={() => {
-          setIsChatOpen(true);
+          if (isChatOpen) {
+            setIsChatOpen(false);
+          } else {
+            setIsChatOpen(true);
+          }
+
+          if (isPopupOpen) {
+            setIsPopupOpen(false)
+          }
+
+          if (showPreviousChats) {
+           setShowPreviousChats(false)
+          }
         }}
       >
         <ChatRounded fontSize="large" color="primary" />
@@ -137,11 +150,13 @@ function ChatButton({socket}) {
                 getChats={getChats}
                 loading={loading}
                 setIsPopupOpen={setIsPopupOpen} 
+                setShowPreviousChats={setShowPreviousChats}
               />
             ) : (
               <ChatWindow 
                 scrollToBottom={scrollToBottom} 
                 setIsPopupOpen={setIsPopupOpen} 
+                setShowPreviousChats={setShowPreviousChats}
                 conversationId={conversationId}
                 mode="user" 
                 socket={socket}
@@ -149,6 +164,7 @@ function ChatButton({socket}) {
                 setDisableButton={setDisableButton}
                 recipientId={recipientId}
                 loading={loading}
+                conversationString={conversationString}
               />
             )
           }
@@ -171,6 +187,7 @@ function ChatButton({socket}) {
               setIsPopupOpen(true)
               setIsChatOpen(false)
             }}
+            style={{ marginLeft: '8px', borderRadius: "30px",  }} 
           >
             New chat
           </Button>
@@ -184,6 +201,7 @@ function ChatButton({socket}) {
               setShowPreviousChats(true)
               setIsChatOpen(false)
             }}
+            style={{ marginLeft: '8px', borderRadius: "30px",  }} 
           >
             Previous chats
           </Button>
@@ -192,6 +210,8 @@ function ChatButton({socket}) {
           <Button 
             onClick={() => {
               setIsChatOpen(false)
+              setIsPopupOpen(false)
+              setShowPreviousChats(false)
               dispatch(setNewChat({newChat: false}))
             }} 
             color="primary"
