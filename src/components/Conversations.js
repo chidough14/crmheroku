@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react'
 import { useLocation, useParams } from 'react-router'
 import instance from '../services/fetchApi';
 import { useDispatch, useSelector } from 'react-redux';
-import { setAdminChats, setIsUserViewingPage } from '../features/MessagesSlice';
+import { setAdminChats } from '../features/MessagesSlice';
 import ChatWindow from './ChatWindow';
 
 const Conversations = ({ socket }) => {
@@ -27,11 +27,13 @@ const Conversations = ({ socket }) => {
 
   useEffect(() => {
     getAdminChats(params.id)
-  }, [params])
+  }, [params.id])
+
 
   return (
     <div
       ref={chatDivRef}
+      style={{width: "40%"}}
     >
       <ChatWindow
         mode="admin" 
@@ -39,6 +41,7 @@ const Conversations = ({ socket }) => {
         conversationId={params?.id}
         socket={socket}
         recipientId={recipientId}
+        conversationString={location?.state?.conversationString}
       />
     </div>
   )
