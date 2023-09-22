@@ -24,7 +24,10 @@ const initialState = {
   conversations: [],
   isUserViewingPage: false,
   chatContinue: false,
-  newChat: false
+  newChat: false,
+  usersRequests: [],
+  userschats: [],
+  users_conversations: []
 }
 
 export const MessageSlice = createSlice({
@@ -155,6 +158,19 @@ export const MessageSlice = createSlice({
     setNewChat: (state, action) => {
       state.newChat = action.payload.newChat
     },
+    setUsersChatsRequests: (state, action) => {
+      state.usersRequests = [...state.usersRequests, action.payload.requests ]
+    },
+    removeUsersChatRequest: (state, action) => {
+      state.usersRequests = state.usersRequests.filter((a) => a.conversationId !== action.payload.requestId)
+ 
+    },
+    setUsersChats: (state, action) => {
+      state.userschats = action.payload.userschats
+    },
+    setUsersConversations: (state, action) => {
+      state.users_conversations = action.payload.users_conversations
+    },
   },
 })
 
@@ -192,7 +208,11 @@ export const {
   setConversations,
   setIsUserViewingPage,
   setNewChat,
-  removeChatRequest
+  removeChatRequest,
+  setUsersChatsRequests,
+  removeUsersChatRequest,
+  setUsersChats,
+  setUsersConversations
 } = MessageSlice.actions
 
 export default MessageSlice.reducer
