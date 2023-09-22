@@ -52,6 +52,33 @@ const sendEvent = (arr, data, event) => {
   }
 }
 
+const sendAdminEvent = (arr, data, event) => {
+  const admins = arr.filter(a => a.role === "super admin" || a.role === "admin");
+
+  if (event.includes("chat_request")) {
+    admins.forEach(admin => socketIO.to(admin.id).emit(event, data));
+  } else {
+    const recipientId = data.mode === "user-user" ? parseInt(data.recipientId) : data.recipientId;
+    const xx = arr.find(a => a.userId === recipientId);
+
+    if (xx) {
+      socketIO.to(xx.id).emit(event, data);
+    }
+
+    admins.forEach(admin => socketIO.to(admin.id).emit(event, data));
+  }
+};
+
+const sendUserChatEvent = (arr, data, event) => {
+  if (data.recipientId) {
+    let xx = arr.find((a)=> a.userId === parseInt(data.recipientId))
+
+    if(xx) {
+      socketIO.to(xx.id).emit(event, data);
+    }
+  } 
+};
+
 let users = [];
 let arr = []
 //Add this before the app.get() block
@@ -186,116 +213,41 @@ socketIO.on('connection', (socket) => {
 
   //user-user chat  --------------------------------------------------------
 
-  socket.on('users_chat_request', (data) => { //user-user chat
-    let xx = arr.find((a)=> a.userId === parseInt(data.recipientId))
-
-    if(xx) {
-      socketIO.to(xx.id).emit('users_chat_request', data);
-    }
+  socket.on('users_chat_request', (data) => { 
+    sendUserChatEvent(arr, data, "users_chat_request")
   });
 
   socket.on('new_users_chat_message', (data) => {
-
-    if (data.recipientId) {
-      let xx = arr.find((a)=> a.userId === parseInt(data.recipientId))
-
-      if(xx) {
-        socketIO.to(xx.id).emit('new_users_chat_message', data);
-      }
-    } 
+    sendUserChatEvent(arr, data, "new_users_chat_message")
      
   });
 
   socket.on('users_chat_request_continue', (data) => {
-
-    if (data.recipientId) {
-      let xx = arr.find((a)=> a.userId === parseInt(data.recipientId))
-
-      if(xx) {
-        socketIO.to(xx.id).emit('users_chat_request_continue', data);
-      }
-    } 
+    sendUserChatEvent(arr, data, "users_chat_request_continue")
   });
 
    //user-user chat  --------------------------------------------------------
 
   //user-admin chat  --------------------------------------------------------
   socket.on('chat_request', (data) => {    
-
-    let newArray = arr.filter((a) => a.role === "super admin" || a.role === "admin")
-    for (let i=0; i<newArray.length; i++) {
-
-      socketIO.to(newArray[i].id).emit('chat_request', data);
-    }
+    sendAdminEvent(arr, data, "chat_request") 
   });
 
   socket.on('chat_request_continue', (data) => {
-
-    let newArray = arr.filter((a) => a.role === "super admin" || a.role === "admin")
-    for (let i=0; i<newArray.length; i++) {
-
-      socketIO.to(newArray[i].id).emit('chat_request_continue', data);
-    }
+    sendAdminEvent(arr, data, "chat_request_continue") 
   });
 
   socket.on('typing_message', (data) => {
-
-    if (data.recipientId) {
-      let xx = arr.find((a)=> a.userId === data.recipientId)
-
-      if(xx) {
-        socketIO.to(xx.id).emit('typing_message', data);
-      }
-    } 
-
-    let newArray = arr.filter((a) => a.role === "super admin" || a.role === "admin")
-
-    for (let i=0; i<newArray.length; i++) {
-      socketIO.to(newArray[i].id).emit('typing_message', data);
-    }
-    
-
-
-   
+    sendAdminEvent(arr, data, "typing_message") 
   });
 
   socket.on('stopped_typing_message', (data) => {
-
-    if (data.recipientId) {
-      let xx = arr.find((a)=> a.userId === data.recipientId)
-
-      if(xx) {
-        socketIO.to(xx.id).emit('stopped_typing_message', data);
-      }
-    } 
-
-    let newArray = arr.filter((a) => a.role === "super admin" || a.role === "admin")
-
-    for (let i=0; i<newArray.length; i++) {
-      socketIO.to(newArray[i].id).emit('stopped_typing_message', data);
-    }
-    
-
-
-   
+    sendAdminEvent(arr, data, "stopped_typing_message") 
   });
 
 
   socket.on('new_chat_message', (data) => {
-
-    if (data.recipientId) {
-      let xx = arr.find((a)=> a.userId === data.recipientId)
-
-      if(xx) {
-        socketIO.to(xx.id).emit('new_chat_message', data);
-      }
-    } 
-
-    let newArray = arr.filter((a) => a.role === "super admin" || a.role === "admin")
-
-    for (let i=0; i<newArray.length; i++) {
-      socketIO.to(newArray[i].id).emit('new_chat_message', data);
-    }
+    sendAdminEvent(arr, data, "new_chat_message") 
      
   });
    //user-admin chat  --------------------------------------------------------

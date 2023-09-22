@@ -1,5 +1,5 @@
 import { Group } from '@mui/icons-material'
-import { Alert, Badge, Menu } from '@mui/material'
+import { Alert, Badge, Menu, Tooltip } from '@mui/material'
 import React, { useState } from 'react'
 import { useDispatch } from 'react-redux';
 import { removeFollowersData } from '../features/userSlice';
@@ -81,7 +81,10 @@ const FollowersNotification = ({data, deleteFollowerMessage, allUsers}) => {
         color="primary" 
         badgeContent={data?.length}
       >
-        <Group style={{cursor: "pointer"}}  onClick={handleClick} />
+        <Tooltip title="Followers notification">
+          <Group style={{cursor: "pointer"}}  onClick={handleClick} />
+        </Tooltip>
+      
       </Badge>
 
       <Menu

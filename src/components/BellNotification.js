@@ -101,7 +101,10 @@ const BellNotification = ({inbox, allUsers, invitedMeetings}) => {
         badgeContent={renderBadgeCount(inbox, invitedMeetings)}
         // badgeContent={inbox?.filter((a) => !a.isRead)?.length + invitedMeetings?.filter((b)=> !moment(b.event.end).isBefore(moment()))?.length}
       >
-        <Notifications style={{cursor: "pointer"}}  onClick={handleClick} />
+        <Tooltip title="Notifications">
+          <Notifications style={{cursor: "pointer"}}  onClick={handleClick} />
+        </Tooltip>
+     
       </Badge>
 
       <Menu
