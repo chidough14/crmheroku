@@ -8,6 +8,7 @@ import { setUsersChats } from '../features/MessagesSlice';
 const UserToUserChat = ({socket}) => {
   const location = useLocation()
   const [chat, setChat] = useState([]);
+  const [usersTyping, setUsersTyping] = useState([]);
   const [message, setMessage] = useState('');
   const { id, name, role, allUsers } = useSelector(state => state.user)
   const { userschats } = useSelector(state => state.message)
@@ -33,7 +34,6 @@ const UserToUserChat = ({socket}) => {
   const fetchChatMessages = async (id) => [
     await instance.get(`users-chats/${id}`)
     .then((res) => {
-      // setChat(res.data.chats)
       dispatch(setUsersChats({userschats: res.data.chats}))
     })
   ]
@@ -43,10 +43,6 @@ const UserToUserChat = ({socket}) => {
     fetchChatMessages(location?.state?.conversationId)
  
   }, [location?.state?.conversationId])
-
-  // useEffect(() => {
-  // console.log(location);
-  // }, [location])
 
   useEffect(() => {
     if (userschats.length) {
@@ -107,9 +103,6 @@ const UserToUserChat = ({socket}) => {
         conversation_id: res.data.chat.conversation_id
       })
 
-
-      // let username = userDetails ? userDetails.name : "Admin"
-
       setChat([...chat, { user: userDetails.name, message: res.data.chat.message }]);
       setMessage('');
   
@@ -120,7 +113,7 @@ const UserToUserChat = ({socket}) => {
   useEffect(() => {
      if (location?.state?.resumeChat) {
        setDisabled(true)
-     }else {
+     } else {
       setDisabled(false)
      }
   }, [location?.state?.resumeChat])
@@ -134,6 +127,49 @@ const UserToUserChat = ({socket}) => {
 //      return <Typography variant="h7">{`${user.user}`}</Typography> 
 //     }
 //  }
+
+const usersTypingSet = new Set(usersTyping);
+
+useEffect(() => {
+  socket.on('typing_message', (data) => {
+    if (data.userId !== id && data.conversationString === location?.state?.conversationString && data.mode === "user-user") {
+      if (!usersTypingSet.has(data.name)) {
+        usersTypingSet.add(allUsers.find((a) => a.id === data.userId)?.name);
+        setUsersTyping(Array.from(usersTypingSet));
+      }
+    }
+
+  });
+
+  socket.on('stopped_typing_message', (data) => {
+    if (data.userId !== id && data.conversationString === location?.state?.conversationString && data.mode === "user-user") {
+      usersTypingSet.delete(allUsers.find((a) => a.id === data.userId)?.name);
+      setUsersTyping(Array.from(usersTypingSet));
+    }
+  });
+
+  return () => {
+    socket.off('typing_message');
+    socket.off('stopped_typing_message');
+  };
+}, [location?.state?.conversationString]);
+
+  const data =  {
+    userId: id, 
+    recipientId: location?.state?.recipientId, 
+    conversation_id: conversationId, 
+    conversationString: location?.state?.conversationString,
+    mode: "user-user"
+  }
+
+  const handleTyping = () => {
+    socket.emit("typing_message", data)
+  };
+
+  const handleStoppedTyping = () => {
+    socket.emit("stopped_typing_message", data)
+
+  };
 
   return (
     <div
@@ -186,15 +222,15 @@ const UserToUserChat = ({socket}) => {
             fullWidth
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            // onKeyUp={handleTyping}
-            // onBlur={handleStoppedTyping}
+            onKeyUp={handleTyping}
+            onBlur={handleStoppedTyping}
           />
 
-          {/* <div>
-            {usersTyping?.length && usersTyping.map((user) => (
+          <div>
+            {usersTyping?.length ? usersTyping.map((user) => (
               <p key={user}>{user} is typing...</p>
-            ))}
-          </div> */}
+            )) : null}
+          </div>
 
           {
             disabled ? (

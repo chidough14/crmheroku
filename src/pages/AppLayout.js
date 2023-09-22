@@ -414,31 +414,36 @@ export default function AppLayout({socket}) {
     socket.on('chat_request', (data) => {
       data.mode = "null"
       dispatch(setChatRequests({request: data}))
+
+      let message = `${data.username} requested a chat with admin ${data.conversationId}`
+      showAlert(message, "info")
     });
 
     socket.on('chat_request_continue', (data) => {
       data.mode = "continue"
       dispatch(setChatRequests({request: data}))
+
+      let message = `${data.username} requested to continue a chat with admin  ${data.conversationId}`
+      showAlert(message, "info")
     });
 
     socket.on('users_chat_request', (data) => {
       data.mode = "null"
-      console.log(data);
 
       dispatch(setUsersChatsRequests({requests: data}))
+
+      let message = `${data.username} requested a chat  ${data.conversationId}`
+      showAlert(message, "info")
     });
 
     socket.on('users_chat_request_continue', (data) => {
       data.mode = "continue"
-      console.log(data);
 
       dispatch(setUsersChatsRequests({requests: data}))
+
+      let message = `${data.username} requested to continue a chat ${data.conversationId}`
+      showAlert(message, "info")
     });
-
-    // socket.on('new_users_chat_message', (data) => {
-
-    //   dispatch(setUsersChats({userschats: data}))
-    // });
 
    
   }, [socket])
