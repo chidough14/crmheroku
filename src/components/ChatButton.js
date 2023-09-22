@@ -70,7 +70,7 @@ function ChatButton({socket}) {
 
   const getConversations = async () => {
     setLoading(true)
-    await instance.get(`conversations`)
+    await instance.get(`conversations/admin`)
     .then((res) => {
        dispatch(setConversations({conversations: res.data.conversations}))
        setLoading(false)

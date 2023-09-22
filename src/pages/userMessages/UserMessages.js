@@ -12,11 +12,12 @@ import { setInboxMessages, setOutboxMessages, setPage } from '../../features/Mes
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getToken } from '../../services/LocalStorageService';
-import { CreateOutlined, DraftsOutlined, InboxOutlined, OutboxOutlined } from '@mui/icons-material';
+import { ChatBubbleOutline, CreateOutlined, DraftsOutlined, InboxOutlined, OutboxOutlined } from '@mui/icons-material';
 import { Snackbar, Tooltip } from '@mui/material';
 import MuiAlert from '@mui/material/Alert';
 import SingleMessage from './SingleMessage';
 import Drafts from './Drafts';
+import ChatMessages from './ChatMessages';
 
 
 const Alert = React.forwardRef(function Alert(props, ref) {
@@ -185,12 +186,13 @@ const UserMessages = ({socket}) => {
           value={value}
           onChange={handleChange}
           aria-label="Vertical tabs example"
-          sx={{ borderRight: 1, borderColor: 'divider' }}
+          sx={{ borderRight: 1, borderColor: 'divider', height: "400px" }}
         >
           <Tab icon={<Tooltip title="Inbox"><InboxOutlined /></Tooltip>}  {...a11yProps(0)} />
           <Tab icon={<Tooltip title="Outbox"><OutboxOutlined /></Tooltip>}  {...a11yProps(1)} />
           <Tab icon={<Tooltip title="Compose"><CreateOutlined /></Tooltip>} {...a11yProps(2)} />
-          <Tab icon={<Tooltip title="Drafts"><DraftsOutlined /></Tooltip>} {...a11yProps(2)} />
+          <Tab icon={<Tooltip title="Drafts"><DraftsOutlined /></Tooltip>} {...a11yProps(3)} />
+          <Tab icon={<Tooltip title="Chat Messages"><ChatBubbleOutline /></Tooltip>} {...a11yProps(4)} />
         </Tabs>
         <TabPanel value={value} index={0}>
           <UserMessagesTable messages={inbox} isInbox={true} getInboxMessages={getInboxMessages} loading={inboxLoading} />
@@ -203,6 +205,9 @@ const UserMessages = ({socket}) => {
         </TabPanel>
         <TabPanel value={value} index={3}>
           <Drafts setValue={setValue}  socket={socket} sendingMessage={sendingMessage} />
+        </TabPanel>
+        <TabPanel value={value} index={4}>
+          <ChatMessages />
         </TabPanel>
       </Box>
       }

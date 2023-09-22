@@ -3,7 +3,7 @@ import React, { useEffect, useReducer, useState } from 'react';
 import { getToken } from '../../services/LocalStorageService';
 import { useChangeUserPasswordMutation } from '../../services/userAuthApi';
 import { useDispatch, useSelector } from 'react-redux';
-import { ChangeCircleOutlined, CloseOutlined, DeleteOutline, MessageOutlined, PeopleOutlineOutlined, SaveOutlined, UpdateOutlined} from '@mui/icons-material';
+import { ChangeCircleOutlined, ChatBubbleOutline, CloseOutlined, DeleteOutline, MailOutlined, MessageOutlined, PeopleOutlineOutlined, SaveOutlined, UpdateOutlined} from '@mui/icons-material';
 import moment from 'moment';
 import UploadWidget from './UploadWidget';
 import instance from '../../services/fetchApi';
@@ -56,6 +56,8 @@ const MyAccount = ({ socket }) => {
   const [showUpdateNotification, setShowUpdateNotification] = useState(false)
   const [showFollowers, setShowFollowers] = useState(false);
   const [showFollowersMode, setShowFollowersMode] = useState("followers");
+  const [conversationId, setConversationId] = useState()
+  const [conversationString, setConversationString] = useState("")
   const params = useParams()
   const navigate = useNavigate()
 
@@ -391,6 +393,53 @@ const MyAccount = ({ socket }) => {
     )
 
   } 
+
+  const generateRandomId = () => {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const length = 6;
+    let randomId = '';
+  
+    for (let i = 0; i < length; i++) {
+      const randomIndex = Math.floor(Math.random() * characters.length);
+      randomId += characters.charAt(randomIndex);
+    }
+  
+    return randomId;
+  }
+
+  const startChat = async () => {
+    let randomId = generateRandomId()
+
+    let body = {
+      conversation_string: randomId,
+      recipient_id: parseInt(params?.id)
+    }
+
+    await instance.post(`conversations`, body)
+    .then((res) => {
+       setConversationId(res.data.conversation.id)
+      //  setRecipientId(res.data.conversation.user_id)
+       setConversationString(res.data.conversation.conversation_string)
+
+       socket.emit("users_chat_request", {
+         userId: res.data.conversation.user_id, 
+         recipientId: params?.id,
+         username: name, 
+         conversationId: res.data.conversation.id, 
+         conversationString: res.data.conversation.conversation_string 
+       })
+
+       navigate(`/users-conversations/${res.data.conversation.id}`, { 
+          state: {
+            conversationString: res.data.conversation.conversation_string, 
+            conversationId: res.data.conversation.id,
+            recipientId: params?.id ,
+            resumeChat: false 
+          }
+       })
+
+    })
+  }
   
 
   return <>
@@ -466,8 +515,18 @@ const MyAccount = ({ socket }) => {
                 }
 
                 <Tooltip title="Send Message">
-                  <Button onClick={() => navigate(`/messages`, { state: {id: params?.id, populateEmail: true, sendMessage: true}})}>
-                    <MessageOutlined />
+                  <Button style={{marginRight: "10px"}} onClick={() => navigate(`/messages`, { state: {id: params?.id, populateEmail: true, sendMessage: true}})}>
+                    <MailOutlined />
+                  </Button>
+                </Tooltip>
+
+                <Tooltip title="Qick chat">
+                  <Button 
+                    onClick={() => {
+                      startChat()
+                    }}
+                  >
+                    <ChatBubbleOutline />
                   </Button>
                 </Tooltip>
               </>
