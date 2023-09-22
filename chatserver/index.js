@@ -187,7 +187,43 @@ socketIO.on('connection', (socket) => {
     socket.broadcast.emit('user stopped typing reply', data);
   });
 
-  socket.on('chat_request', (data) => {
+  //user-user chat  --------------------------------------------------------
+
+  socket.on('users_chat_request', (data) => { //user-user chat
+    let xx = arr.find((a)=> a.userId === parseInt(data.recipientId))
+
+    if(xx) {
+      socketIO.to(xx.id).emit('users_chat_request', data);
+    }
+  });
+
+  socket.on('new_users_chat_message', (data) => {
+
+    if (data.recipientId) {
+      let xx = arr.find((a)=> a.userId === parseInt(data.recipientId))
+
+      if(xx) {
+        socketIO.to(xx.id).emit('new_users_chat_message', data);
+      }
+    } 
+     
+  });
+
+  socket.on('users_chat_request_continue', (data) => {
+
+    if (data.recipientId) {
+      let xx = arr.find((a)=> a.userId === parseInt(data.recipientId))
+
+      if(xx) {
+        socketIO.to(xx.id).emit('users_chat_request_continue', data);
+      }
+    } 
+  });
+
+   //user-user chat  --------------------------------------------------------
+
+  //user-admin chat  --------------------------------------------------------
+  socket.on('chat_request', (data) => {    
 
     let newArray = arr.filter((a) => a.role === "super admin" || a.role === "admin")
     for (let i=0; i<newArray.length; i++) {
@@ -263,11 +299,9 @@ socketIO.on('connection', (socket) => {
     for (let i=0; i<newArray.length; i++) {
       socketIO.to(newArray[i].id).emit('new_chat_message', data);
     }
-    
-
-
-   
+     
   });
+   //user-admin chat  --------------------------------------------------------
 
   socket.on('logout', () => {
     console.log(': A user loggedout');

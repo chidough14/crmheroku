@@ -34,11 +34,12 @@ import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import { setFollowersData, setFollwed, setFollwers, setOnlineUsers } from '../features/userSlice';
 import ActivityModal from '../components/activities/ActivityModal';
-import { setChatRequests, setInboxMessages, setReloadMessages, setShowSingleMessage } from '../features/MessagesSlice';
+import { setChatRequests, setInboxMessages, setReloadMessages, setShowSingleMessage, setUsersChats, setUsersChatsRequests } from '../features/MessagesSlice';
 import FollowersNotification from '../components/FollowersNotification';
 import { setReloadActivities } from '../features/ActivitySlice';
 import { setReloadEvents } from '../features/EventSlice';
 import ChatRequestNotification from '../components/ChatRequestNotification';
+import UsersChatsRequestNotification from '../components/UsersChatsRequestNotification';
 
 
 const Alert = React.forwardRef(function Alert(props, ref) {
@@ -420,6 +421,25 @@ export default function AppLayout({socket}) {
       dispatch(setChatRequests({request: data}))
     });
 
+    socket.on('users_chat_request', (data) => {
+      data.mode = "null"
+      console.log(data);
+
+      dispatch(setUsersChatsRequests({requests: data}))
+    });
+
+    socket.on('users_chat_request_continue', (data) => {
+      data.mode = "continue"
+      console.log(data);
+
+      dispatch(setUsersChatsRequests({requests: data}))
+    });
+
+    // socket.on('new_users_chat_message', (data) => {
+
+    //   dispatch(setUsersChats({userschats: data}))
+    // });
+
    
   }, [socket])
 
@@ -718,16 +738,17 @@ export default function AppLayout({socket}) {
             }&nbsp;&nbsp;&nbsp;&nbsp;
 
             {
+              loggedIn  ? (
+                <UsersChatsRequestNotification
+                />
+              ) : null
+            }&nbsp;&nbsp;&nbsp;&nbsp;
+
+            {
                 loggedIn && (
                   <BellNotification inbox={inboxData} allUsers={allUsers} invitedMeetings={invitedMeetingsData} setState={setState} />
                 )
             }&nbsp;&nbsp;&nbsp;&nbsp;
-          
-            
-  {/* 
-            <Button component={NavLink} to='/' style={({ isActive }) => { return { backgroundColor: isActive ? '#6d1b7b' : '' } }} sx={{ color: 'white', textTransform: 'none' }}>About</Button>
-
-            <Button component={NavLink} to='/contact' style={({ isActive }) => { return { backgroundColor: isActive ? '#6d1b7b' : '' } }} sx={{ color: 'white', textTransform: 'none' }}>Contact</Button> */}
 
             {
               loggedIn ? 
