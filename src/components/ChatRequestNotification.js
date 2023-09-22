@@ -1,11 +1,11 @@
-import { ChatBubble } from '@mui/icons-material'
-import { Alert, Badge, Menu } from '@mui/material'
+import { ChatTwoTone } from '@mui/icons-material'
+import { Alert, Badge, Menu, Tooltip } from '@mui/material'
 import React, { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { removeChatRequest, setNewChat } from '../features/MessagesSlice';
 
-const ChatRequestNotification = ({data, deleteFollowerMessage, allUsers}) => {
+const ChatRequestNotification = ({}) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const { requests } = useSelector(state => state.message)
   const open = Boolean(anchorEl);
@@ -79,15 +79,11 @@ const ChatRequestNotification = ({data, deleteFollowerMessage, allUsers}) => {
 
   const renderText = (name, cId, mode) => {
     if (mode === "continue") {
-      return `${name} requested a to continue a chat ${cId}`
+      return `${name} requested to continue a chat with admin ${cId}`
     } else {
-      return `${name} requested a chat ${cId}`
+      return `${name} requested a chat with admin ${cId}`
     }
   }
-
-  useEffect(() => {
-    console.log(requests);
-  }, [requests])
 
   return (
     <div>
@@ -95,7 +91,10 @@ const ChatRequestNotification = ({data, deleteFollowerMessage, allUsers}) => {
         color="primary" 
         badgeContent={requests?.length}
       >
-        <ChatBubble style={{cursor: "pointer"}}  onClick={handleClick} />
+        <Tooltip title="Admin chats">
+          <ChatTwoTone style={{cursor: "pointer"}}  onClick={handleClick} />
+        </Tooltip>
+    
       </Badge>
 
       <Menu

@@ -1,5 +1,5 @@
 import { ChatBubbleRounded } from '@mui/icons-material'
-import { Alert, Badge, Menu } from '@mui/material'
+import { Alert, Badge, Menu, Tooltip } from '@mui/material'
 import React, { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
@@ -19,15 +19,11 @@ const UsersChatsRequestNotification = () => {
 
   const renderText = (name, cId, mode) => {
     if (mode === "continue") {
-      return `${name} requested a to continue a chat ${cId}`
+      return `${name} requested to continue a chat ${cId}`
     } else {
       return `${name} requested a chat ${cId}`
     }
   }
-
-  useEffect(() => {
-    console.log(usersRequests);
-  }, [usersRequests])
 
   return (
     <div>
@@ -35,7 +31,10 @@ const UsersChatsRequestNotification = () => {
         color="primary" 
         badgeContent={usersRequests?.length}
       >
-        <ChatBubbleRounded style={{cursor: "pointer"}}  onClick={handleClick} />
+        <Tooltip title="User chats">
+          <ChatBubbleRounded style={{cursor: "pointer"}}  onClick={handleClick} />
+        </Tooltip>
+      
       </Badge>
 
       <Menu
