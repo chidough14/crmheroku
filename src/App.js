@@ -38,7 +38,7 @@ import CheckoutSuccess from "./components/CheckoutSuccess";
 import Announcements from "./pages/announcements/Announcements";
 import ChatButton from "./components/ChatButton";
 import Conversations from "./components/Conversations";
-// import SessionTimer from "./services/SessionTimer";
+import UserToUserChat from "./components/UserToUserChat";
 
 const socket = socketIO('');
 // const socket = socketIO('http://localhost:4000');
@@ -172,6 +172,7 @@ function App() {
             <Route path="/checkout-success" element={<CheckoutSuccess />} />
             <Route path="/announcements" element={<Announcements />} />
             <Route path="/conversations/:id" element={<Conversations socket={socket}/>} />
+            <Route path="/users-conversations/:id" element={<UserToUserChat socket={socket}/>} />
           </Route>
           <Route path="*" element={<h1>Error 404 Page not found !!</h1>} />
         </Routes>
