@@ -89,15 +89,17 @@ const UserMessages = ({socket}) => {
   useEffect(() => {
     if (state?.sendMessage) {
       setValue(2)
+    } else {
+      if (!state?.isInbox) {
+        setValue(1)
+      }
+  
+      if (state?.isInbox) {
+        setValue(0)
+      }
     }
 
-    if (!state?.isInbox) {
-      setValue(1)
-    }
-
-    if (state?.isInbox) {
-      setValue(0)
-    }
+   
   }, [state])
 
   const handleCloseAlert = () => {
