@@ -4,6 +4,13 @@ import { useLocation } from 'react-router'
 import instance from '../services/fetchApi';
 import { useDispatch, useSelector } from 'react-redux';
 import { setUsersChats } from '../features/MessagesSlice';
+import { Done, DoneAll } from '@mui/icons-material';
+import { init } from 'emoji-mart'
+import emojiData from '@emoji-mart/data'
+import Picker from '@emoji-mart/react'
+import moment from 'moment';
+
+init({ emojiData })
 
 const UserToUserChat = ({socket}) => {
   const location = useLocation()
@@ -14,6 +21,7 @@ const UserToUserChat = ({socket}) => {
   const { userschats } = useSelector(state => state.message)
   const chatDivRef = useRef(null);
   const [disabled, setDisabled] = useState(false)
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [conversationId, setConversationId] = useState(location?.state?.conversationId);
   const dispatch = useDispatch()
 
@@ -50,7 +58,8 @@ const UserToUserChat = ({socket}) => {
         return {
           user: allUsers.find((b) => b.id === a.user_id)?.name,
           message: a.message,
-          userId: a.userId
+          userId: a.user_id,
+          createdAt: a.created_at
         }
       })
       setChat(newArr);
@@ -67,7 +76,8 @@ const UserToUserChat = ({socket}) => {
         let newObj = {
           user: allUsers.find((a) => a.id === data.userId)?.name,
           message: data.message,
-          userId: data.userId
+          userId: data.userId,
+          createdAt: data.createdAt
         }
         setChat(prev => [...prev, newObj]);
       } else {
@@ -86,29 +96,41 @@ const UserToUserChat = ({socket}) => {
   };
 
   const handleSend = async () => {
+    setChat((prevChat) => [...prevChat, { user: name, message, sending: true }]);
+    setMessage('');
+  
+    scrollToBottom();
+  
     let body = {
       message,
       conversation_id: parseInt(location?.state?.conversationId),
       user_id: id,
       recipient_id: location?.state?.recipientId
-    }
-    await instance.post(`/users-chats`, body)
-    .then((res) => {
-      let userDetails = allUsers.find((a) => a.id === res.data.chat.user_id)
-
-      socket.emit("new_users_chat_message", {
-        userId: res.data.chat.user_id, 
-        recipientId: res.data.chat.recipient_id, 
-        message: res.data.chat.message, 
-        conversation_id: res.data.chat.conversation_id
-      })
-
-      setChat([...chat, { user: userDetails.name, message: res.data.chat.message }]);
-      setMessage('');
+    };
   
-      scrollToBottom()
-    })
-  }
+    try {
+      const res = await instance.post(`/users-chats`, body);
+  
+      socket.emit("new_users_chat_message", {
+        userId: res.data.chat.user_id,
+        recipientId: res.data.chat.recipient_id,
+        message: res.data.chat.message,
+        conversation_id: res.data.chat.conversation_id,
+        createdAt: res.data.chat.created_at
+      });
+
+      setChat((prevChat) => {
+        const updatedChat = [...prevChat];
+        updatedChat[prevChat.length - 1].sending = false;
+        updatedChat[prevChat.length - 1].createdAt = res.data.chat.created_at;
+        return updatedChat;
+      });
+
+    } catch (error) {
+      console.error(error);
+    }
+  };
+  
 
   useEffect(() => {
      if (location?.state?.resumeChat) {
@@ -117,16 +139,6 @@ const UserToUserChat = ({socket}) => {
       setDisabled(false)
      }
   }, [location?.state?.resumeChat])
-
-//   const renderName = (user) => {
-//     let userRole = allUsers.find((a) => a.id === user.userId)?.role
-
-//     if (userRole === "admin" || userRole === "super admin") {
-//       return <Typography variant="h7">{`${user.user} - Admin`}</Typography> 
-//     } else {
-//      return <Typography variant="h7">{`${user.user}`}</Typography> 
-//     }
-//  }
 
 const usersTypingSet = new Set(usersTyping);
 
@@ -171,103 +183,179 @@ useEffect(() => {
 
   };
 
+  const insertEmoji = (emoji) => {
+    setMessage(message + emoji.native);
+  };
+
+  const renderName = (username) => {
+    if (username === name) {
+      return "Me"
+    } else {
+      return username
+    }
+  };
+
   return (
-    <div
-      style={{
-        width: '500px',
-        maxHeight: '600px', // Set maximum height
-        overflowY: 'auto', // Enable vertical scrollbar when the content exceeds maxHeight
-        zIndex: 1000,
-        backgroundColor: 'white',
-        boxShadow: '0px 0px 5px 0px rgba(0,0,0,0.5)',
-      }}
-      ref={chatDivRef}
-    > 
-      <Paper elevation={3} style={{ padding: '16px', minHeight: '400px' }}>
-        <div 
-          style={{
-            width: '100%',
-            maxWidth: 400,
-            margin: '0 auto',
-            padding: "10px",
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'flex-end', // Align messages to the right
-          }}
-        >
-          <Typography style={{margin: "auto"}} variant="h6">{location?.state?.conversationString}</Typography> 
-          {chat.map((message, index) => (
-            <div  style={{alignSelf: message.user === name ? "flex-end" : "flex-start"}}>
-              {/* {
-                renderName(message)
-              } */}
-              <Typography variant="h7">{`${message.user}`}</Typography> 
-              <Paper
-                key={index}
-                style={message.user === name  ? myMessage : otherUsersMessage}
-                elevation={3}
-              >
-        
-                <Typography variant="body1">{message.message}</Typography>
+    <>
+      <div
+        style={{
+          width: '500px',
+          maxHeight: '600px', // Set maximum height
+          overflowY: 'auto', // Enable vertical scrollbar when the content exceeds maxHeight
+          zIndex: 1000,
+          backgroundColor: 'white',
+          boxShadow: '0px 0px 5px 0px rgba(0,0,0,0.5)',
+        }}
+        ref={chatDivRef}
+      > 
+        <Paper elevation={3} style={{ padding: '16px', minHeight: '400px' }}>
+          <div 
+            style={{
+              width: '100%',
+              maxWidth: 400,
+              margin: '0 auto',
+              padding: "10px",
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-end', // Align messages to the right
+            }}
+          >
+            <Typography style={{margin: "auto"}} variant="h6">{location?.state?.conversationString}</Typography> 
+            {chat.map((message, index) => (
+              <div  style={{alignSelf: message.user === name ? "flex-end" : "flex-start"}}>
+                <Typography variant="h7">
+                  { renderName(message.user) }
+                </Typography> 
+                <p style={{fontSize: "12px", marginTop: "-4px", marginBottom: "-4px"}}>{`${moment(message.createdAt).format("MMMM Do YYYY, h:mm a")}`}</p>
 
-              </Paper>
-            </div>
-          ))}
-        </div>
+                <div style={{display: "flex", justifyContent: "space-between"}}>
+                  <Paper
+                    key={index}
+                    style={message.user === name  ? myMessage : otherUsersMessage}
+                    elevation={3}
+                  >
+            
+                    {/* <Typography variant="body1">{message.message}</Typography> */}
+                    <Typography variant="body1">
+                    {message.message?.split(' ').map((word, index) => (
+                      <React.Fragment key={index}>
+                        {word.startsWith(':') && word.endsWith(':') ? (
+                          <em-emoji shortcodes={word} size={16} ></em-emoji>
+                        ) : (
+                          word + ' '
+                        )}
+                      </React.Fragment>
+                    ))}
+                    </Typography>
 
-        <div style={{ display: 'flex', marginTop: '16px', marginBottom: "10px" }}>
-          <TextField
-            label="Type a message"
-            variant="outlined"
-            fullWidth
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyUp={handleTyping}
-            onBlur={handleStoppedTyping}
-          />
-
-          <div>
-            {usersTyping?.length ? usersTyping.map((user) => (
-              <p key={user}>{user} is typing...</p>
-            )) : null}
+                  </Paper>
+                  
+                  {
+                    message.user === name ? (
+                      <span style={{color:  message.sending ? null : "blue"}} >
+                        {
+                          message.sending ? (
+                            <Done />
+                          ) : (
+                            <DoneAll />
+                          )
+                        }
+                      
+                      </span>
+                    ) : null
+                  }
+                
+                </div> 
+              </div>
+            ))}
           </div>
 
-          {
-            disabled ? (
-              <Button 
-                variant="contained" 
-                color="primary" 
-                onClick={()=> {
-                  setDisabled(false)
-                  socket.emit("users_chat_request_continue", {
-                    userId: id, 
-                    username: name, 
-                    conversationId: location?.state?.conversationId, 
-                    recipientId: location?.state?.recipientId,
-                    conversationString: location?.state?.conversationString
-                  })
-                }} 
-                style={{ marginLeft: '8px', borderRadius: "30px",  }} 
-                // disabled={disableButton}
-              >
-                Resume chat
+          <div style={{ display: 'flex', marginTop: '16px', marginBottom: "10px" }}>
+            <TextField
+              label="Type a message"
+              variant="outlined"
+              fullWidth
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyUp={handleTyping}
+              onBlur={handleStoppedTyping}
+            />
+
+            <div
+              style={{
+                position: 'relative',
+                zIndex: 1000,
+                cursor: 'pointer',
+              }}
+            >
+              <Button onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
+                😄
               </Button>
-            ) : null
-          }
+            </div>
+
+            <div>
+              {usersTyping?.length ? usersTyping.map((user) => (
+                <p key={user}>{user} is typing...</p>
+              )) : null}
+            </div>
+
+            {
+              disabled ? (
+                <Button 
+                  variant="contained" 
+                  color="primary" 
+                  onClick={()=> {
+                    setDisabled(false)
+                    socket.emit("users_chat_request_continue", {
+                      userId: id, 
+                      username: name, 
+                      conversationId: location?.state?.conversationId, 
+                      recipientId: location?.state?.recipientId,
+                      conversationString: location?.state?.conversationString
+                    })
+                  }} 
+                  style={{ marginLeft: '8px', borderRadius: "30px",  }} 
+                  // disabled={disableButton}
+                >
+                  Resume chat
+                </Button>
+              ) : null
+            }
 
 
-          <Button 
-            variant="contained" 
-            color="primary" 
-            onClick={handleSend} 
-            style={{ marginLeft: '8px', borderRadius: "30px",  }} 
-            disabled={disabled}
-          >
-            Send
-          </Button>
-        </div>
-      </Paper>
-    </div>
+            <Button 
+              variant="contained" 
+              color="primary" 
+              onClick={handleSend} 
+              style={{ marginLeft: '8px', borderRadius: "30px",  }} 
+              disabled={disabled}
+            >
+              Send
+            </Button>
+          </div>
+        </Paper>
+      </div>
+
+      {
+        showEmojiPicker && (
+          <div
+            style={{
+              position: 'absolute',
+              bottom: '120px', // 20px above the button
+              // right: '20px',
+              // width: '500px',
+              maxHeight: '600px', // Set maximum height
+              overflowY: 'auto', // Enable vertical scrollbar when the content exceeds maxHeight
+              zIndex: 1000,
+              backgroundColor: 'white',
+              boxShadow: '0px 0px 5px 0px rgba(0,0,0,0.5)',
+            }}
+          > 
+            <Picker data={emojiData} onEmojiSelect={insertEmoji} />
+          </div>
+        )
+      }
+    </>
   )
 }
 

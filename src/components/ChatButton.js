@@ -49,6 +49,7 @@ function ChatButton({socket}) {
   }
 
   const addConversation = async () => {
+    setDisableButton(false)
     dispatch(setNewChat({newChat: true}))
     let randomId = generateRandomId()
     // setConversationId(randomId)

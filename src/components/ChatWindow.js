@@ -1,9 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { Container, Paper, TextField, Button, Typography, List, ListItem, ListItemText, Divider, Box, CircularProgress } from '@mui/material';
+import { Paper, TextField, Button, Typography,  Box, CircularProgress } from '@mui/material';
 import { useDispatch, useSelector } from 'react-redux';
 import instance from '../services/fetchApi';
 import { useParams } from 'react-router';
 import { setNewChat } from '../features/MessagesSlice';
+import { Done, DoneAll } from '@mui/icons-material';
+import { init } from 'emoji-mart'
+import emojiData from '@emoji-mart/data'
+import Picker from '@emoji-mart/react'
+import moment from 'moment';
+
+init({ emojiData })
 
 const ChatWindow = ({
   scrollToBottom, 
@@ -21,10 +28,9 @@ const ChatWindow = ({
 
   const [message, setMessage] = useState('');
   const { id, name,  role, allUsers } = useSelector(state => state.user) 
-  const [chat, setChat] = useState([
-    { user: 'Admin', message: 'Hello! How can I assist you?' }
-  ]);
+  const [chat, setChat] = useState([]);
   const [usersTyping, setUsersTyping] = useState([]);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const { adminchats, newChat } = useSelector(state => state.message) 
   const params = useParams()
   const dispatch = useDispatch()
@@ -49,18 +55,26 @@ const ChatWindow = ({
         let newArr = adminchats.map((a) => {
           return {
             user: allUsers.find((b) => b.id === a.user_id)?.name,
-            message: a.message
+            message: a.message,
+            userId: a.user_id,
+            createdAt: a.created_at
           }
         })
         setChat(newArr);
       }
     } else {
-      setChat([{ user: 'Admin', message: 'Hello! How can I assist you?' }])
+      // setChat([{ user: 'Admin', message: 'Hello! How can I assist you?' }])
+      setChat([])
     }
   
   }, [adminchats, newChat])
 
   const handleSend = async () => {
+    setChat((prevChat) => [...prevChat, { user: name, message, sending: true, user_id: id }]);
+    setMessage('');
+  
+    scrollToBottom();
+
     let body = {
       message,
       conversation_id: parseInt(conversationId),
@@ -68,17 +82,21 @@ const ChatWindow = ({
     }
     await instance.post(`/adminchats`, body)
     .then((res) => {
-      let userDetails = allUsers.find((a) => a.id === res.data.chat.user_id)
 
-      socket.emit("new_chat_message", {userId: res.data.chat.user_id, recipientId: recipientId, message: res.data.chat.message, conversation_id: res.data.chat.conversation_id})
+      socket.emit("new_chat_message", {
+        userId: res.data.chat.user_id, 
+        recipientId: recipientId, 
+        message: res.data.chat.message, 
+        conversation_id: res.data.chat.conversation_id,
+        createdAt: res.data.chat.created_at
+      })
 
-
-      let username = userDetails ? userDetails.name : "Admin"
-
-      setChat([...chat, { user: username, message: res.data.chat.message }]);
-      setMessage('');
-  
-      scrollToBottom()
+      setChat((prevChat) => {
+        const updatedChat = [...prevChat];
+        updatedChat[prevChat.length - 1].sending = false;
+        updatedChat[prevChat.length - 1].createdAt = res.data.chat.created_at;
+        return updatedChat;
+      });
     })
 
   };
@@ -93,7 +111,8 @@ const ChatWindow = ({
             let newObj = {
               user: allUsers.find((a) => a.id === data.userId)?.name,
               message: data.message,
-              userId: data.userId
+              userId: data.userId,
+              createdAt: data.createdAt
             }
             setChat(prev => [...prev, newObj]);
           }
@@ -108,10 +127,20 @@ const ChatWindow = ({
   const renderName = (user) => {
      let userRole = allUsers.find((a) => a.id === user.userId)?.role
 
-     if (userRole === "admin" || userRole === "super admin") {
-       return <Typography variant="h7">{`${user.user} - Admin`}</Typography> 
+    //  if (userRole === "admin" || userRole === "super admin") {
+    //    return <Typography variant="h7">{`${user.user} - Admin`}</Typography> 
+    //  } else {
+    //   return <Typography variant="h7">{`${user.user}`}</Typography> 
+    //  }
+
+     if (user.user === name) {
+       return <Typography variant="h7">Me</Typography> 
      } else {
-      return <Typography variant="h7">{`${user.user}`}</Typography> 
+      if (userRole === "admin" || userRole === "super admin") {
+        return <Typography variant="h7">{`${user.user} - Admin`}</Typography> 
+      } else {
+        return <Typography variant="h7">{`${user.user}`}</Typography> 
+      }
      }
   }
 
@@ -123,7 +152,7 @@ const ChatWindow = ({
   const usersTypingSet = new Set(usersTyping);
 
   useEffect(() => {
-    // Listen for 'user typing' events from the server
+    // Listen for 'typing_message' events from the server
     socket.on('typing_message', (data) => {
       if (data.userId !== id && data.conversationString === conversationString) {
         if (!usersTypingSet.has(data.name)) {
@@ -135,7 +164,7 @@ const ChatWindow = ({
 
     });
   
-    // Listen for 'user stopped typing' events from the server
+    // Listen for 'stopped_typing_message' events from the server
     socket.on('stopped_typing_message', (data) => {
       if (data.userId !== id && data.conversationString === conversationString) {
         usersTypingSet.delete(allUsers.find((a) => a.id === data.userId)?.name);
@@ -160,8 +189,13 @@ const ChatWindow = ({
   
   };
 
+  const insertEmoji = (emoji) => {
+    setMessage(message + emoji.native);
+  };
+
   return (
-      <Paper elevation={3} style={{ padding: '16px', minHeight: '400px' }}>
+    <>
+      <Paper elevation={3} style={{ padding: '16px', minHeight: '600px' }}>
         {
           loading ? (
             <Box sx={{ display: 'flex', marginLeft: "50%" }}>
@@ -184,19 +218,45 @@ const ChatWindow = ({
               >
                 <Typography style={{margin: "auto"}} variant="h6">{conversationString}</Typography> 
                 {chat.map((message, index) => (
-                  <div  style={{alignSelf: message.user === name || (message.user === "Admin" && role === "super admin") ? "flex-end" : "flex-start"}}>
+                  <div  style={{alignSelf: message.user === name || (message.user === "Admin" && (role === "super admin" || role === "admin")) ? "flex-end" : "flex-start"}}>
                     {
                       renderName(message)
                     }
-                    <Paper
-                      key={index}
-                      style={message.user === name || (message.user === "Admin" && role === "super admin")  ? myMessage : adminMessage}
-                      elevation={3}
-                    >
-              
-                      <Typography variant="body1">{message.message}</Typography>
 
-                    </Paper>
+                    <p style={{fontSize: "12px", marginTop: "-4px", marginBottom: "-4px"}}>{`${moment(message.createdAt).format("MMMM Do YYYY, h:mm a")}`}</p>
+                    
+                    {/* {
+                      message.user === "Admin" ? null : (
+                        <p style={{fontSize: "12px", marginTop: "-4px", marginBottom: "-4px"}}>{`${moment(message.createdAt).format("MMMM Do YYYY, h:mm a")}`}</p>
+                      )
+                    } */}
+                   
+                    <div style={{display: "flex", justifyContent: "space-between"}}>
+                      <Paper
+                        key={index}
+                        style={message.user === name || (message.user === "Admin" && (role === "super admin" || role === "admin"))  ? myMessage : adminMessage}
+                        elevation={3}
+                      >
+                
+                        <Typography variant="body1">{message.message}</Typography>
+
+                      </Paper>
+
+                      {
+                        message.user === name || (message.user === "Admin" && (role === "super admin" || role === "admin")) ? (
+                          <span  style={{color:  message.sending ? null : "blue"}} >
+                            {
+                              message.sending ? (
+                                <Done />
+                              ) : (
+                                <DoneAll />
+                              )
+                            }
+                          
+                          </span>
+                        ) : null
+                      }
+                    </div>
                   </div>
                 ))}
               </div>
@@ -211,6 +271,18 @@ const ChatWindow = ({
                   onKeyUp={handleTyping}
                   onBlur={handleStoppedTyping}
                 />
+
+                <div
+                  style={{
+                    position: 'relative',
+                    zIndex: 1000,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <Button onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
+                    😄
+                  </Button>
+                </div>
 
                 <div>
                   {usersTyping?.length && usersTyping.map((user) => (
@@ -265,6 +337,27 @@ const ChatWindow = ({
         }
       
       </Paper>
+
+      {
+        showEmojiPicker && (
+          <div
+            style={{
+              position: 'absolute',
+              top: "300px",
+              // right: '20px',
+              // width: '500px',
+              maxHeight: '600px', // Set maximum height
+              overflowY: 'auto', // Enable vertical scrollbar when the content exceeds maxHeight
+              zIndex: 1000,
+              backgroundColor: 'white',
+              boxShadow: '0px 0px 5px 0px rgba(0,0,0,0.5)',
+            }}
+          > 
+            <Picker data={emojiData} onEmojiSelect={insertEmoji} />
+          </div>
+        )
+      }
+    </>
   );
 };
 
