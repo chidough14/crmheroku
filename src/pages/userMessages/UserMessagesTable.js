@@ -304,7 +304,10 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
             borderRadius: "50%",
             cursor: "pointer",
           }}
-          onClick={() => navigate(`/profile/${allUsers?.find((a)=> a.id === row.sender_id)?.id}`)}
+          onClick={(e) => {
+            e.stopPropagation()
+            navigate(`/profile/${allUsers?.find((a)=> a.id === row.sender_id)?.id}`)
+          }}
         >
           <p 
             style={{
@@ -335,7 +338,10 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
             src={image_src}  
             alt='profile_pic' 
             style={{borderRadius: "50%", cursor: "pointer"}} 
-            onClick={() => navigate(`/profile/${allUsers?.find((a)=> a.id === row.sender_id)?.id}`)}
+            onClick={(e) => {
+              e.stopPropagation()
+              navigate(`/profile/${allUsers?.find((a)=> a.id === row.sender_id)?.id}`)
+            }}
           />
         )
       }
@@ -618,7 +624,6 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
                           {
                             isInbox &&
                             <TableCell style={{ width: 160 }} >
-                              {/* {allUsers?.find((a) => a.id === row.sender_id)?.name} */}
                               <Tooltip title={allUsers?.find((a)=> a.id === row.sender_id)?.name}>
                                 {getImage(row)}
                               </Tooltip>
