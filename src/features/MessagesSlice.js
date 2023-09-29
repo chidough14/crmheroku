@@ -171,6 +171,12 @@ export const MessageSlice = createSlice({
     setUsersConversations: (state, action) => {
       state.users_conversations = action.payload.users_conversations
     },
+    deleteUsersConversation: (state, action) => {
+      state.users_conversations.data = state.users_conversations.data.filter((a) => a.id !== action.payload.conversationId)
+    },
+    bulkDeleteUsersConversation: (state, action) => {
+      state.users_conversations.data = state.users_conversations.data.filter((a) => !action.payload.conversationIds.includes(a.id))
+    },
   },
 })
 
@@ -212,7 +218,9 @@ export const {
   setUsersChatsRequests,
   removeUsersChatRequest,
   setUsersChats,
-  setUsersConversations
+  setUsersConversations,
+  deleteUsersConversation,
+  bulkDeleteUsersConversation
 } = MessageSlice.actions
 
 export default MessageSlice.reducer
