@@ -1,31 +1,42 @@
-import { ContentPasteOff } from '@mui/icons-material'
-import { Pagination, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material'
+import { ContentPasteOff, DeleteOutline } from '@mui/icons-material'
+import { 
+  Button, 
+  Checkbox, 
+  Dialog, 
+  DialogActions, 
+  DialogContent, 
+  DialogContentText, 
+  DialogTitle, 
+  Pagination, 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableContainer, 
+  TableHead, 
+  TableRow, 
+  Tooltip, 
+  Typography 
+} from '@mui/material'
 import Paper from '@mui/material/Paper';
 import moment from 'moment';
-import React, { useEffect } from 'react'
-import { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
-import { setPage, setUsersConversations } from '../../features/MessagesSlice';
+import { bulkDeleteUsersConversation, deleteUsersConversation, setPage } from '../../features/MessagesSlice';
 import instance from '../../services/fetchApi';
 import { useNavigate } from 'react-router';
+import { arraysHaveSameContents } from '../../services/checkers';
 
-const ChatMessages = () => {
-
-  const [loading, setLoading] = useState(false)
+const ChatMessages = ({getConversations, loading}) => {
   const { users_conversations, page } = useSelector(state => state.message)
   const { allUsers } = useSelector(state => state.user)
   const dispatch = useDispatch()
   const navigate = useNavigate()
-
-  const getConversations = async () => {
-    setLoading(true)
-    await instance.get(`conversations/users`)
-    .then((res) => {
-       dispatch(setUsersConversations({users_conversations: res.data.conversations}))
-       setLoading(false)
-
-    })
-  }
+  const [showTableActions, setShowTableActions] = useState(false)
+  const [messageIds, setMessageIds] = useState([]);
+  const [messageId, setMessageId] = useState();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [showDeleteNotification, setShowDeleteNotification] = useState(false)
+  const [rowObj, setRowObj] = useState();
 
   useEffect(() => {
     getConversations()
@@ -35,6 +46,29 @@ const ChatMessages = () => {
     dispatch(setPage({page: newPage}))
   };
 
+  const deleteConversation = async () => {
+    setShowDeleteNotification(true)
+
+    if (rowObj) {
+      await instance.delete(`conversations/${rowObj.id}`)
+      .then((res) => {
+        dispatch(deleteUsersConversation({conversationId: rowObj.id}))
+        setShowDeleteDialog(false)
+      })
+    } else {
+      await instance.post(`bulk-delete-conversations`, {messageIds})
+      .then((res) => {
+        dispatch(bulkDeleteUsersConversation({conversationIds: messageIds.map((a) => a.id)}))
+        setShowDeleteDialog(false)
+      })
+    }
+
+    setRowObj(undefined)
+    setMessageIds([])
+    setShowDeleteNotification(false)
+
+  }
+
   return (
 
     
@@ -43,15 +77,14 @@ const ChatMessages = () => {
           <div style={{display: "flex"}}>
             <Typography variant='h7'><b>Chat Messages</b></Typography>
             
-            {/* {
+            {
               messageIds.length ? (
                 <div style={{marginLeft: "30px"}}>
           
                   <Tooltip title="Delete">
-                    <DeleteOutlined
+                    <DeleteOutline
                       style={{cursor: "pointer", marginLeft: "20px", marginBottom: "-5px"}}
                       onClick={()=> {
-                        // bulkDeleteDrafts()
                         setShowDeleteDialog(true)
                       }}
                     />
@@ -62,7 +95,7 @@ const ChatMessages = () => {
                   </span>
                 </div>
               ) : null
-            } */}
+            }
 
            
           </div>
@@ -72,15 +105,14 @@ const ChatMessages = () => {
               <TableHead>
                   <TableRow>
                     <TableCell>
-                      {/* <Checkbox
-                        checked={arraysHaveSameContents(drafts?.data?.map((a) => a.id), messageIds.map((a) => a.id))}
-                        indeterminate={messageIds.length > 0 && messageIds.length < drafts?.data?.length}
+                      <Checkbox
+                        checked={arraysHaveSameContents(users_conversations?.data?.map((a) => a.id), messageIds.map((a) => a.id))}
+                        indeterminate={messageIds.length > 0 && messageIds.length < users_conversations?.data?.length}
                         onChange={(e,f) => {
                           if (f) {
-                            let ids = drafts?.data?.map((a) => {
+                            let ids = users_conversations?.data?.map((a) => {
                               return {
-                                id: a.id,
-                                read: a.isRead
+                                id: a.id
                               }
                             })
         
@@ -90,9 +122,8 @@ const ChatMessages = () => {
                           }
                         }}
                         inputProps={{ 'aria-label': 'controlled' }}
-                      /> */}
+                      />
                     </TableCell>
-                    {/* <TableCell >Message</TableCell> */}
                     <TableCell >Recipient</TableCell>
                     <TableCell >String</TableCell>
                     <TableCell >Date Sent</TableCell>
@@ -120,13 +151,13 @@ const ChatMessages = () => {
                             <TableRow
                               key={i} 
                               sx={{cursor: "pointer"}} 
-                              // onMouseEnter={() => {
-                              //   setMessageId(row.id)
-                              //   setShowTableActions(true)
-                              // }}
-                              // onMouseLeave={()=> {
-                              //   setShowTableActions(false)
-                              // }}
+                              onMouseEnter={() => {
+                                setMessageId(row.id)
+                                setShowTableActions(true)
+                              }}
+                              onMouseLeave={()=> {
+                                setShowTableActions(false)
+                              }}
                               onClick={()=> {
                                 navigate(`/users-conversations/${row.id}`, { 
                                   state: {
@@ -134,6 +165,7 @@ const ChatMessages = () => {
                                     conversationId: row.id ,
                                     recipientId: row.recipient_id,
                                     userId: row.user_id,
+                                    creator: row.user_id,
                                     resumeChat: true 
                                   }
                                })
@@ -141,12 +173,12 @@ const ChatMessages = () => {
                               }}
                             >
                               <TableCell component="th" scope="row">
-                                {/* <Checkbox
+                                <Checkbox
                                   checked={messageIds.map((a) => a.id).includes(row.id)}
                                   onChange={(e,f) => {
                                   
                                     if(f) {
-                                      setMessageIds([...messageIds, {id: row.id, read: row.isRead}])
+                                      setMessageIds([...messageIds, {id: row.id}])
                                     } else {
                                       setMessageIds(messageIds.filter((b) => b.id !== row.id))
                                     }
@@ -155,7 +187,7 @@ const ChatMessages = () => {
                                       e.stopPropagation()
                                   }}
                                   inputProps={{ 'aria-label': 'controlled' }}
-                                /> */}
+                                />
                               </TableCell>
 
                               <TableCell component="th" scope="row">
@@ -166,30 +198,16 @@ const ChatMessages = () => {
                                 {row.conversation_string}
                               </TableCell>
 
-                              {/* {
-                                renderMessageColumn(row)
-                              } */}
-
                             
                               <TableCell style={{ width: 160 }} >
                                 {moment(row.created_at).format("MMMM Do YYYY")}
                               </TableCell>
 
-                              {/* <TableCell>
+                              <TableCell>
                                 <div style={{display: "flex", justifyContent: "space-between"}}>
                                 {
                                   (showTableActions && messageId === row.id) && (
                                     <>
-                                      <Tooltip title="Edit">
-                                        <EditOutlined
-                                          style={{cursor: "pointer"}}
-                                          onClick={(e)=> {
-                                            e.stopPropagation()
-                                            setRowObj(row)
-                                            setEditMode(true)
-                                          }}
-                                        />
-                                      </Tooltip>
 
                                       <Tooltip title="Delete">
                                         <DeleteOutline
@@ -206,7 +224,7 @@ const ChatMessages = () => {
                                   )
                                 }
                                 </div>
-                              </TableCell> */}
+                              </TableCell>
                             </TableRow>
                           ))
                         }
@@ -218,7 +236,7 @@ const ChatMessages = () => {
             </Table>
           </TableContainer>
 
-          {/* <Dialog
+          <Dialog
             open={showDeleteDialog}
             onClose={() => {
               setShowDeleteDialog(false)
@@ -232,7 +250,7 @@ const ChatMessages = () => {
             </DialogTitle>
             <DialogContent>
               <DialogContentText id="alert-dialog-description">
-                You are about to delete these messages. Confirm...
+                You are about to delete these chat message(s). Confirm...
               </DialogContentText>
 
               <DialogContentText id="alert-dialog-description" sx={{textAlign: "center", color: "red"}}>
@@ -253,14 +271,14 @@ const ChatMessages = () => {
 
               <Button 
                 onClick={() => {
-                  bulkDeleteDrafts()
+                  deleteConversation()
                 }} 
                 autoFocus
               >
                 Agree
               </Button>
             </DialogActions>
-          </Dialog> */}
+          </Dialog>
 
           <div style={{marginTop: "20px"}}>
             <Pagination

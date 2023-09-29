@@ -49,6 +49,25 @@ const ChatWindow = ({
     padding: "10px"
   }
 
+  // useEffect(() => {
+  //   if (!newChat) {
+  //     if (adminchats.length) {
+  //       let newArr = adminchats.map((a) => {
+  //         return {
+  //           user: allUsers.find((b) => b.id === a.user_id)?.name,
+  //           message: a.message,
+  //           userId: a.user_id,
+  //           createdAt: a.created_at
+  //         }
+  //       })
+  //       setChat(newArr);
+  //     }
+  //   } else {
+  //     setChat([])
+  //   }
+  
+  // }, [adminchats, newChat])
+
   useEffect(() => {
     if (!newChat) {
       if (adminchats.length) {
@@ -58,16 +77,60 @@ const ChatWindow = ({
             message: a.message,
             userId: a.user_id,
             createdAt: a.created_at
-          }
-        })
+          };
+        });
         setChat(newArr);
+      } else {
+        setChat([]);
       }
     } else {
-      // setChat([{ user: 'Admin', message: 'Hello! How can I assist you?' }])
-      setChat([])
+      setChat([]);
     }
   
-  }, [adminchats, newChat])
+    if (conversationId) {
+      socket.on('new_chat_message', (data) => {
+        if (data.conversation_id === parseInt(conversationId)) {
+          if (data.userId === id) {
+            // Handle the case when the message is sent by the current user
+          } else {
+            let newObj = {
+              user: allUsers.find((a) => a.id === data.userId)?.name,
+              message: data.message,
+              userId: data.userId,
+              createdAt: data.createdAt
+            };
+            setChat((prev) => [...prev, newObj]);
+          }
+        } else {
+          console.log('null');
+        }
+      });
+    }
+  
+    socket.on('typing_message', (data) => {
+      if (data.userId !== id && data.conversationString === conversationString) {
+        if (!usersTypingSet.has(data.name)) {
+          usersTypingSet.add(allUsers.find((a) => a.id === data.userId)?.name);
+          setUsersTyping(Array.from(usersTypingSet));
+        }
+      }
+    });
+  
+    socket.on('stopped_typing_message', (data) => {
+      if (data.userId !== id && data.conversationString === conversationString) {
+        usersTypingSet.delete(allUsers.find((a) => a.id === data.userId)?.name);
+        setUsersTyping(Array.from(usersTypingSet));
+      }
+    });
+  
+    // Clean up event listeners when the component unmounts
+    return () => {
+      socket.off('new_chat_message');
+      socket.off('typing_message');
+      socket.off('stopped_typing_message');
+    };
+  }, [adminchats, newChat, socket, conversationId, id, allUsers, conversationString, usersTypingSet]);
+  
 
   const handleSend = async () => {
     setChat((prevChat) => [...prevChat, { user: name, message, sending: true, user_id: id }]);
@@ -101,37 +164,31 @@ const ChatWindow = ({
 
   };
 
-  useEffect(() => {
-    if (conversationId) {
-      socket.on('new_chat_message', (data) => {
-        if (data.conversation_id === parseInt(conversationId)) {
-          if (data.userId === id) {
+  // useEffect(() => {
+  //   if (conversationId) {
+  //     socket.on('new_chat_message', (data) => {
+  //       if (data.conversation_id === parseInt(conversationId)) {
+  //         if (data.userId === id) {
 
-          } else {
-            let newObj = {
-              user: allUsers.find((a) => a.id === data.userId)?.name,
-              message: data.message,
-              userId: data.userId,
-              createdAt: data.createdAt
-            }
-            setChat(prev => [...prev, newObj]);
-          }
-        } else {
-          console.log("null");
-        }
-      });
-    }
+  //         } else {
+  //           let newObj = {
+  //             user: allUsers.find((a) => a.id === data.userId)?.name,
+  //             message: data.message,
+  //             userId: data.userId,
+  //             createdAt: data.createdAt
+  //           }
+  //           setChat(prev => [...prev, newObj]);
+  //         }
+  //       } else {
+  //         console.log("null");
+  //       }
+  //     });
+  //   }
 
-  }, [socket, conversationId])
+  // }, [socket, conversationId])
 
   const renderName = (user) => {
      let userRole = allUsers.find((a) => a.id === user.userId)?.role
-
-    //  if (userRole === "admin" || userRole === "super admin") {
-    //    return <Typography variant="h7">{`${user.user} - Admin`}</Typography> 
-    //  } else {
-    //   return <Typography variant="h7">{`${user.user}`}</Typography> 
-    //  }
 
      if (user.user === name) {
        return <Typography variant="h7">Me</Typography> 
@@ -151,34 +208,32 @@ const ChatWindow = ({
 
   const usersTypingSet = new Set(usersTyping);
 
-  useEffect(() => {
-    // Listen for 'typing_message' events from the server
-    socket.on('typing_message', (data) => {
-      if (data.userId !== id && data.conversationString === conversationString) {
-        if (!usersTypingSet.has(data.name)) {
-          usersTypingSet.add(allUsers.find((a) => a.id === data.userId)?.name);
-          // Convert the Set back to an array and update the state
-          setUsersTyping(Array.from(usersTypingSet));
-        }
-      }
+  // useEffect(() => {
+  //   socket.on('typing_message', (data) => {
+  //     if (data.userId !== id && data.conversationString === conversationString) {
+  //       if (!usersTypingSet.has(data.name)) {
+  //         usersTypingSet.add(allUsers.find((a) => a.id === data.userId)?.name);
+  //         // Convert the Set back to an array and update the state
+  //         setUsersTyping(Array.from(usersTypingSet));
+  //       }
+  //     }
 
-    });
+  //   });
   
-    // Listen for 'stopped_typing_message' events from the server
-    socket.on('stopped_typing_message', (data) => {
-      if (data.userId !== id && data.conversationString === conversationString) {
-        usersTypingSet.delete(allUsers.find((a) => a.id === data.userId)?.name);
-        // Convert the Set back to an array and update the state
-        setUsersTyping(Array.from(usersTypingSet));
-      }
-    });
+  //   socket.on('stopped_typing_message', (data) => {
+  //     if (data.userId !== id && data.conversationString === conversationString) {
+  //       usersTypingSet.delete(allUsers.find((a) => a.id === data.userId)?.name);
+  //       // Convert the Set back to an array and update the state
+  //       setUsersTyping(Array.from(usersTypingSet));
+  //     }
+  //   });
   
-    // Clean up event listeners when the component unmounts
-    return () => {
-      socket.off('typing_message');
-      socket.off('stopped_typing_message');
-    };
-  }, [conversationString]);
+  //   // Clean up event listeners when the component unmounts
+  //   return () => {
+  //     socket.off('typing_message');
+  //     socket.off('stopped_typing_message');
+  //   };
+  // }, [conversationString]);
   
   const handleTyping = () => {
     socket.emit("typing_message", {userId: id, recipientId: recipientId, conversation_id: conversationId, conversationString})
@@ -224,12 +279,6 @@ const ChatWindow = ({
                     }
 
                     <p style={{fontSize: "12px", marginTop: "-4px", marginBottom: "-4px"}}>{`${moment(message.createdAt).format("MMMM Do YYYY, h:mm a")}`}</p>
-                    
-                    {/* {
-                      message.user === "Admin" ? null : (
-                        <p style={{fontSize: "12px", marginTop: "-4px", marginBottom: "-4px"}}>{`${moment(message.createdAt).format("MMMM Do YYYY, h:mm a")}`}</p>
-                      )
-                    } */}
                    
                     <div style={{display: "flex", justifyContent: "space-between"}}>
                       <Paper
