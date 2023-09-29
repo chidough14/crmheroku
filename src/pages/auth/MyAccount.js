@@ -434,7 +434,8 @@ const MyAccount = ({ socket }) => {
             conversationString: res.data.conversation.conversation_string, 
             conversationId: res.data.conversation.id,
             recipientId: params?.id ,
-            resumeChat: false 
+            resumeChat: false,
+            creator: id 
           }
        })
 

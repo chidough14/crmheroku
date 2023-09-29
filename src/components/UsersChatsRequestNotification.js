@@ -93,7 +93,8 @@ const UsersChatsRequestNotification = () => {
                     conversationString: a.conversationString, 
                     conversationId: a.conversationId,
                     recipientId: a.userId,
-                    mode: a.mode
+                    mode: a.mode,
+                    creator: a.userId,
                   }}
                 >
                 <Alert 
@@ -105,14 +106,8 @@ const UsersChatsRequestNotification = () => {
                   sx={{ width: '100%' }}
                   onClick={()=> {
                     dispatch(removeUsersChatRequest({requestId: a.conversationId}))
-                    // if (a.mode === "null") {
-                    //   dispatch(setNewChat({newChat: true}))
-                    // } else {
-                    //   dispatch(setNewChat({newChat: false}))
-                    // }
                   }}
                 >
-                  {/* {getImage(a)} */}
 
                   {
                     renderText(a.username, a.conversationId, a.mode)

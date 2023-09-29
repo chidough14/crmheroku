@@ -4,7 +4,7 @@ import { useLocation } from 'react-router'
 import instance from '../services/fetchApi';
 import { useDispatch, useSelector } from 'react-redux';
 import { setUsersChats } from '../features/MessagesSlice';
-import { Done, DoneAll } from '@mui/icons-material';
+import { AssignmentInd, Done, DoneAll } from '@mui/icons-material';
 import { init } from 'emoji-mart'
 import emojiData from '@emoji-mart/data'
 import Picker from '@emoji-mart/react'
@@ -46,47 +46,135 @@ const UserToUserChat = ({socket}) => {
     })
   ]
 
-  useEffect(() => {
-    setConversationId(location?.state?.conversationId)
-    fetchChatMessages(location?.state?.conversationId)
+  // useEffect(() => {
+  //   setConversationId(location?.state?.conversationId)
+  //   fetchChatMessages(location?.state?.conversationId)
  
-  }, [location?.state?.conversationId])
+  // }, [location?.state?.conversationId])
+
+  // useEffect(() => {
+  //   if (userschats.length) {
+  //     let newArr = userschats.map((a) => {
+  //       return {
+  //         user: allUsers.find((b) => b.id === a.user_id)?.name,
+  //         message: a.message,
+  //         userId: a.user_id,
+  //         createdAt: a.created_at
+  //       }
+  //     })
+  //     setChat(newArr);
+  //   } else {
+  //     setChat(userschats);
+  //   }
+  
+  // }, [userschats])
+  
+  // useEffect(() => {
+  //   socket.on('new_users_chat_message', (data) => {
+  //     // if (data.conversation_id === parseInt(location?.state?.conversationId)) {
+  //     if (data.conversation_id === parseInt(conversationId)) {
+  //       let newObj = {
+  //         user: allUsers.find((a) => a.id === data.userId)?.name,
+  //         message: data.message,
+  //         userId: data.userId,
+  //         createdAt: data.createdAt
+  //       }
+  //       setChat(prev => [...prev, newObj]);
+  //     } else {
+  //       console.log("null");
+  //     }
+  //   });
+    
+
+  // }, [socket, conversationId])
 
   useEffect(() => {
+    // Set conversationId and fetch chat messages when location changes
+    const conversationId = location?.state?.conversationId;
+    setConversationId(conversationId);
+    fetchChatMessages(conversationId);
+  
+    // Handle socket events for new messages
+    const handleNewMessage = (data) => {
+      if (data.conversation_id === parseInt(conversationId)) {
+        const newObj = {
+          user: allUsers.find((a) => a.id === data.userId)?.name,
+          message: data.message,
+          userId: data.userId,
+          createdAt: data.createdAt,
+        };
+        setChat((prev) => [...prev, newObj]);
+      } else {
+        console.log("null");
+      }
+    };
+  
+    socket.on('new_users_chat_message', handleNewMessage);
+  
+    return () => {
+      socket.off('new_users_chat_message', handleNewMessage);
+    };
+  }, [socket, location?.state?.conversationId, conversationId, allUsers]);
+  
+  useEffect(() => {
+    // Set chat based on userschats
     if (userschats.length) {
-      let newArr = userschats.map((a) => {
-        return {
-          user: allUsers.find((b) => b.id === a.user_id)?.name,
-          message: a.message,
-          userId: a.user_id,
-          createdAt: a.created_at
-        }
-      })
+      const newArr = userschats.map((a) => ({
+        user: allUsers.find((b) => b.id === a.user_id)?.name,
+        message: a.message,
+        userId: a.user_id,
+        createdAt: a.created_at,
+      }));
       setChat(newArr);
     } else {
       setChat(userschats);
     }
-  
-  }, [userschats])
+  }, [userschats, allUsers]);
   
   useEffect(() => {
-    socket.on('new_users_chat_message', (data) => {
-      // if (data.conversation_id === parseInt(location?.state?.conversationId)) {
-      if (data.conversation_id === parseInt(conversationId)) {
-        let newObj = {
-          user: allUsers.find((a) => a.id === data.userId)?.name,
-          message: data.message,
-          userId: data.userId,
-          createdAt: data.createdAt
+    // Set disabled state based on location.state.resumeChat
+    setDisabled(location?.state?.resumeChat);
+  }, [location?.state?.resumeChat]);
+  
+  const usersTypingSet = new Set(usersTyping);
+  
+  useEffect(() => {
+    // Handle socket events for typing and stopped typing messages
+    const handleTypingMessage = (data) => {
+      if (
+        data.userId !== id &&
+        data.conversationString === location?.state?.conversationString &&
+        data.mode === "user-user"
+      ) {
+        if (!usersTypingSet.has(data.name)) {
+          usersTypingSet.add(allUsers.find((a) => a.id === data.userId)?.name);
+          setUsersTyping(Array.from(usersTypingSet));
         }
-        setChat(prev => [...prev, newObj]);
-      } else {
-        console.log("null");
       }
-    });
-    
-
-  }, [socket, conversationId])
+    };
+  
+    const handleStoppedTypingMessage = (data) => {
+      if (
+        data.userId !== id &&
+        data.conversationString === location?.state?.conversationString &&
+        data.mode === "user-user"
+      ) {
+        usersTypingSet.delete(allUsers.find((a) => a.id === data.userId)?.name);
+        setUsersTyping(Array.from(usersTypingSet));
+      }
+    };
+  
+    socket.on('typing_message', handleTypingMessage);
+    socket.on('stopped_typing_message', handleStoppedTypingMessage);
+  
+    return () => {
+      socket.off('typing_message', handleTypingMessage);
+      socket.off('stopped_typing_message', handleStoppedTypingMessage);
+    };
+  }, [socket, location?.state?.conversationString, id, usersTypingSet, allUsers]);
+  
+  
+  
 
   const scrollToBottom = () => {
     // Scroll to the bottom of the chat div
@@ -132,39 +220,39 @@ const UserToUserChat = ({socket}) => {
   };
   
 
-  useEffect(() => {
-     if (location?.state?.resumeChat) {
-       setDisabled(true)
-     } else {
-      setDisabled(false)
-     }
-  }, [location?.state?.resumeChat])
+//   useEffect(() => {
+//      if (location?.state?.resumeChat) {
+//        setDisabled(true)
+//      } else {
+//       setDisabled(false)
+//      }
+//   }, [location?.state?.resumeChat])
 
-const usersTypingSet = new Set(usersTyping);
+// const usersTypingSet = new Set(usersTyping);
 
-useEffect(() => {
-  socket.on('typing_message', (data) => {
-    if (data.userId !== id && data.conversationString === location?.state?.conversationString && data.mode === "user-user") {
-      if (!usersTypingSet.has(data.name)) {
-        usersTypingSet.add(allUsers.find((a) => a.id === data.userId)?.name);
-        setUsersTyping(Array.from(usersTypingSet));
-      }
-    }
+// useEffect(() => {
+//   socket.on('typing_message', (data) => {
+//     if (data.userId !== id && data.conversationString === location?.state?.conversationString && data.mode === "user-user") {
+//       if (!usersTypingSet.has(data.name)) {
+//         usersTypingSet.add(allUsers.find((a) => a.id === data.userId)?.name);
+//         setUsersTyping(Array.from(usersTypingSet));
+//       }
+//     }
 
-  });
+//   });
 
-  socket.on('stopped_typing_message', (data) => {
-    if (data.userId !== id && data.conversationString === location?.state?.conversationString && data.mode === "user-user") {
-      usersTypingSet.delete(allUsers.find((a) => a.id === data.userId)?.name);
-      setUsersTyping(Array.from(usersTypingSet));
-    }
-  });
+//   socket.on('stopped_typing_message', (data) => {
+//     if (data.userId !== id && data.conversationString === location?.state?.conversationString && data.mode === "user-user") {
+//       usersTypingSet.delete(allUsers.find((a) => a.id === data.userId)?.name);
+//       setUsersTyping(Array.from(usersTypingSet));
+//     }
+//   });
 
-  return () => {
-    socket.off('typing_message');
-    socket.off('stopped_typing_message');
-  };
-}, [location?.state?.conversationString]);
+//   return () => {
+//     socket.off('typing_message');
+//     socket.off('stopped_typing_message');
+//   };
+// }, [location?.state?.conversationString]);
 
   const data =  {
     userId: id, 
@@ -220,7 +308,13 @@ useEffect(() => {
               alignItems: 'flex-end', // Align messages to the right
             }}
           >
-            <Typography style={{margin: "auto"}} variant="h6">{location?.state?.conversationString}</Typography> 
+            <Typography style={{margin: "auto"}} variant="h6">
+              {location?.state?.conversationString}  
+              
+              {location?.state?.creator === id ? (
+                <AssignmentInd />
+              ) : null}
+            </Typography> 
             {chat.map((message, index) => (
               <div  style={{alignSelf: message.user === name ? "flex-end" : "flex-start"}}>
                 <Typography variant="h7">
@@ -234,8 +328,6 @@ useEffect(() => {
                     style={message.user === name  ? myMessage : otherUsersMessage}
                     elevation={3}
                   >
-            
-                    {/* <Typography variant="body1">{message.message}</Typography> */}
                     <Typography variant="body1">
                     {message.message?.split(' ').map((word, index) => (
                       <React.Fragment key={index}>
@@ -315,7 +407,6 @@ useEffect(() => {
                     })
                   }} 
                   style={{ marginLeft: '8px', borderRadius: "30px",  }} 
-                  // disabled={disableButton}
                 >
                   Resume chat
                 </Button>

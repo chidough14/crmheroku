@@ -6,9 +6,8 @@ import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import UserMessagesTable from './UserMessagesTable';
 import ComposeMessage from './ComposeMessage';
-import { useEffect } from 'react';
 import instance from '../../services/fetchApi';
-import { setInboxMessages, setOutboxMessages, setPage } from '../../features/MessagesSlice';
+import { setInboxMessages, setOutboxMessages, setPage, setUsersConversations } from '../../features/MessagesSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getToken } from '../../services/LocalStorageService';
@@ -69,24 +68,18 @@ const UserMessages = ({socket}) => {
   const [openAlert, setOpenAlert] = React.useState(false)
   const [severity, setSeverity] = React.useState("")
   const [text, setText] = React.useState("")
-  const [isInbox, setIsInbox] = React.useState("")
+  const [loading, setLoading] = React.useState(false)
   
   const {state} = useLocation();
 
-  // useEffect(() => {
-  //   socket.on('receiveNotification', (message) => {
-  //     console.log(`received notification: ${message}`);
-  //   });
-  // }, [socket])
-
-  useEffect(() => {
+  React.useEffect(() => {
     if (!token) {
       navigate('/login')
     }
   }, [token])
 
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (state?.sendMessage) {
       setValue(2)
     } else {
@@ -101,7 +94,7 @@ const UserMessages = ({socket}) => {
 
    
   }, [state])
-
+  
   const handleCloseAlert = () => {
     setOpenAlert(false)
   }
@@ -118,6 +111,16 @@ const UserMessages = ({socket}) => {
     setValue(newValue);
     dispatch(setPage({page: 1}))
   };
+
+  const getConversations = async (page = 1) => {
+    setLoading(true)
+    await instance.get(`conversations/users?page=${page}`)
+    .then((res) => {
+       dispatch(setUsersConversations({users_conversations: res.data.conversations}))
+       setLoading(false)
+
+    })
+  }
 
   const getInboxMessages = async (page = 1) => {
     setInboxLoading(true)
@@ -148,13 +151,20 @@ const UserMessages = ({socket}) => {
 
   React.useEffect(() => {
     if(value === 0){
-     getInboxMessages(page)
-   } else {
-     getOutboxMessages(page)
-   }
+      getInboxMessages(page)
+    } 
+
+    if(value === 1){
+      getOutboxMessages(page)
+    } 
+
+    if(value === 4){
+      getConversations(page)
+    } 
+    
  }, [page])
 
-  useEffect(()=> {
+ React.useEffect(()=> {
     if (!outbox?.data.length){
       getOutboxMessages()
     }
@@ -209,7 +219,11 @@ const UserMessages = ({socket}) => {
           <Drafts setValue={setValue}  socket={socket} sendingMessage={sendingMessage} />
         </TabPanel>
         <TabPanel value={value} index={4}>
-          <ChatMessages />
+          <ChatMessages
+            loading={loading}
+            setLoading={setLoading}
+            getConversations={getConversations}
+          />
         </TabPanel>
       </Box>
       }
