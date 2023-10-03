@@ -26,7 +26,9 @@ const ActivityEventsTable = ({events, editEvent, deleteEvent, activity, user}) =
           </TableRow>
         </TableHead>
         <TableBody>
-          {events?.map((row) => (
+          {
+          events.length ?
+          events?.map((row) => (
             <TableRow
               key={row.title}
               sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
@@ -57,7 +59,11 @@ const ActivityEventsTable = ({events, editEvent, deleteEvent, activity, user}) =
                 </Tooltip>
               </TableCell>
             </TableRow>
-          ))}
+          )) : (
+            <TableRow>
+              No upcoming events
+            </TableRow>
+          )}
         </TableBody>
       </Table>
     </TableContainer>

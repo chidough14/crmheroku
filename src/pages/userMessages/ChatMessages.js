@@ -39,7 +39,7 @@ const ChatMessages = ({getConversations, loading}) => {
   const [rowObj, setRowObj] = useState();
 
   useEffect(() => {
-    getConversations()
+    getConversations(page)
   }, [])
 
   const handleChangePage = (event, newPage) => {
@@ -159,7 +159,7 @@ const ChatMessages = ({getConversations, loading}) => {
                                 setShowTableActions(false)
                               }}
                               onClick={()=> {
-                                navigate(`/users-conversations/${row.id}`, { 
+                                navigate(`/messages/users-conversations/${row.id}`, { 
                                   state: {
                                     conversationString: row.conversation_string, 
                                     conversationId: row.id ,

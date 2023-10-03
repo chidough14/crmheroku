@@ -29,6 +29,7 @@ import Comments from '../comments/Comments';
 import deltaToString from "delta-to-string-converter"
 import LineChart from '../../components/activities/LineChart';
 import ActivityFiles from './ActivityFiles';
+import moment from 'moment';
 const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
 });
@@ -500,7 +501,7 @@ const ActivityDetails = ({socket}) => {
                   </div>
 
                   <ActivityEventsTable
-                    events={activity?.events}
+                    events={activity?.events.filter((ev) =>  moment().isBefore(ev.end))}
                     editEvent={editEvent}
                     deleteEvent={removeEvent}
                     activity={activity}
