@@ -90,6 +90,10 @@ const UserMessages = ({socket}) => {
       if (state?.isInbox) {
         setValue(0)
       }
+
+      if (state?.chat) {
+        setValue(4)
+      }
     }
 
    
