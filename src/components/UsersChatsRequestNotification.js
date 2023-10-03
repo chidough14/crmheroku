@@ -88,7 +88,7 @@ const UsersChatsRequestNotification = () => {
             usersRequests?.map((a) => (
               <>
                 <Link 
-                  to={`/users-conversations/${a.conversationId}`} 
+                  to={`/messages/users-conversations/${a.conversationId}`} 
                   state= {{
                     conversationString: a.conversationString, 
                     conversationId: a.conversationId,

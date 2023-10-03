@@ -1,14 +1,15 @@
-import { Button, Paper, TextField, Typography } from '@mui/material';
+import { Button, Paper, TextField, Tooltip, Typography } from '@mui/material';
 import React, { useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router'
 import instance from '../services/fetchApi';
 import { useDispatch, useSelector } from 'react-redux';
 import { setUsersChats } from '../features/MessagesSlice';
-import { AssignmentInd, Done, DoneAll } from '@mui/icons-material';
+import { ArrowBack, AssignmentInd, Done, DoneAll } from '@mui/icons-material';
 import { init } from 'emoji-mart'
 import emojiData from '@emoji-mart/data'
 import Picker from '@emoji-mart/react'
 import moment from 'moment';
+import { useNavigate } from 'react-router-dom'
 
 init({ emojiData })
 
@@ -24,6 +25,7 @@ const UserToUserChat = ({socket}) => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [conversationId, setConversationId] = useState(location?.state?.conversationId);
   const dispatch = useDispatch()
+  const navigate = useNavigate()
 
   const otherUsersMessage =  {
     backgroundColor: 'lightblue',
@@ -285,6 +287,17 @@ const UserToUserChat = ({socket}) => {
 
   return (
     <>
+      <Tooltip title="Back to Messages" placement="top">
+        <Button 
+          onClick={() => {
+
+            navigate("/messages", {state: {chat: true}})
+          }}
+        >
+          <ArrowBack />
+        </Button>
+      </Tooltip>
+
       <div
         style={{
           width: '500px',
@@ -296,6 +309,7 @@ const UserToUserChat = ({socket}) => {
         }}
         ref={chatDivRef}
       > 
+
         <Paper elevation={3} style={{ padding: '16px', minHeight: '400px' }}>
           <div 
             style={{
