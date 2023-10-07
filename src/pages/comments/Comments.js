@@ -10,11 +10,14 @@ import AddCommentModal from './AddCommentModal';
 import { useNavigate } from 'react-router';
 import { Box } from '@mui/system';
 import CommentFormQill from './CommentFormQill';
-// import { QuillDeltaToHtmlConverter } from 'quill-delta-to-html';
-// import { DeltaToStringConverter } from '../../services/DeltaToStringConverter';
-import deltaToString from "delta-to-string-converter"
+import { DeltaToStringConverter } from '../../services/DeltaToStringConverter';
 import Popover from '@mui/material/Popover';
 import { checkFileType } from '../../services/checkers';
+import { init } from 'emoji-mart'
+import emojiData from '@emoji-mart/data'
+import deltaToStringConverter from 'delta-to-string-converter';
+
+init({ emojiData })
 
 
 const Comment = ({ 
@@ -132,7 +135,6 @@ const Comment = ({
 
   const renderCommentContent = (comment) => {
     return (
-      // <Typography variant="body1">{replaceUsernames(comment.content)}</Typography>
       <div dangerouslySetInnerHTML={{ __html: comment.content }} />
     )
   }
@@ -496,7 +498,8 @@ const Comments = ({comments, activityId, socket, params}) => {
   const handleUpvote = async (id) => {
     await instance.get(`comment/${id}/upvote`)
     .then((res) => {
-      res.data.comment.content = deltaToString(res.data.comment.content.ops)
+      // res.data.comment.content = DeltaToStringConverter(res.data.comment.content.ops)
+      res.data.comment.content = deltaToStringConverter(res.data.comment.content.ops)
       socket.emit('comment_upvoted', { activityId, comment: JSON.stringify(res.data.comment) });
       
       dispatch(editComment({comment: res.data.comment}))
@@ -511,7 +514,6 @@ const Comments = ({comments, activityId, socket, params}) => {
       dispatch(editDownVotes({id: res.data.comment.id}))
     })
   };
-
   
 
   const saveComment2 = async (content, names, paths, parent_id = null) => {
@@ -529,12 +531,15 @@ const Comments = ({comments, activityId, socket, params}) => {
     await instance.post(`comment`, body)
     .then((res) => {
 
-      res.data.comment.content = deltaToString(res.data.comment.content.ops)
+      // const formattedHtml = DeltaToStringConverter(res.data.comment.content.ops);
+      const formattedHtml = deltaToStringConverter(res.data.comment.content.ops);
+
+      res.data.comment.content = formattedHtml
+
       dispatch(addComments({comment: res.data.comment}))
 
 
       socket.emit('comment_added', { activityId, comment: JSON.stringify(res.data.comment) });
-      // socket.emit('user stopped typing reply',  {name, commentId: res.data.comment.id}); 
      
       dispatch(setCommentContent({content: ""}))
       dispatch(setChildCommentContent({content: ""}))
@@ -565,7 +570,8 @@ const Comments = ({comments, activityId, socket, params}) => {
     await instance.patch(`comment/${commentId}`, body)
     .then((res) => {
 
-      res.data.comment.content = deltaToString(res.data.comment.content.ops)
+      res.data.comment.content = deltaToStringConverter(res.data.comment.content.ops)
+      // res.data.comment.content = DeltaToStringConverter(res.data.comment.content.ops)
 
       socket.emit('comment_edited', { activityId, comment: JSON.stringify(res.data.comment) });
 

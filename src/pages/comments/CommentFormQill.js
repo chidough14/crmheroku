@@ -1,7 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import ReactQuill, { Quill } from 'react-quill';
+import ReactQuill, { Quill, Delta } from 'react-quill';
+import 'react-quill-emoji';
 import "quill-mention";
 import 'react-quill/dist/quill.snow.css';
+import 'react-quill-emoji/dist/quill-emoji.css';
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
 import { useDispatch, useSelector } from 'react-redux';
 import instance from '../../services/fetchApi';
@@ -56,7 +58,11 @@ const CommentFormQill = ({
       // Submit the form or perform your action
       let arr = myInputRef.current.getEditor().getContents().ops
 
-      let names = arr.filter((a) => typeof a.insert === 'object').map((b) => b.insert.mention.value)
+      let names = arr.filter((a) => typeof a.insert === 'object').map((b) => {
+        if (b.insert.mention) {
+          return b.insert.mention.value
+        }
+      })
   
       saveComment(myInputRef.current.getEditor().getContents(), names, paths, parentId)
 
@@ -71,25 +77,106 @@ const CommentFormQill = ({
   const update = () => {
     let arr = myInputRef.current.getEditor().getContents().ops
 
-    let names = arr.filter((a) => typeof a.insert === 'object').map((b) => b.insert.mention.value)
+    let names = arr.filter((a) => typeof a.insert === 'object').map((b) => {
+      if (b.insert.mention) {
+        return b.insert.mention.value
+      }
+    })
 
     updateComment(myInputRef.current.getEditor().getContents(), names, commentFiles)
   }
 
   // const isEditorEmpty = value?.trim().length === 0;
 
+  // useEffect(() => {
+  //   if (editMode) {
+      
+  //     const quill = myInputRef.current.getEditor();
+  //     console.log(childCommentContent, quill.clipboard.convert(childCommentContent));
+   
+  //     quill.setContents(quill.clipboard.convert(childCommentContent));
+
+  //     setValue(childCommentContent)
+  //   }
+  // }, [editMode])
+  
   useEffect(() => {
     if (editMode) {
-      
       const quill = myInputRef.current.getEditor();
-      // const newValue = 'New editor value!';
-      quill.setContents(quill.clipboard.convert(childCommentContent));
-
-      setValue(childCommentContent)
-
-      // setPaths(commentFiles)
+  
+      // Parse the HTML content into a Delta
+      const delta = quill.clipboard.convert(childCommentContent);
+  
+      // Extract content inside <p> tags and remove paragraph tags
+      const contentInsidePTags = childCommentContent.replace(/<\/?p>/g, '');
+  
+      // Initialize an array to store the individual ops
+      const ops = [];
+      let currentAttributes = {}; // Track the current attributes
+  
+      // Split the content into text and emoji components
+      const components = contentInsidePTags.split(/(<em-emoji.*?<\/em-emoji>|<\/?(?:strong|em|u)>)/);
+  
+      // Iterate over the components and construct ops
+      components.forEach((component) => {
+        if (component.startsWith("<em-emoji")) {
+          // Extract shortcode and size from the custom component
+          const shortcodeMatch = component.match(/shortcodes="(.*?)"/);
+          const sizeMatch = component.match(/size={(.*?)}/);
+  
+          if (shortcodeMatch && sizeMatch) {
+            const shortcode = shortcodeMatch[1].slice(1, -1); // remove beginning and ending colons
+            const size = sizeMatch[1];
+  
+            // Insert the emoji as a custom insert
+            ops.push({
+              insert: {
+                emoji: shortcode,
+              },
+            });
+          }
+        } else if (component === '<strong>') {
+          // Set the currentAttributes to bold
+          currentAttributes = { ...currentAttributes, bold: true };
+        } else if (component === '</strong>') {
+          // Remove the bold attribute
+          currentAttributes = { ...currentAttributes, bold: undefined };
+        } else if (component === '<em>') {
+          // Set the currentAttributes to italic
+          currentAttributes = { ...currentAttributes, italic: true };
+        } else if (component === '</em>') {
+          // Remove the italic attribute
+          currentAttributes = { ...currentAttributes, italic: undefined };
+        } else if (component === '<u>') {
+          // Set the currentAttributes to underline
+          currentAttributes = { ...currentAttributes, underline: true };
+        } else if (component === '</u>') {
+          // Remove the underline attribute
+          currentAttributes = { ...currentAttributes, underline: undefined };
+        } else {
+          // Insert text as a regular insert with currentAttributes
+          ops.push({
+            attributes: currentAttributes,
+            insert: component,
+          });
+        }
+      });
+  
+      // Create a new delta with the constructed ops
+      const newDelta = {
+        ops,
+      };
+  
+      // Set the contents of the Quill editor
+      quill.setContents(newDelta);
+  
+      // Optionally, update the state with the Delta
+      setValue(newDelta);
     }
-  }, [editMode])
+  }, [editMode]);
+  
+  
+  
 
   // const atValues = [
   //   { id: 1, value: "Fredrik Sundqvist" },
@@ -139,6 +226,10 @@ const CommentFormQill = ({
       }
     };
     input.click();
+  }, []);
+
+  const handleSelectEmoji = useCallback(() => {
+  
   }, []);
 
 
@@ -265,9 +356,11 @@ const CommentFormQill = ({
               container: [
                 ['bold', 'italic', 'underline', 'strike', 'link'],
                 [{ 'image': 'Upload Image' }],
+                ['emoji'], 
               ],
               handlers: {
                 image: handleImageUpload, // Directly reference the callback
+                'emoji': handleSelectEmoji
               },
             },
             mention: {
@@ -306,7 +399,10 @@ const CommentFormQill = ({
               //   },
               //   []
               // )
-            }
+            },
+            "emoji-toolbar": true,
+            "emoji-textarea": true,
+            "emoji-shortname": true,
           }
           }
           onKeyUp={handleTyping}
