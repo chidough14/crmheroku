@@ -30,6 +30,7 @@ import deltaToString from "delta-to-string-converter"
 import LineChart from '../../components/activities/LineChart';
 import ActivityFiles from './ActivityFiles';
 import moment from 'moment';
+
 const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
 });
@@ -169,7 +170,8 @@ const ActivityDetails = ({socket}) => {
         let formttedComments = res.data.activity.comments.map((a)=> {
           return {
             ...a,
-            content: isValidJson(a.content) ? deltaToString(JSON.parse(a.content).ops) : a.content
+            content: isValidJson(a.content) ? deltaToString(JSON.parse(a.content).ops) : a.content,
+            // content: isValidJson(a.content) ? DeltaToStringConverter(JSON.parse(a.content).ops) : a.content
           }
         })
 

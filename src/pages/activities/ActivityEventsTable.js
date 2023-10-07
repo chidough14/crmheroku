@@ -27,7 +27,7 @@ const ActivityEventsTable = ({events, editEvent, deleteEvent, activity, user}) =
         </TableHead>
         <TableBody>
           {
-          events.length ?
+          events?.length ?
           events?.map((row) => (
             <TableRow
               key={row.title}
