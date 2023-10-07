@@ -429,7 +429,7 @@ const MyAccount = ({ socket }) => {
          conversationString: res.data.conversation.conversation_string 
        })
 
-       navigate(`/users-conversations/${res.data.conversation.id}`, { 
+       navigate(`/messages/users-conversations/${res.data.conversation.id}`, { 
           state: {
             conversationString: res.data.conversation.conversation_string, 
             conversationId: res.data.conversation.id,

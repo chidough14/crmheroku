@@ -2,6 +2,9 @@ const DeltaToStringConverter = (delta) => {
   const formatInsert = (insert) => {
     if (typeof insert === "string") {
       return insert;
+    } else if (insert.emoji) {
+      // Handle emoji inserts
+      return  `<em-emoji shortcodes=":${insert.emoji}:" size={16} ></em-emoji>`
     } else if (insert.mention) {
       return insert.mention.value;
     }
