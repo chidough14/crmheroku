@@ -1,15 +1,16 @@
 import { Button, Paper, TextField, Tooltip, Typography } from '@mui/material';
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router'
 import instance from '../services/fetchApi';
 import { useDispatch, useSelector } from 'react-redux';
 import { setUsersChats } from '../features/MessagesSlice';
-import { ArrowBack, AssignmentInd, Done, DoneAll } from '@mui/icons-material';
+import { ArrowBack, AssignmentInd, DeleteOutlined, Done, DoneAll, DownloadOutlined, FilePresent, UploadFileOutlined } from '@mui/icons-material';
 import { init } from 'emoji-mart'
 import emojiData from '@emoji-mart/data'
 import Picker from '@emoji-mart/react'
 import moment from 'moment';
 import { useNavigate } from 'react-router-dom'
+import { checkFileType } from '../services/checkers';
 
 init({ emojiData })
 
@@ -22,6 +23,8 @@ const UserToUserChat = ({socket}) => {
   const { userschats } = useSelector(state => state.message)
   const chatDivRef = useRef(null);
   const [disabled, setDisabled] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [currentFile, setCurrentFile] = useState("")
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [conversationId, setConversationId] = useState(location?.state?.conversationId);
   const dispatch = useDispatch()
@@ -103,6 +106,7 @@ const UserToUserChat = ({socket}) => {
           user: allUsers.find((a) => a.id === data.userId)?.name,
           message: data.message,
           userId: data.userId,
+          files: data.files || null,
           createdAt: data.createdAt,
         };
         setChat((prev) => [...prev, newObj]);
@@ -125,6 +129,7 @@ const UserToUserChat = ({socket}) => {
         user: allUsers.find((b) => b.id === a.user_id)?.name,
         message: a.message,
         userId: a.user_id,
+        files: a.files,
         createdAt: a.created_at,
       }));
       setChat(newArr);
@@ -285,6 +290,135 @@ const UserToUserChat = ({socket}) => {
     }
   };
 
+  const downloadFile = async (filename) => {
+    try {
+      const response = await instance.get(`download-file/${filename}`, {
+        responseType: 'blob', // Important for binary data
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename); // Change the filename as needed
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+    } catch (error) {
+      console.error('Error downloading file:', error);
+    }
+  };
+
+  const renderFiles = (files) => {
+   
+      const isImage = checkFileType(files) === "image";
+  
+      return (
+        <>
+          <div
+            style={{
+              marginRight: "20px",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              flexDirection: "column",
+              marginTop: "40px",
+              flex: "1 1 calc(25% - 20px)"
+            }}
+            onMouseEnter={() => {
+              setCurrentFile(files)
+            }}
+            onMouseLeave={() => {
+              setCurrentFile("")
+            }}
+          >
+            <div>
+              {isImage ? (
+                <img
+                  src={`${process.env.REACT_APP_BASE_URL}${files}`}
+                  alt="Image"
+                  style={{ height: "100px" }}
+                />
+              ) : (
+                <FilePresent />
+              )}
+
+              {
+                (currentFile === files) && (
+                  <>
+                    <span
+                      style={{ marginLeft: "6px", cursor: "pointer" }}
+                      onClick={() => {
+                        downloadFile(files.replace("files/", ""))
+                      }}
+                    >
+                      <DownloadOutlined />
+                    </span>
+                  </>
+                )
+              }
+            
+            </div>
+            <p>{files.replace("files/", "")}</p>
+          </div>
+        </>
+      );
+    
+  };
+  
+
+  const handleFileUpload = useCallback(async () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*, application/pdf, application/vnd.ms-excel, text/csv'; // Updated accept attribute
+
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+
+      setMessage('');
+    
+      scrollToBottom();
+      setLoading(true)
+
+      if (file) {
+        const formData = new FormData();
+        formData.append('file', file); 
+        formData.append('message', "IM");
+        formData.append('conversation_id', parseInt(location?.state?.conversationId));
+        formData.append('recipient_id',  location?.state?.recipientId);
+        formData.append('user_id', id);
+  
+        try {
+          const res = await instance.post(`/upload-chatfiles-and-save`, formData);
+
+          socket.emit("new_users_chat_message", {
+            userId: parseInt(res.data.chat.user_id),
+            recipientId: parseInt(res.data.chat.recipient_id),
+            message: res.data.chat.message,
+            conversation_id: parseInt(res.data.chat.conversation_id),
+            createdAt: res.data.chat.created_at,
+            files: res.data.filePath
+          });
+
+          setChat((prevChat) => [...prevChat, 
+            { 
+              user: name, 
+              message: res.data.chat.message, 
+              files: res.data.filePath, 
+              sending: false, 
+              createdAt: res.data.chat.created_at 
+            }
+          ]);
+
+          setLoading(false)
+        
+        } catch (error) {
+          console.error('Error uploading file:', error);
+        }
+      }
+    };
+    input.click();
+  }, []);
+
   return (
     <>
       <Tooltip title="Back to Messages" placement="top">
@@ -342,17 +476,23 @@ const UserToUserChat = ({socket}) => {
                     style={message.user === name  ? myMessage : otherUsersMessage}
                     elevation={3}
                   >
-                    <Typography variant="body1">
-                    {message.message?.split(' ').map((word, index) => (
-                      <React.Fragment key={index}>
-                        {word.startsWith(':') && word.endsWith(':') ? (
-                          <em-emoji shortcodes={word} size={16} ></em-emoji>
-                        ) : (
-                          word + ' '
-                        )}
-                      </React.Fragment>
-                    ))}
-                    </Typography>
+             
+
+                    {
+                      message.files ? renderFiles(message.files) : (
+                        <Typography variant="body1">
+                          {message.message?.split(' ').map((word, index) => (
+                            <React.Fragment key={index}>
+                              {word.startsWith(':') && word.endsWith(':') ? (
+                                <em-emoji shortcodes={word} size={16} ></em-emoji>
+                              ) : (
+                                word + ' '
+                              )}
+                            </React.Fragment>
+                          ))}
+                          </Typography>
+                      )
+                    }
 
                   </Paper>
                   
@@ -400,6 +540,13 @@ const UserToUserChat = ({socket}) => {
             </div>
 
             <div>
+              <UploadFileOutlined 
+                onClick={() => handleFileUpload()}
+                style={{cursor: "pointer"}}
+              />
+            </div>
+
+            <div>
               {usersTyping?.length ? usersTyping.map((user) => (
                 <p key={user}>{user} is typing...</p>
               )) : null}
@@ -431,7 +578,7 @@ const UserToUserChat = ({socket}) => {
             <Button 
               variant="contained" 
               color="primary" 
-              onClick={handleSend} 
+              onClick={() => handleSend()} 
               style={{ marginLeft: '8px', borderRadius: "30px",  }} 
               disabled={disabled}
             >
