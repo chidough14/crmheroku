@@ -38,44 +38,97 @@ export default function DashboardCard({type, events, list}) {
   const [mediumActivities, setMediumActivities] = useState({count: 0, amount: 0})
   const [highActivities, setHighActivities] = useState({count: 0, amount: 0})
   const [closedActivities, setClosedActivities] = useState({count: 0, amount: 0})
-  const { id } = useSelector(state => state.user)
+  const { id, setting, exchangeRates } = useSelector(state => state.user)
+  const [currencySymbol, setCurrencySymbol] = useState("$")
 
   useEffect(() => {
-    if(activities && activities.length) {
+    if (setting?.currency_mode === "USD" || setting?.currency_mode === null) {
+      setCurrencySymbol("$")
+      if(activities && activities.length) {
 
-      let low = activities.filter((a) => a.probability === "Low")
-      let medium = activities.filter((a) => a.probability === "Medium")
-      let high = activities.filter((a) => a.probability === "High")
-      let closed = activities.filter((a) => a.probability === "Closed")
-      
-      setLowActivities({
-        count: low?.length,
-        amount: low?.map((a) => a.total).reduce((prev, curr) => prev + curr, 0) * 0.2
-      })
-  
-      setMediumActivities({
-        count:  medium?.length,
-        amount:  medium?.map((a) => a.total).reduce((prev, curr) => prev + curr, 0) * 0.4
-      })
-  
-      setHighActivities({
-        count:  high?.length,
-        amount:  high?.map((a) => a.total).reduce((prev, curr) => prev + curr, 0) * 0.8
-      })
-  
-      setClosedActivities({
-        count:  closed?.length,
-        amount:  closed?.map((a) => a.total).reduce((prev, curr) => prev + curr, 0)
-      })
+        let low = activities.filter((a) => a.probability === "Low")
+        let medium = activities.filter((a) => a.probability === "Medium")
+        let high = activities.filter((a) => a.probability === "High")
+        let closed = activities.filter((a) => a.probability === "Closed")
+        
+        setLowActivities({
+          count: low?.length,
+          amount: low?.map((a) => a.total).reduce((prev, curr) => prev + curr, 0) * 0.2
+        })
+    
+        setMediumActivities({
+          count:  medium?.length,
+          amount:  medium?.map((a) => a.total).reduce((prev, curr) => prev + curr, 0) * 0.4
+        })
+    
+        setHighActivities({
+          count:  high?.length,
+          amount:  high?.map((a) => a.total).reduce((prev, curr) => prev + curr, 0) * 0.8
+        })
+    
+        setClosedActivities({
+          count:  closed?.length,
+          amount:  closed?.map((a) => a.total).reduce((prev, curr) => prev + curr, 0)
+        })
+      }
+    } else {
+      if (setting?.currency_mode === "EUR") {
+        setCurrencySymbol("€")
+      }
+
+      if (setting?.currency_mode === "GBP") {
+        setCurrencySymbol("£")
+      }
+      let rate = exchangeRates[setting?.currency_mode]
+
+      if(activities && activities.length) {
+        let activitiesWithCurrencyConverted = activities.map((a) => {
+          return {
+            ...a,
+            total: a.total * rate
+          }
+        })
+
+        let low = activitiesWithCurrencyConverted.filter((a) => a.probability === "Low")
+        let medium = activitiesWithCurrencyConverted.filter((a) => a.probability === "Medium")
+        let high = activitiesWithCurrencyConverted.filter((a) => a.probability === "High")
+        let closed = activitiesWithCurrencyConverted.filter((a) => a.probability === "Closed")
+
+        // let low = activities.filter((a) => a.probability === "Low")
+        // let medium = activities.filter((a) => a.probability === "Medium")
+        // let high = activities.filter((a) => a.probability === "High")
+        // let closed = activities.filter((a) => a.probability === "Closed")
+        
+        setLowActivities({
+          count: low?.length,
+          amount: low?.map((a) => a.total).reduce((prev, curr) => prev + curr, 0) * 0.2
+        })
+    
+        setMediumActivities({
+          count:  medium?.length,
+          amount:  medium?.map((a) => a.total).reduce((prev, curr) => prev + curr, 0) * 0.4
+        })
+    
+        setHighActivities({
+          count:  high?.length,
+          amount:  high?.map((a) => a.total).reduce((prev, curr) => prev + curr, 0) * 0.8
+        })
+    
+        setClosedActivities({
+          count:  closed?.length,
+          amount:  closed?.map((a) => a.total).reduce((prev, curr) => prev + curr, 0)
+        })
+      }
     }
   
-  }, [activities])
+    
+  }, [activities, exchangeRates])
 
   const renderTableRow = (td1, td2) => {
     return  <tr>
               <td style={{textAlign: "left"}}>{td1}</td>
               <td style={{textAlign: "right"}}>
-                {`${td2.count} ($${td2.amount.toFixed(1)})`}
+                {`${td2.count} (${currencySymbol}${td2.amount.toFixed(1)})`}
               </td>
             </tr>
   }

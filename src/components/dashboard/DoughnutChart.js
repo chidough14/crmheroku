@@ -5,7 +5,7 @@ import { FormControl, MenuItem, Select, Typography } from '@mui/material';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-export function DoughnutChart({results, measurement, setMeasurement, showDoughnutGraphLoadingNotification}) {
+export function DoughnutChart({results, measurement, setMeasurement, showDoughnutGraphLoadingNotification, currencySymbol}) {
   const [keys, setKeys] = useState([])
   const [values, setValues] = useState([])
 
@@ -22,7 +22,7 @@ export function DoughnutChart({results, measurement, setMeasurement, showDoughnu
     labels: keys,
     datasets: [
       {
-        label: 'Total sales ($)',
+        label: `Total sales (${currencySymbol})`,
         data: values,
         backgroundColor: [
           'rgba(255, 99, 132, 0.2)',

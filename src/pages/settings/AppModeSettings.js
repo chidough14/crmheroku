@@ -23,6 +23,7 @@ const AppModeSettings = ({user}) => {
     product_sales_mode: "",
     announcements_mode: false,
     top_sales_mode: "",
+    currency_mode: "",
     openAlert: false,
     text: "",
     severity: ""
@@ -48,6 +49,7 @@ const AppModeSettings = ({user}) => {
         calendar_mode: user?.setting?.calendar_mode,
         product_sales_mode: user?.setting?.product_sales_mode,
         top_sales_mode: user?.setting?.top_sales_mode,
+        currency_mode: user?.setting?.currency_mode,
         announcements_mode: user?.setting?.announcements_mode === "show" ? true : false,
       })
     }
@@ -61,6 +63,7 @@ const AppModeSettings = ({user}) => {
       calendar_mode: data.calendar_mode,
       product_sales_mode: data.product_sales_mode,
       top_sales_mode: data.top_sales_mode,
+      currency_mode: data.currency_mode,
       announcements_mode: data.announcements_mode ? "show" : "hide",
     }
 
@@ -68,7 +71,7 @@ const AppModeSettings = ({user}) => {
     .then((res) => {
       dispatch(setShowSaveNotification({showSaveNotification: false}))
       dispatch(updateUserSettings({setting: res.data.setting}))
-      updateData({openAlert: true, severity: "success", text: "Sttings updated successfully"})
+      updateData({openAlert: true, severity: "success", text: "Settings updated successfully"})
     })
     .catch(() => {
       dispatch(setShowSaveNotification({showSaveNotification: false}))
@@ -156,6 +159,24 @@ const AppModeSettings = ({user}) => {
       >
         <MenuItem value="salespersons">Sales Persons</MenuItem>
         <MenuItem value="products">Products</MenuItem>
+      </Select>
+      <p></p>
+
+         
+      <InputLabel id="demo-select-small">Currency mode</InputLabel>
+      <Select
+        id='currency_mode'
+        name="currency_mode"
+        label="Currency Mode"
+        size='small'
+        style={{width: "50%"}}
+        //fullWidth
+        value={data.currency_mode}
+        onChange={(e)=> updateData({currency_mode: e.target.value})}
+      >
+        <MenuItem value="USD">USD</MenuItem>
+        <MenuItem value="EUR">EUR</MenuItem>
+        <MenuItem value="GBP">GBP</MenuItem>
       </Select>
       <p></p>
 
