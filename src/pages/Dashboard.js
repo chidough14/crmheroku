@@ -26,7 +26,14 @@ const Dashboard = ({socket}) => {
   //const { events } = useSelector(state => state.event)
   const { lists } = useSelector(state => state.list)
   const [eventsToday, setEventsToday] = useState([])
-  const { setting, loadingDashboard, showBarGraphLoadingNotification, showDoughnutGraphLoadingNotification, showAnnouncementsLoading } = useSelector(state => state.user)
+  const { 
+    setting, 
+    loadingDashboard, 
+    showBarGraphLoadingNotification, 
+    showDoughnutGraphLoadingNotification, 
+    showAnnouncementsLoading, 
+    exchangeRates 
+  } = useSelector(state => state.user)
   const [events, setEvents] = useState([])
   const [list, setList] = useState()
   const [results, setResults] = useState([])
@@ -38,6 +45,7 @@ const Dashboard = ({socket}) => {
   const [severity, setSeverity] = useState("");
   const [alertMessage, setAlertMessage] = useState("");
   const [open, setOpen] = useState(false);
+  const [currencySymbol, setCurrencySymbol] = useState("$")
   // const handleOpen = () => setOpen(true);
 
   const showAlert = (msg, sev) => {
@@ -85,8 +93,31 @@ const Dashboard = ({socket}) => {
     dispatch(setShowDoughnutGraphLoadingNotification({showDoughnutGraphLoadingNotification: true}))
     await  instance.get(`${url}`)
     .then((res) => {
-     dispatch(setShowDoughnutGraphLoadingNotification({showDoughnutGraphLoadingNotification: false}))
-      setDoughnutResults(res.data.results)
+      if (setting?.currency_mode === "USD" || setting?.currency_mode === null) {
+        setCurrencySymbol("$")
+        setDoughnutResults(res.data.results)
+      } else {
+        if (setting?.currency_mode === "EUR") {
+          setCurrencySymbol("€")
+        }
+  
+        if (setting?.currency_mode === "GBP") {
+          setCurrencySymbol("£")
+        }
+
+        const result = res.data.results.map((a) => {
+          return {
+            ...a,
+            total: a.total * exchangeRates[setting?.currency_mode]
+          }
+        })
+        console.log(res.data.results, result);
+        setDoughnutResults(result)
+      }
+
+      // setDoughnutResults(res.data.results)
+      dispatch(setShowDoughnutGraphLoadingNotification({showDoughnutGraphLoadingNotification: false}))
+    
     })
     .catch(()=> {
       showAlert("Ooops an error was encountered", "error")
@@ -98,12 +129,36 @@ const Dashboard = ({socket}) => {
     dispatch(setShowBarGraphLoadingNotification({showBarGraphLoadingNotification: true}))
     await  instance.get(`${url}`)
     .then((res) => {
-    dispatch(setShowBarGraphLoadingNotification({showBarGraphLoadingNotification: false}))
-      setResults(res.data.results)
+      if (setting?.currency_mode === "USD" || setting?.currency_mode === null) {
+        setCurrencySymbol("$")
+        setResults(res.data.results)
+      } else {
+        if (setting?.currency_mode === "EUR") {
+          setCurrencySymbol("€")
+        }
+  
+        if (setting?.currency_mode === "GBP") {
+          setCurrencySymbol("£")
+        }
+
+        const result = res.data.results.map((item) => {
+          const newObj = {};
+          for (const key in item) {
+            if (item.hasOwnProperty(key)) {
+              newObj[key] = item[key] * exchangeRates[setting?.currency_mode];
+            }
+          }
+          return newObj;
+        });
+
+        setResults(result)
+      }
+
+      dispatch(setShowBarGraphLoadingNotification({showBarGraphLoadingNotification: false}))
     })
     .catch(()=> {
       showAlert("Ooops an error was encountered", "error")
-    dispatch(setShowBarGraphLoadingNotification({showBarGraphLoadingNotification: false}))
+      dispatch(setShowBarGraphLoadingNotification({showBarGraphLoadingNotification: false}))
     })
   }
 
@@ -252,6 +307,7 @@ const Dashboard = ({socket}) => {
                         owner={owner}
                         setOwner={setOwner}
                         showBarGraphLoadingNotification={showBarGraphLoadingNotification}
+                        currencySymbol={currencySymbol}
                       />
                     )}
                     {setting.dashboard_mode === 'show_bar_graph' && (
@@ -260,6 +316,7 @@ const Dashboard = ({socket}) => {
                         owner={owner}
                         setOwner={setOwner}
                         showBarGraphLoadingNotification={showBarGraphLoadingNotification}
+                        currencySymbol={currencySymbol}
                       />
                     )}
                   </div>
@@ -270,6 +327,7 @@ const Dashboard = ({socket}) => {
                         measurement={measurement}
                         setMeasurement={setMeasurement}
                         showDoughnutGraphLoadingNotification={showDoughnutGraphLoadingNotification}
+                        currencySymbol={currencySymbol}
                       />
                     )}
                   </div>
