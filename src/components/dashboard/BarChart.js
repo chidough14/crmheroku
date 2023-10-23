@@ -37,7 +37,7 @@ export const options = {
   },
 };
 
-export function BarChart({results, owner, setOwner, showBarGraphLoadingNotification}) {
+export function BarChart({results, owner, setOwner, showBarGraphLoadingNotification, currencySymbol}) {
 
   const handleChange = (event) => {
     setOwner(event.target.value);
@@ -102,7 +102,7 @@ export function BarChart({results, owner, setOwner, showBarGraphLoadingNotificat
   }
 
   return <>
-    <Typography variant="h7"><b>Products Total Sales ($)</b></Typography>
+    <Typography variant="h7"><b>Products Total Sales ({`${currencySymbol}`})</b></Typography>
     <div style={{ width: "50%", float: "right"}}>
       <FormControl fullWidth>
         {/* <InputLabel id="demo-simple-select-label">Products Total Sales ($)</InputLabel> */}

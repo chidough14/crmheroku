@@ -6,11 +6,9 @@ import PropTypes from 'prop-types';
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { addComments, addProductItemToActivity, deleteActivityEvent, editComment, removeActivity, removeInvoiceFromActivity, removeProductItem, setClosePrompt, setDownvotes, setShowDeleteNotification, setSingleActivity, setUpvotes, updateProductItem } from '../../features/ActivitySlice'
 import instance from '../../services/fetchApi'
-import { AddOutlined, DeleteOutlined, EditOutlined } from '@mui/icons-material';
 import ActivityProductsTable from './ActivityProductsTable';
 import AddProductToActivityModal from '../../components/activities/AddProductToActivityModal';
 import ActivityModal from '../../components/activities/ActivityModal';
-import ActivityEventsTable from './ActivityEventsTable';
 import EventModal from '../../components/events/EventModal';
 import ViewEventModal from '../../components/events/ViewEventModal';
 import { deleteEvent } from '../../features/EventSlice';
@@ -21,15 +19,14 @@ import ViewInvoiceModal from '../../components/invoice/ViewInvoiceModal';
 import { setOpenViewInvoiceModal } from '../../features/InvoiceSlice';
 import { getToken } from '../../services/LocalStorageService';
 import MuiAlert from '@mui/material/Alert';
-import { loadStripe } from "@stripe/stripe-js"; 
 import axios from "axios"
 import { setProductAdding } from '../../features/ProductSlice';
-import Comments from '../comments/Comments';
 // import { DeltaToStringConverter } from '../../services/DeltaToStringConverter';
 import deltaToString from "delta-to-string-converter"
 import LineChart from '../../components/activities/LineChart';
 import ActivityFiles from './ActivityFiles';
 import moment from 'moment';
+import DetailsPage from './DetailsPage';
 
 const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
@@ -77,7 +74,6 @@ const ActivityDetails = ({socket}) => {
   const [open, setOpen] = React.useState(false);
   const [openAddModal, setOpenAddModal] = React.useState(false);
   const [editMode, setEditMode] = React.useState(false);
-  const [openDialog, setOpenDialog] = React.useState(false);
   const [productId, setProductId] = React.useState();
   const [quantity, setQuantity] =  React.useState(0);
   const [openEditModal, setOpenEditModal] = React.useState(false);
@@ -220,22 +216,6 @@ const ActivityDetails = ({socket}) => {
     } else {
       
     }
-  
-    // if(comment.user_id === user?.id) {
-
-    // } else {
-
-    //   if(parseInt(params?.id) === actId) {
-    //     if (flag === "add") {
-    //       dispatch(addComments({comment}))
-    //     } else {
-    //       dispatch(editComment({comment}))
-    //     }
-    
-    //   } else {
-        
-    //   }
-    // }
   }
 
   useEffect(()=> {
@@ -456,61 +436,19 @@ const ActivityDetails = ({socket}) => {
               </Tabs>
             </Box>
             <TabPanel value={value} index={0}>
-              <div style={{display: "flex", justifyContent: "space-between", marginBottom: "20px"}}>
-                <div>
-                  <Typography variant="h7" display="block"  gutterBottom>
-                    <b>Label</b> : {activity?.label}
-                  </Typography>
 
-                  <Typography variant="h7" display="block"  gutterBottom>
-                    <b>Description</b> : {activity?.description}
-                  </Typography>
-
-                  <Typography variant="h7" display="block"  gutterBottom>
-                    <b>Assignee</b> : {activity?.assignedTo}
-                  </Typography>
-
-                  <Typography variant="h7" display="block"  gutterBottom>
-                    <b>Type</b> : {activity?.type}
-                  </Typography>
-
-                  <Typography variant="h7" display="block"  gutterBottom>
-                    <b>Estimate</b> : {activity?.earningEstimate}
-                  </Typography>
-
-                  <Typography variant="h7" display="block"  gutterBottom>
-                    <b>Probability</b> : {activity?.probability}
-                  </Typography>
-
-                  <Typography variant="h7" display="block"  gutterBottom>
-                    <b>Company</b> : 
-                    <Button style={{borderRadius: "30px"}} onClick={() => navigate(`/companies/${activity?.company?.id}`)}>
-                      {activity?.company?.name}
-                    </Button>
-                  </Typography>
-
-                  <Button disabled={activity?.user_id !== user?.id} variant="contained" size='small' onClick={() => setOpenEditModal(true)} style={{borderRadius: "30px"}}><EditOutlined /></Button>&nbsp;&nbsp;&nbsp;
-
-                  <Button disabled={activity?.user_id !== user?.id}  variant="contained" color='error' size='small' onClick={()=> setOpenDialogDeleteActivity(true)} style={{borderRadius: "30px"}}><DeleteOutlined /> </Button>
-                </div>
-
-                <div style={{margin: "auto", width: "60%"}}>
-                  <div style={{display: "flex", justifyContent: "space-between"}}>
-                    <Typography variant='h6'  component="div" sx={{ flexGrow: 2 }}><b>Upcoming Events</b></Typography>
-                    <Button variant="contained" size='small' onClick={() => setOpenAddEventModal(true)} style={{borderRadius: "30px"}} disabled={activity?.user_id !== user?.id}>
-                      <AddOutlined />
-                    </Button>
-                  </div>
-
-                  <ActivityEventsTable
-                    events={activity?.events.filter((ev) =>  moment().isBefore(ev.end))}
-                    editEvent={editEvent}
-                    deleteEvent={removeEvent}
-                    activity={activity}
-                    user={user}
-                  />
-                </div>
-              </div>
+              <DetailsPage 
+                activity={activity}
+                events={activity?.events.filter((ev) =>  moment().isBefore(ev.end))}
+                editEvent={editEvent}
+                deleteEvent={removeEvent}
+                user={user}
+                setOpenAddEventModal={setOpenAddEventModal}
+                setOpenDialogDeleteActivity={setOpenDialogDeleteActivity}
+                setOpenEditModal={setOpenEditModal}
+                socket={socket}
+                params={params}
+              />
             </TabPanel>
 
             <TabPanel value={value} index={1}>
@@ -615,26 +553,6 @@ const ActivityDetails = ({socket}) => {
               />
             </TabPanel>
           </Box>
-
-         {
-          value === 0 && (
-            <div>
-              <Typography variant='h6'>
-                Comments &nbsp; &nbsp;
-                {
-                  `(${activity?.comments?.length})`
-                }
-              </Typography>
-              
-              <Comments
-                comments={activity?.comments}
-                activityId={activity?.id}
-                socket={socket}
-                params={params}
-              />
-            </div>
-          )
-         }
         </>
         )
       }

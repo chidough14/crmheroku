@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react'
-import { Card, CardContent, Typography, Divider, Button, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, IconButton } from '@mui/material'
+import { Card, CardContent, Typography, Divider, Button, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, IconButton, Snackbar, Tooltip } from '@mui/material'
 import { useDispatch, useSelector } from 'react-redux';
 import moment from 'moment';
 import CommentForm from './CommentForm';
 import instance from '../../services/fetchApi';
 import { addComments, editComment, editDownVotes, editUpVotes, setChildCommentContent, setCommentContent, setCommentFiles } from '../../features/ActivitySlice';
-import { DeleteOutline, DownloadOutlined, EditOutlined, FilePresent, ReplyOutlined, ThumbDown, ThumbUp } from '@mui/icons-material';
+import { ContentCopyOutlined, DeleteOutline, DownloadOutlined, EditOutlined, FilePresent, ReplyOutlined, ThumbDown, ThumbUp } from '@mui/icons-material';
 import AddCommentModal from './AddCommentModal';
 import { useNavigate } from 'react-router';
 import { Box } from '@mui/system';
@@ -16,6 +16,13 @@ import { checkFileType } from '../../services/checkers';
 import { init } from 'emoji-mart'
 import emojiData from '@emoji-mart/data'
 import deltaToStringConverter from 'delta-to-string-converter';
+import emoji from 'emoji-dictionary';
+import MuiAlert from '@mui/material/Alert';
+
+
+const Alert = React.forwardRef(function Alert(props, ref) {
+  return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
+});
 
 init({ emojiData })
 
@@ -45,6 +52,17 @@ const Comment = ({
   const [anchorEl, setAnchorEl] = useState(null);
   const [currentPath, setCurrentPath] = useState("");
   const [usersTyping, setUsersTyping] = useState([]);
+  const [openAlert, setOpenAlert] = useState(false);
+  const [alertMessage, setAlertMessage] =  useState("");
+  const [severity, setSeverity] =  useState("");
+
+  const handleCloseAlert = (event, reason) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+
+    setOpenAlert(false);
+  };
 
   const usersTypingSet = new Set(usersTyping);
 
@@ -199,261 +217,298 @@ const Comment = ({
       console.error('Error downloading file:', error);
     }
   };
+
+  const  removeHTMLTags = (html) => {
+    const div = document.createElement('div');
+    div.innerHTML = html;
+    return div.textContent || div.innerText;
+  }
   
 
   return (
-   
-    <Card sx={{marginBottom: "20px", borderLeft: "4px solid grey"}}>
-      <CardContent>
-        {
-          comment?.isDeleted === "Yes" ? (
-            <Typography variant="body1">Comment deleted</Typography>
-          ) : (
-            <>
-              {
-                renderCommentContent(comment)
-              }
-              
-              {
-                comment?.files?.length ?
-                <div style={{display: "flex"}}>
-                  {
-                    comment.files.map((a) => {
-                      if (checkFileType(a) === "image") {
-                        return  (
-                          <div 
-                            style={{
-                              marginRight: "20px", 
-                              display: "flex", 
-                              justifyContent: "center", 
-                              alignItems: "center", 
-                              flexDirection: "column", 
-                              marginTop: "40px",
-                              cursor: "pointer"
-                            }}
-                            onClick={() => downloadFile(a.replace("files/", ""))}
-                            onMouseEnter={() => {
-                              setCurrentPath(a)
-                            }}
-                            onMouseLeave={() => {
-                              setCurrentPath("")
-                            }}
-                          >
-                            
-                              <div>
-                                <img src={`${process.env.REACT_APP_BASE_URL}${a}`} alt="Image" style={{height: "30px"}} />
-                                {
-                                  currentPath === a && (
-                                    <span style={{marginLeft: "6px", color: "lightblue"}}>
-                                      <DownloadOutlined />
-                                    </span>
-                                  )
-                                }
-                              </div>
-                              <p>{a.replace("files/", "")}</p>
-                          </div>
-                        )
-                      
-                      } else {
-                        return (
-                          <div 
-                            style={{
-                              marginRight: "20px", 
-                              display: "flex", 
-                              justifyContent: "center", 
-                              alignItems: "center", 
-                              flexDirection: "column", 
-                              marginTop: "40px",
-                              cursor: "pointer"
-                            }}
-                            onClick={() => downloadFile(a.replace("files/", ""))}
-                            onMouseEnter={() => {
-                              setCurrentPath(a)
-                            }}
-                            onMouseLeave={() => {
-                              setCurrentPath("")
-                            }}
-                          >
-                              <div>
-                                <FilePresent />  
-                                {
-                                  currentPath === a && (
-                                    <span style={{marginLeft: "6px", color: "lightblue"}}>
-                                      <DownloadOutlined />
-                                    </span>
-                                  )
-                                }
-                              </div>
-                              <p>{a.replace("files/", "")}</p>
-                          </div>
-                        )
-                      }
-                    })
-                  }
-                </div> : null
-              }
-          
-              <div style={{display: "flex", justifyContent: "space-between"}}>
-                <Typography variant="caption" color="textSecondary">
-                  {
-                    renderProfileImage(row)
-                  }
-      
-                  {
-                    allUsers?.find((a) => a.id === comment.user_id)?.name
-                  } 
-                  • 
-                  { 
-                    moment(comment.updated_at).format("DD MMMM YYYY h:m") 
-                  }
-                </Typography>
-      
-                <div style={{display: "flex"}}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <span>{comment.upvotes}</span>
-                    <IconButton 
-                      color={upvotes.includes(comment.id) ? "warning" : "primary"} 
-                      onClick={() => {
-                        handleUpvote(comment.id)
-                        // setShowForm(false)
-                      }}
-                      onMouseEnter={handlePopoverOpen}
-                      onMouseLeave={handlePopoverClose}
-                    >
-                      <ThumbUp />
-                    </IconButton>
-                    <Popover
-                      id="mouse-over-popover"
-                      sx={{
-                        pointerEvents: 'none',
-                      }}
-                      open={open}
-                      anchorEl={anchorEl}
-                      anchorOrigin={{
-                        vertical: 'bottom',
-                        horizontal: 'left',
-                      }}
-                      transformOrigin={{
-                        vertical: 'top',
-                        horizontal: 'left',
-                      }}
-                      onClose={handlePopoverClose}
-                      disableRestoreFocus
-                    >
-                       &nbsp;Liked by &nbsp; &nbsp;
-                      {
-                        comment?.likers?.slice(0, 3).map((a) => renderProfileImage(a))
-                      }
+    <>
+      <Card sx={{marginBottom: "20px", borderLeft: "4px solid grey"}}>
+        <CardContent>
+          {
+            comment?.isDeleted === "Yes" ? (
+              <Typography variant="body1">Comment deleted</Typography>
+            ) : (
+              <>
+                {
+                  renderCommentContent(comment)
+                }
+                
+                {
+                  comment?.files?.length ?
+                  <div style={{display: "flex"}}>
+                    {
+                      comment.files.map((a) => {
+                        if (checkFileType(a) === "image") {
+                          return  (
+                            <div 
+                              style={{
+                                marginRight: "20px", 
+                                display: "flex", 
+                                justifyContent: "center", 
+                                alignItems: "center", 
+                                flexDirection: "column", 
+                                marginTop: "40px",
+                                cursor: "pointer"
+                              }}
+                              onClick={() => downloadFile(a.replace("files/", ""))}
+                              onMouseEnter={() => {
+                                setCurrentPath(a)
+                              }}
+                              onMouseLeave={() => {
+                                setCurrentPath("")
+                              }}
+                            >
+                              
+                                <div>
+                                  <img src={`${process.env.REACT_APP_BASE_URL}${a}`} alt="Image" style={{height: "30px"}} />
+                                  {
+                                    currentPath === a && (
+                                      <span style={{marginLeft: "6px", color: "lightblue"}}>
+                                        <DownloadOutlined />
+                                      </span>
+                                    )
+                                  }
+                                </div>
+                                <p>{a.replace("files/", "")}</p>
+                            </div>
+                          )
+                        
+                        } else {
+                          return (
+                            <div 
+                              style={{
+                                marginRight: "20px", 
+                                display: "flex", 
+                                justifyContent: "center", 
+                                alignItems: "center", 
+                                flexDirection: "column", 
+                                marginTop: "40px",
+                                cursor: "pointer"
+                              }}
+                              onClick={() => downloadFile(a.replace("files/", ""))}
+                              onMouseEnter={() => {
+                                setCurrentPath(a)
+                              }}
+                              onMouseLeave={() => {
+                                setCurrentPath("")
+                              }}
+                            >
+                                <div>
+                                  <FilePresent />  
+                                  {
+                                    currentPath === a && (
+                                      <span style={{marginLeft: "6px", color: "lightblue"}}>
+                                        <DownloadOutlined />
+                                      </span>
+                                    )
+                                  }
+                                </div>
+                                <p>{a.replace("files/", "")}</p>
+                            </div>
+                          )
+                        }
+                      })
+                    }
+                  </div> : null
+                }
+            
+                <div style={{display: "flex", justifyContent: "space-between"}}>
+                  <Typography variant="caption" color="textSecondary">
+                    {
+                      renderProfileImage(row)
+                    }
+        
+                    {
+                      allUsers?.find((a) => a.id === comment.user_id)?.name
+                    } 
+                    • 
+                    { 
+                      moment(comment.updated_at).format("DD MMMM YYYY h:m") 
+                    }
+                  </Typography>
+        
+                  <div style={{display: "flex"}}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <span>{comment.upvotes}</span>
+                      <IconButton 
+                        color={upvotes.includes(comment.id) ? "warning" : "primary"} 
+                        onClick={() => {
+                          handleUpvote(comment.id)
+                          // setShowForm(false)
+                        }}
+                        onMouseEnter={handlePopoverOpen}
+                        onMouseLeave={handlePopoverClose}
+                      >
+                        <ThumbUp />
+                      </IconButton>
+                      <Popover
+                        id="mouse-over-popover"
+                        sx={{
+                          pointerEvents: 'none',
+                        }}
+                        open={open}
+                        anchorEl={anchorEl}
+                        anchorOrigin={{
+                          vertical: 'bottom',
+                          horizontal: 'left',
+                        }}
+                        transformOrigin={{
+                          vertical: 'top',
+                          horizontal: 'left',
+                        }}
+                        onClose={handlePopoverClose}
+                        disableRestoreFocus
+                      >
+                        &nbsp;Liked by &nbsp; &nbsp;
+                        {
+                          comment?.likers?.slice(0, 3).map((a) => renderProfileImage(a))
+                        }
 
-                      {
-                        comment?.likers?.length > 3 ? (
-                          <span>... and {comment?.likers?.length - 3} others</span>
-                        ) : null
-                      }
-                    </Popover>
-                    {/* <Typography variant="body1">
-                      {comment.upvotes - comment.downvotes}
-                    </Typography>
-                    <span>{comment.downvotes}</span>
-                    <IconButton color={downvotes.includes(comment.id) ? "warning" : "primary"} onClick={() => handleDownvote(comment.id)}>
-                      <ThumbDown />
-                    </IconButton> */}
-                  </Box>
+                        {
+                          comment?.likers?.length > 3 ? (
+                            <span>... and {comment?.likers?.length - 3} others</span>
+                          ) : null
+                        }
+                      </Popover>
+                      {/* <Typography variant="body1">
+                        {comment.upvotes - comment.downvotes}
+                      </Typography>
+                      <span>{comment.downvotes}</span>
+                      <IconButton color={downvotes.includes(comment.id) ? "warning" : "primary"} onClick={() => handleDownvote(comment.id)}>
+                        <ThumbDown />
+                      </IconButton> */}
+                    </Box>
 
 
-                  { renderShowHideReplies(hide, comment) }
-                 
-
-                  <Button
-                    onClick={() => {
-                      setEditMode(false)
-                      setParentId(comment.id)
-                      setCommentId(comment.id)
-                      setOpenModal(true)
-                      setShowForm(false)
-                    }}
-                  >
-                    <ReplyOutlined />
-                  </Button>
-      
-                  {
-                    comment.user_id === userId && (
+                    { renderShowHideReplies(hide, comment) }
+                  
+                    <Tooltip title="Reply">
                       <Button
                         onClick={() => {
+                          setEditMode(false)
+                          setParentId(comment.id)
                           setCommentId(comment.id)
-                          setEditMode(true)
                           setOpenModal(true)
-                          dispatch(setChildCommentContent({content: comment.content}))
-                          dispatch(setCommentFiles({commentFiles: comment.files}))
                           setShowForm(false)
                         }}
                       >
-                        <EditOutlined />
+                        <ReplyOutlined />
                       </Button>
-                    )
-                  }
-      
-                  {
-                    comment.user_id === userId && (
+                    </Tooltip>
+                    
+                    <Tooltip title="Copy text">
                       <Button
                         onClick={() => {
-                          setCommentId(comment.id)
-                          setOpenDeleteDialog(true)
-                          setShowForm(false)
+
+                          const modifiedHtml = comment.content.replace(/<em-emoji shortcodes=":([^:]+):"[^>]+><\/em-emoji>/g, (match, shortcode) => {
+                            const unicode = emoji.getUnicode(`:${shortcode}:`);
+                            return unicode || match;
+                          });
+                          navigator.clipboard.writeText(`${removeHTMLTags(modifiedHtml)}`)
+
+                          setOpenAlert(true)
+                          setAlertMessage("Text Copied!!")
+                          setSeverity("info")
                         }}
                       >
-                        <DeleteOutline />
+                        <ContentCopyOutlined />
                       </Button>
-                    )
+                    </Tooltip>
+        
+                    {
+                      comment.user_id === userId && (
+                        <Tooltip title="Edit">
+                          <Button
+                            onClick={() => {
+                              setCommentId(comment.id)
+                              setEditMode(true)
+                              setOpenModal(true)
+                              dispatch(setChildCommentContent({content: comment.content}))
+                              dispatch(setCommentFiles({commentFiles: comment.files}))
+                              setShowForm(false)
+                            }}
+                          >
+                            <EditOutlined />
+                          </Button>
+                        </Tooltip>
+                      )
+                    }
+        
+                    {
+                      comment.user_id === userId && (
+                        <Tooltip title="Delete">
+                          <Button
+                            onClick={() => {
+                              setCommentId(comment.id)
+                              setOpenDeleteDialog(true)
+                              setShowForm(false)
+                            }}
+                          >
+                            <DeleteOutline />
+                          </Button>
+                        </Tooltip>
+                      )
+                    }
+                  </div>
+
+                  {
+                    usersTyping?.length ? (
+                    <div>
+                      {
+                          usersTyping.map((user) => (
+                            <p key={user}>{user} is typing a reply...</p>
+                          ))
+                      }
+                    </div>
+                    ) : null
                   }
                 </div>
+              </>
+            )
+          }
+        
+        </CardContent>
+        {hide !== comment.id && comment.children && comment.children.length > 0 && (
+          <div style={{marginLeft: "40px"}}>
+            <Divider />
+            {comment.children.map((childComment) => (
+              <Comment 
+                key={childComment.id} 
+                comment={childComment}   
+                allUsers={allUsers}
+                setOpenModal={setOpenModal}
+                setParentId={setParentId}
+                userId={userId}
+                dispatch={dispatch}
+                setEditMode={setEditMode}
+                editMode={editMode}
+                setCommentId={setCommentId}
+                setOpenDeleteDialog={setOpenDeleteDialog}
+                setHide={setHide}
+                hide={hide}
+                handleDownvote={handleDownvote}
+                handleUpvote={handleUpvote}
+                upvotes={upvotes}
+                downvotes={downvotes}
+                setShowForm={setShowForm}
+                socket={socket}
+              />
+            ))}
+          </div>
+        )}
+      </Card>
 
-                {
-                  usersTyping?.length ? (
-                   <div>
-                     {
-                        usersTyping.map((user) => (
-                          <p key={user}>{user} is typing a reply...</p>
-                        ))
-                     }
-                   </div>
-                  ) : null
-                }
-              </div>
-            </>
-          )
-        }
-      
-      </CardContent>
-      {hide !== comment.id && comment.children && comment.children.length > 0 && (
-        <div style={{marginLeft: "40px"}}>
-          <Divider />
-          {comment.children.map((childComment) => (
-            <Comment 
-              key={childComment.id} 
-              comment={childComment}   
-              allUsers={allUsers}
-              setOpenModal={setOpenModal}
-              setParentId={setParentId}
-              userId={userId}
-              dispatch={dispatch}
-              setEditMode={setEditMode}
-              editMode={editMode}
-              setCommentId={setCommentId}
-              setOpenDeleteDialog={setOpenDeleteDialog}
-              setHide={setHide}
-              hide={hide}
-              handleDownvote={handleDownvote}
-              handleUpvote={handleUpvote}
-              upvotes={upvotes}
-              downvotes={downvotes}
-              setShowForm={setShowForm}
-              socket={socket}
-            />
-          ))}
-        </div>
-      )}
-    </Card>
+      <Snackbar open={openAlert} autoHideDuration={6000} onClose={handleCloseAlert}>
+        <Alert onClose={handleCloseAlert} severity={severity} sx={{ width: '100%' }}>
+          {alertMessage}
+        </Alert>
+      </Snackbar>
+    </>
   );
 };
 
@@ -649,7 +704,7 @@ const Comments = ({comments, activityId, socket, params}) => {
           <Button
             variant='contained' 
             onClick={() => setShowForm(true)}
-            style={{marginTop: "10px"}}
+            style={{marginTop: "10px", borderRadius: "30px"}}
           >
             Add Comment
           </Button>

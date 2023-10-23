@@ -9,7 +9,7 @@ import { useDispatch, useSelector } from "react-redux";
 import Lists from "./pages/Lists";
 import { useEffect, useState } from "react";
 import { getToken } from "./services/LocalStorageService";
-import { setAllUsersData, setFollowersData, setLoadingDashboard, setUserInfo } from "./features/userSlice";
+import { setAllUsersData, setExchangeRates, setFollowersData, setLoadingDashboard, setUserInfo } from "./features/userSlice";
 import { useGetLoggedUserQuery } from "./services/userAuthApi";
 import Activities from "./pages/Activities";
 import SingleList from "./pages/SingleList";
@@ -49,6 +49,27 @@ function App() {
   const dispatch = useDispatch()
   const { data, isSuccess } = useGetLoggedUserQuery(token)
   const navigate = useNavigate()
+
+  const fetchExchangeRates = async () => {
+    await instance.get(`https://api.currencyfreaks.com/v2.0/rates/latest?apikey=${process.env.CURRENCY_API_SECRET_KEY}`)
+    .then((res) => {
+      dispatch(setExchangeRates({exchangeRates: res.data.rates}))
+    })
+    .catch((e) => {
+       console.log(e);
+    })
+  }
+
+  useEffect(() => {
+    let rates = {
+      GBP: 0.8240269799382,
+      SEK: 10.952982985376233,
+      EUR: 0.9447777410364212,
+    }
+
+    dispatch(setExchangeRates({exchangeRates: rates}))
+    // fetchExchangeRates()
+   }, [])
   
   useEffect(() => {
    
