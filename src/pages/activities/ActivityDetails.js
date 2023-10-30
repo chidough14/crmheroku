@@ -89,6 +89,8 @@ const ActivityDetails = ({socket}) => {
   const [openAlert, setOpenAlert] =  React.useState(false);
   const [alertMessage, setAlertMessage] =  React.useState("");
   const [severity, setSeverity] =  React.useState("");
+  const [currencySymbol, setCurrencySymbol] =  React.useState("$")
+  const [updatedProducts, setUpdatedProducts] = React.useState([]);
   
   const {state} = useLocation()
 
@@ -191,13 +193,50 @@ const ActivityDetails = ({socket}) => {
   }, [openPrompt])
 
   useEffect(()=> {
+
+    if (user?.setting?.currency_mode === "USD" || user?.setting?.currency_mode === null) {
+      setCurrencySymbol("$")
+
+      let arr = []
+      activity?.products?.map((a) => {
+         let total = a.price * a.pivot.quantity
+         arr.push(total)
+      })
+      setUpdatedProducts(activity?.products)
+
+      setTotal(arr.reduce((a, b) => a + b, 0))
+
+    } else {
+      if (user?.setting?.currency_mode === "EUR") {
+        setCurrencySymbol("€")
+      }
+
+      if (user?.setting?.currency_mode === "GBP") {
+        setCurrencySymbol("£")
+      }
+
+      let arr = []
+
+      let prds = activity?.products?.map((a) => {
+        return {
+          ...a,
+          price: parseFloat((a.price * user?.exchangeRates[user?.setting?.currency_mode]).toFixed(2))
+        }
+      })
+
+      setUpdatedProducts(prds)
+
+      prds?.map((a) => {
+          let total = a.price * a.pivot.quantity
+          arr.push(total)
+      })
+
+      setTotal(arr.reduce((a, b) => a + b, 0))
+   
+    }
     
-    let arr = []
-    activity?.products?.map((a) => {
-       let total = a.price * a.pivot.quantity
-       arr.push(total)
-    })
-    setTotal(arr.reduce((a, b) => a + b, 0))
+
+  
 
 
   }, [activity])
@@ -412,6 +451,20 @@ const ActivityDetails = ({socket}) => {
     .catch((err) => console.log(err))
   }
 
+  const renderActivityProducts = (products) => {
+    if (user?.setting?.currency_mode === "USD" || user?.setting?.currency_mode === null) {
+      setCurrencySymbol("$")
+    } else {
+      if (user?.setting?.currency_mode === "EUR") {
+        setCurrencySymbol("€")
+      }
+
+      if (user?.setting?.currency_mode === "GBP") {
+        setCurrencySymbol("£")
+      }
+    }
+  }
+
 
   return (
     <div>
@@ -460,17 +513,19 @@ const ActivityDetails = ({socket}) => {
             
               <div>
                 <ActivityProductsTable 
-                  products={activity?.products} 
+                  products={updatedProducts} 
+                  // products={activity?.products} 
                   editItem={editItem} 
                   deleteItem={deleteItem}
                   activity={activity}
                   user={user}
+                  currencySymbol={currencySymbol}
                 />
 
 
                 <div style={{display: "flex", justifyContent: "space-between", marginTop: "40px" }}>
                   <Typography variant='h5'  component="div" sx={{ flexGrow: 2}}>
-                    <b>Total:</b> ${total}
+                    <b>Total:</b> {currencySymbol}{parseFloat((total).toFixed(2))}
                   </Typography>
                   
                   {

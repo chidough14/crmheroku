@@ -4,7 +4,7 @@ import React from 'react'
 import { Droppable } from 'react-beautiful-dnd'
 import ActivityItem from './ActivityItem'
 
-const ActivityColumn = ({ col: { list, id, total }, loading, socket, showTrash }) => {
+const ActivityColumn = ({ col: { list, id, total }, loading, socket, showTrash, currencySymbol }) => {
 
   const getInfo = (id) => {
     let text
@@ -46,7 +46,7 @@ const ActivityColumn = ({ col: { list, id, total }, loading, socket, showTrash }
             <Tooltip placement='top' title={getInfo(id)}>
               <InfoOutlined sx={{fontSize: "14px", marginLeft: "10px"}} />
             </Tooltip>
-            <br></br> ${total}
+            <br></br> {currencySymbol}{parseFloat(total?.toFixed(2))}
           </p>
           
 
@@ -74,6 +74,7 @@ const ActivityColumn = ({ col: { list, id, total }, loading, socket, showTrash }
                       index={index} 
                       socket={socket} 
                       showTrash={showTrash}
+                      currencySymbol={currencySymbol}
                     />
                 ))}
                 {provided.placeholder}
