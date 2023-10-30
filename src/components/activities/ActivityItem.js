@@ -32,7 +32,7 @@ const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
 });
 
-const ActivityItem = ({activity, index, socket, showTrash}) => {
+const ActivityItem = ({activity, index, socket, showTrash, currencySymbol}) => {
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const [openModal, setOpenModal] = useState(false);
@@ -311,12 +311,13 @@ const ActivityItem = ({activity, index, socket, showTrash}) => {
                     display: "flex", 
                     justifyContent: "space-between", 
                     marginBottom: Boolean(activity.decreased_probability) ||  
-                                  ( activity.decreased_probability !== null && !Boolean(activity.decreased_probability) ) ||
+                                  (activity.decreased_probability !== null && !Boolean(activity.decreased_probability)) ||
                                   (activity.decreased_probability === null && activity.probability !== "Closed")
-                                   ? "-18px" : null}}
+                                   ? "-18px" : null
+                  }}
                 >
                   <Typography sx={{ fontSize: 14, mb: -2, color: "blue" }} >
-                      ${activity.total}
+                      {currencySymbol}{activity.total}
                   </Typography>
 
                   <Typography sx={{ fontSize: 14, mb: -2 }} >

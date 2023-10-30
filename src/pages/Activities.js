@@ -49,7 +49,7 @@ const Activities = ({socket}) => {
     followers,
     reloadActivities 
   } = useSelector((state) => state.activity) 
-  const { id, name, usersFollowed, usersFollowers, onlineUsers } = useSelector(state => state.user)
+  const { id, name, usersFollowed, usersFollowers, onlineUsers, exchangeRates, setting } = useSelector(state => state.user)
   const [open, setOpen] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -64,6 +64,7 @@ const Activities = ({socket}) => {
   const [restoreMode, setRestoreMode] = useState(false);
   const [openTransferModal, setOpenTransferModal] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
+  const [currencySymbol, setCurrencySymbol] = useState("$")
 
   const [anchorEl, setAnchorEl] = useState(null);
   const openMenu = Boolean(anchorEl);
@@ -137,31 +138,77 @@ const Activities = ({socket}) => {
   useEffect(() => {
 
     const obj = (act) => {
-      let cols  = {
-        Low: {
-          id: 'Low',
-          list: act.filter((a) => a.probability === "Low"),
-          total: act.filter((a) => a.probability === "Low").reduce((n, {total}) => n + total, 0) * 0.2,
-        },
-        Medium: {
-          id: 'Medium',
-          list: act.filter((a) => a.probability === "Medium"),
-          total: act.filter((a) => a.probability === "Medium").reduce((n, {total}) => n + total, 0) * 0.4,
-        },
-        High: {
-          id: 'High',
-          list: act.filter((a) => a.probability === "High"),
-          total: act.filter((a) => a.probability === "High").reduce((n, {total}) => n + total, 0) * 0.8,
-        },
-        Closed: {
-          id: 'Closed',
-          list: act.filter((a) => a.probability === "Closed"),
-          total: act.filter((a) => a.probability === "Closed").reduce((n, {total}) => n + total, 0),
-        },
-      
+      if (setting?.currency_mode === "USD" || setting?.currency_mode === null)  {
+        setCurrencySymbol("$")
+        let cols  = {
+          Low: {
+            id: 'Low',
+            list: act.filter((a) => a.probability === "Low"),
+            total: act.filter((a) => a.probability === "Low").reduce((n, {total}) => n + total, 0) * 0.2,
+          },
+          Medium: {
+            id: 'Medium',
+            list: act.filter((a) => a.probability === "Medium"),
+            total: act.filter((a) => a.probability === "Medium").reduce((n, {total}) => n + total, 0) * 0.4,
+          },
+          High: {
+            id: 'High',
+            list: act.filter((a) => a.probability === "High"),
+            total: act.filter((a) => a.probability === "High").reduce((n, {total}) => n + total, 0) * 0.8,
+          },
+          Closed: {
+            id: 'Closed',
+            list: act.filter((a) => a.probability === "Closed"),
+            total: act.filter((a) => a.probability === "Closed").reduce((n, {total}) => n + total, 0),
+          },
+        
+        }
+
+        return cols
+      } else {
+        if (setting?.currency_mode === "EUR") {
+          setCurrencySymbol("€")
+        }
+  
+        if (setting?.currency_mode === "GBP") {
+          setCurrencySymbol("£")
+        }
+
+        let arr = act.map((a) => {
+          return {
+            ...a,
+            total: parseFloat((a.total * exchangeRates[setting?.currency_mode]).toFixed(2))
+          }
+        })
+
+        let cols  = {
+          Low: {
+            id: 'Low',
+            list: arr.filter((a) => a.probability === "Low"),
+            total: arr.filter((a) => a.probability === "Low").reduce((n, {total}) => n + total, 0) * 0.2,
+          },
+          Medium: {
+            id: 'Medium',
+            list: arr.filter((a) => a.probability === "Medium"),
+            total: arr.filter((a) => a.probability === "Medium").reduce((n, {total}) => n + total, 0) * 0.4,
+          },
+          High: {
+            id: 'High',
+            list: arr.filter((a) => a.probability === "High"),
+            total: arr.filter((a) => a.probability === "High").reduce((n, {total}) => n + total, 0) * 0.8,
+          },
+          Closed: {
+            id: 'Closed',
+            list: arr.filter((a) => a.probability === "Closed"),
+            total: arr.filter((a) => a.probability === "Closed").reduce((n, {total}) => n + total, 0),
+          },
+        
+        }
+
+        return cols
       }
       
-      return cols
+     
     }
 
     if (showTrash) {
@@ -528,7 +575,11 @@ const Activities = ({socket}) => {
           <Tooltip placement='top' title="Total amount for the low, medium and high columns">
             <InfoOutlined sx={{fontSize: "14px", marginLeft: "4px", marginBottom: "7px"}} />
           </Tooltip>  
-           : <span  style={{color: "green"}}>${isNaN(columns?.Low?.total + columns?.High?.total + columns?.Medium?.total) ? "" : columns?.Low?.total + columns?.High?.total + columns?.Medium?.total}</span>
+           : 
+           <span  style={{color: "green"}}>{currencySymbol}{isNaN(columns?.Low?.total + columns?.High?.total + columns?.Medium?.total) ? 
+           "" : 
+           parseFloat((columns?.Low?.total + columns?.High?.total + columns?.Medium?.total).toFixed(2))}
+           </span>
         </Typography>
         
         {
@@ -810,6 +861,7 @@ const Activities = ({socket}) => {
               loading={loading} 
               socket={socket}  
               showTrash={showTrash} 
+              currencySymbol={currencySymbol}
             />
           ))}
         </div>
