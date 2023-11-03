@@ -492,7 +492,7 @@ const ActivityDetails = ({socket}) => {
 
               <DetailsPage 
                 activity={activity}
-                events={activity?.events.filter((ev) =>  moment().isBefore(ev.end))}
+                events={activity?.events?.filter((ev) =>  moment().isBefore(ev.end))}
                 editEvent={editEvent}
                 deleteEvent={removeEvent}
                 user={user}

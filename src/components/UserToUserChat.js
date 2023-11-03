@@ -548,42 +548,47 @@ const UserToUserChat = ({socket}) => {
 
             <div>
               {usersTyping?.length ? usersTyping.map((user) => (
-                <p key={user}>{user} is typing...</p>
+                <p key={user} style={{fontSize: "12px"}}>{user} is typing...</p>
               )) : null}
             </div>
-
+            
+           
             {
               disabled ? (
-                <Button 
-                  variant="contained" 
-                  color="primary" 
-                  onClick={()=> {
-                    setDisabled(false)
-                    socket.emit("users_chat_request_continue", {
-                      userId: id, 
-                      username: name, 
-                      conversationId: location?.state?.conversationId, 
-                      recipientId: location?.state?.recipientId,
-                      conversationString: location?.state?.conversationString
-                    })
-                  }} 
-                  style={{ marginLeft: '8px', borderRadius: "30px",  }} 
-                >
-                  Resume chat
-                </Button>
+                <div>
+                  <Button 
+                    variant="contained" 
+                    color="primary" 
+                    onClick={()=> {
+                      setDisabled(false)
+                      socket.emit("users_chat_request_continue", {
+                        userId: id, 
+                        username: name, 
+                        conversationId: location?.state?.conversationId, 
+                        recipientId: location?.state?.recipientId,
+                        conversationString: location?.state?.conversationString
+                      })
+                    }} 
+                    style={{ marginLeft: '8px', borderRadius: "30px",  }} 
+                  >
+                    Resume
+                  </Button>
+                </div>
               ) : null
             }
+         
 
-
-            <Button 
-              variant="contained" 
-              color="primary" 
-              onClick={() => handleSend()} 
-              style={{ marginLeft: '8px', borderRadius: "30px",  }} 
-              disabled={disabled}
-            >
-              Send
-            </Button>
+            <div>
+              <Button 
+                variant="contained" 
+                color="primary" 
+                onClick={() => handleSend()} 
+                style={{ marginLeft: '8px', borderRadius: "30px",  }} 
+                disabled={disabled}
+              >
+                Send
+              </Button>
+            </div>
           </div>
         </Paper>
       </div>
