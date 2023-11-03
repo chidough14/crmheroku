@@ -33,7 +33,7 @@ const Conversations = ({ socket }) => {
   return (
     <div
       ref={chatDivRef}
-      style={{width: "40%"}}
+      style={{width: "60%"}}
     >
       <ChatWindow
         mode="admin" 

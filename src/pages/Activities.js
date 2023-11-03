@@ -1,6 +1,6 @@
 import { AddOutlined, ArrowDropDown, CopyAllOutlined, DeleteOutline, FolderDelete, InfoOutlined, MoveUpOutlined, Restore, RestorePage, SearchOutlined } from '@mui/icons-material'
 import { Button, Checkbox, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Menu, MenuItem, Snackbar, TextField, Toolbar, Tooltip, Typography } from '@mui/material'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import {DragDropContext} from 'react-beautiful-dnd'
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
@@ -128,12 +128,12 @@ const Activities = ({socket}) => {
   }, [token])
 
   useEffect(() => {
-    if (reloadActivities) {
+    if (reloadActivities && activities?.length === 0) {
 
       fetchActivities()
     }
 
-  }, [reloadActivities])
+  }, [reloadActivities, activities])
 
   useEffect(() => {
 
@@ -406,13 +406,15 @@ const Activities = ({socket}) => {
     })
   }
 
-  useEffect(() => {
+  const hasMounted = useRef(false);   // Observe performance
 
-    if (sortOption) {
-      getSortedActivities(sortOption)
+  useEffect(() => {
+    if (hasMounted.current && sortOption) {
+      getSortedActivities(sortOption);
+    } else {
+      hasMounted.current = true;
     }
-    
-  }, [sortOption])
+  }, [sortOption]);
 
   useEffect(()=> {
     if (searchQuery.length === 3){

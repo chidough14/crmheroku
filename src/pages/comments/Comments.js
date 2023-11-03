@@ -242,7 +242,7 @@ const Comment = ({
                   comment?.files?.length ?
                   <div style={{display: "flex"}}>
                     {
-                      comment.files.map((a) => {
+                      comment?.files?.map((a) => {
                         if (checkFileType(a) === "image") {
                           return  (
                             <div 
