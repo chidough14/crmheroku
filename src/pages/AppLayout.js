@@ -40,6 +40,7 @@ import { setReloadActivities } from '../features/ActivitySlice';
 import { setReloadEvents } from '../features/EventSlice';
 import ChatRequestNotification from '../components/ChatRequestNotification';
 import UsersChatsRequestNotification from '../components/UsersChatsRequestNotification';
+import CookieConsent, { Cookies, getCookieConsentValue } from "react-cookie-consent";
 
 
 const Alert = React.forwardRef(function Alert(props, ref) {
@@ -696,6 +697,39 @@ export default function AppLayout({socket}) {
  
   }
 
+  const renderCookieConsent = () => {
+    return (
+      <CookieConsent
+        location="bottom"
+        buttonText="Sure man!!"
+        cookieName="myAwesomeCookieName2"
+        // disableStyles={true}
+        style={{ 
+          background: '#333'
+        }}
+        buttonStyle={{ background: '#f5f5f5', color: '#333' }}
+        onAccept={(acceptedByScrolling) => {
+          if (acceptedByScrolling) {
+            // triggered if user scrolls past threshold
+            console.log("Accept was triggered by user scrolling");
+            console.log(getCookieConsentValue("myAwesomeCookieName2"));
+          } else {
+            console.log("Accept was triggered by clicking the Accept button");
+            console.log(getCookieConsentValue("myAwesomeCookieName2"));
+          }
+        }}
+        enableDeclineButton
+        onDecline={() => {
+          console.log("nay!");
+        }}
+        expires={150}
+      >
+        This website uses cookies to enhance the user experience.{" "}
+        <span style={{ fontSize: "10px" }}>This bit of text is smaller :O</span>
+      </CookieConsent>
+    )
+  }
+
   return (
     <div
     style={{
@@ -971,10 +1005,13 @@ export default function AppLayout({socket}) {
                           </Tooltip>
                          )
                       }
-                     
-                    
                     </List>
+
+                    {
+                      renderCookieConsent()
+                    }
                   </Drawer>
+
 
                   {
                     renderBox()

@@ -9,6 +9,7 @@ import Paper from '@mui/material/Paper';
 import { useDispatch, useSelector } from 'react-redux';
 import { Box, Button, CircularProgress } from '@mui/material';
 import { setNewChat } from '../features/MessagesSlice';
+import moment from 'moment';
 
 const ChatHistory = ({getChats, loading, setIsPopupOpen, setShowPreviousChats}) => {
   const { conversations } = useSelector(state => state.message)
@@ -45,7 +46,7 @@ const ChatHistory = ({getChats, loading, setIsPopupOpen, setShowPreviousChats}) 
                     {row.user_id}
                   </TableCell>
                   <TableCell>{row.conversation_string}</TableCell>
-                  <TableCell>{row.created_at}</TableCell>
+                  <TableCell>{moment(row.created_at).format("DD-MMM-YYYY, h:mm a")}</TableCell>
                 </TableRow>
               )) : null }
             </TableBody>

@@ -392,7 +392,7 @@ const ChatWindow = ({
               <div 
                 style={{
                   width: '100%',
-                  maxWidth: 400,
+                  maxWidth: 800,
                   margin: '0 auto',
                   padding: "10px",
                   display: 'flex',
@@ -474,23 +474,13 @@ const ChatWindow = ({
 
                 <div>
                   {usersTyping?.length && usersTyping.map((user) => (
-                    <p key={user}>{user} is typing...</p>
+                    <p key={user} style={{fontSize: "12px"}}>{user} is typing...</p>
                   ))}
                 </div>
 
-
-                <Button 
-                  variant="contained" 
-                  color="primary" 
-                  onClick={handleSend} 
-                  style={{ marginLeft: '8px', borderRadius: "30px",  }} 
-                  disabled={disableButton}
-                >
-                  Send
-                </Button>
-
                 {
                   disableButton && (
+                    <div>
                     <Button 
                       variant="contained" 
                       size='small' 
@@ -498,10 +488,23 @@ const ChatWindow = ({
                       onClick={resumeChat} 
                       style={{ marginLeft: '8px', borderRadius: "30px",  }} 
                     >
-                      Resume Chat
+                      Resume
                     </Button>
+                    </div>
                   )
                 }
+
+                <div>
+                  <Button 
+                    variant="contained" 
+                    color="primary" 
+                    onClick={handleSend} 
+                    style={{ marginLeft: '8px', borderRadius: "30px",  }} 
+                    disabled={disableButton}
+                  >
+                    Send
+                  </Button>
+                </div>
               </div>
             </>
 
