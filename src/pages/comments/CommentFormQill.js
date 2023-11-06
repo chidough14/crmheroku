@@ -4,7 +4,7 @@ import 'react-quill-emoji';
 import "quill-mention";
 import 'react-quill/dist/quill.snow.css';
 import 'react-quill-emoji/dist/quill-emoji.css';
-import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
+import { Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
 import { useDispatch, useSelector } from 'react-redux';
 import instance from '../../services/fetchApi';
 import { DeleteOutlined, FilePresent } from '@mui/icons-material';
@@ -34,6 +34,7 @@ const CommentFormQill = ({
   const [usersTyping, setUsersTyping] = useState([]);
   const { id, name } = useSelector(state => state.user)
   const { commentFiles } = useSelector(state => state.activity)
+  const [sendingComment, setSendingComment] = useState(false)
   const dispatch = useDispatch()
   const myInputRef = useRef()
 
@@ -43,36 +44,41 @@ const CommentFormQill = ({
     }
   }
 
-  const save = (values) => {
+  const save = async (values) => {
+    setSendingComment(true)
 
-    // Get the Quill editor instance from the ref
     const quillEditor = myInputRef.current.getEditor();
-
-    // Get the text content of the editor
     const editorContents = quillEditor.getText().trim();
-
-    if (editorContents === '') {
-      // setOpenDialog(true)
-      alert("Enter message contents")
-    } else {
-      // Submit the form or perform your action
-      let arr = myInputRef.current.getEditor().getContents().ops
-
-      let names = arr.filter((a) => typeof a.insert === 'object').map((b) => {
-        if (b.insert.mention) {
-          return b.insert.mention.value
-        }
-      })
   
-      saveComment(myInputRef.current.getEditor().getContents(), names, paths, parentId)
+    if (editorContents === '') {
+      alert("Enter message contents");
+    } else {
+      let arr = myInputRef.current.getEditor().getContents().ops;
 
-      setShowForm(false)
+      let names = arr
+      .filter((a) => typeof a.insert === 'object' && a.insert.mention)
+      .map((b) => b.insert.mention.value);
+  
+      // Use async/await to wait for saveComment to finish
+      try {
+        await saveComment(myInputRef.current.getEditor().getContents(), names, paths, parentId);
+
+        if (mode === "normal") {
+          setShowForm(false)
+        } else {
+          handleClose()
+        }
+       
+        setSendingComment(false)
+      } catch (error) {
+        // Handle any errors from saveComment if needed
+        console.error(error);
+      }
+  
+      handleStoppedTyping();
     }
-
-    handleStoppedTyping()
-
-
   }
+  
 
   const update = () => {
     let arr = myInputRef.current.getEditor().getContents().ops
@@ -379,11 +385,13 @@ const CommentFormQill = ({
                     renderList(values, searchTerm);
                   } else if (values) {
                     const matches = [];
-                    for (let i = 0; i < values.length; i += 1)
-                      if (
-                        values[i].value.toLowerCase().indexOf(searchTerm.toLowerCase())
-                      )
-                        matches.push(`{${values[i]}`);
+                    for (let i = 0; i < values.length; i += 1) {
+                      if (values[i].value.toLowerCase().indexOf(searchTerm.toLowerCase()) === 0) {
+                        // matches.push(`{${values[i]}`);
+                        matches.push(values[i]);
+                      }
+                    }
+
                     renderList(matches, searchTerm);
                   }
                 },
@@ -432,7 +440,13 @@ const CommentFormQill = ({
           }}
           style={{borderRadius: "30px"}}
         >
-          Save
+          {
+            sendingComment ? (
+              <Box sx={{ display: 'flex' }}>
+                <CircularProgress size={24} color="inherit" />
+              </Box>
+            ): "Save"
+          }
         </Button>
 
         

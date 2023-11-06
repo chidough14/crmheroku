@@ -12,6 +12,7 @@ import instance from '../../services/fetchApi';
 import SearchBar from '../SearchBar';
 import { DeleteOutlined, FilePresent, UploadFileOutlined } from '@mui/icons-material';
 import { checkFileType } from '../../services/checkers';
+import deltaToString from "delta-to-string-converter"
 
 const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
@@ -177,6 +178,15 @@ const ActivityModal = ({open, setOpen, companyObject, openActivityModal, activit
    
   }
 
+  const isValidJson = (string) => {
+    try {
+      JSON.parse(string)
+      return true
+    } catch (error) {
+      return false
+    }
+  }
+
   const formik = useFormik({
     initialValues: {
       label: '',
@@ -205,10 +215,17 @@ const ActivityModal = ({open, setOpen, companyObject, openActivityModal, activit
           sendNotificationToFollowers(res.data.activity, `${user?.name} edited ${activity.label}`, "activity_edited")
 
           showAlert("Activity updated successfully", "success")
-  
-          dispatch(editActivity({activity: res.data.activity}))
 
-          dispatch(setSingleActivity({activity: res.data.activity}))
+          const updatedActivity = {
+            ...res.data.activity,
+            comments: res.data.activity.comments.map((a) => ({
+              ...a,
+              content: isValidJson(a.content) ? deltaToString(JSON.parse(a.content).ops) : a.content
+            }))
+          };
+      
+          dispatch(editActivity({ activity: updatedActivity }));
+          dispatch(setSingleActivity({ activity: updatedActivity }));
 
           if (formerPobability === "High" && res.data.activity.probability === "Closed") {
            
@@ -220,7 +237,7 @@ const ActivityModal = ({open, setOpen, companyObject, openActivityModal, activit
           resetForm();
           dispatch(setShowSendingSpinner({showSendingSpinner: false}))
         })
-        .catch(()=> {
+        .catch((e)=> {
           showAlert("Ooops an error was encountered", "error")
           dispatch(setShowSendingSpinner({showSendingSpinner: false}))
         })

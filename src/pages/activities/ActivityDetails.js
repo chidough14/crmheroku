@@ -234,11 +234,6 @@ const ActivityDetails = ({socket}) => {
       setTotal(arr.reduce((a, b) => a + b, 0))
    
     }
-    
-
-  
-
-
   }, [activity])
 
   const updateComments = (data, user, params, flag) => {
