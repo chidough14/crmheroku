@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import moment from 'moment';
 import CommentForm from './CommentForm';
 import instance from '../../services/fetchApi';
-import { addComments, editComment, editDownVotes, editUpVotes, setChildCommentContent, setCommentContent, setCommentFiles } from '../../features/ActivitySlice';
+import { addComments, editActivity, editComment, editDownVotes, editUpVotes, setChildCommentContent, setCommentContent, setCommentFiles } from '../../features/ActivitySlice';
 import { ContentCopyOutlined, DeleteOutline, DownloadOutlined, EditOutlined, FilePresent, ReplyOutlined, ThumbDown, ThumbUp } from '@mui/icons-material';
 import AddCommentModal from './AddCommentModal';
 import { useNavigate } from 'react-router';
@@ -99,7 +99,7 @@ const Comment = ({
   }, []);
 
   const handlePopoverOpen = (event) => {
-    if (!comment.likers.length) {
+    if (!comment?.likers?.length) {
 
     } else {
       setAnchorEl(event.currentTarget);
@@ -591,7 +591,8 @@ const Comments = ({comments, activityId, socket, params}) => {
 
       res.data.comment.content = formattedHtml
 
-      dispatch(addComments({comment: res.data.comment}))
+      //dispatch(addComments({comment: res.data.comment}))
+      dispatch(editActivity({activityId, comment: res.data.comment}))
 
 
       socket.emit('comment_added', { activityId, comment: JSON.stringify(res.data.comment) });
@@ -602,12 +603,15 @@ const Comments = ({comments, activityId, socket, params}) => {
       setCommentId(null)
       setParentId(null)
 
-      for (let i=0; i<names.length; i++) {
-        let username = names[i] 
-
-        let userInfo  = allUsers?.find((a) => a.name === username)
-        socket.emit('sendNotification', { recipientId: userInfo.id, message: `You were mentioned by ${name}` });  
+      if (names.length) {
+        for (let i=0; i<names.length; i++) {
+          let username = names[i] 
+  
+          let userInfo  = allUsers?.find((a) => a.name === username)
+          socket.emit('sendNotification', { recipientId: userInfo?.id, message: `You were mentioned by ${name}` });  
+        }
       }
+     
       
     })
   }

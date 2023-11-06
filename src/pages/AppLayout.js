@@ -703,7 +703,6 @@ export default function AppLayout({socket}) {
         location="bottom"
         buttonText="Sure man!!"
         cookieName="myAwesomeCookieName2"
-        // disableStyles={true}
         style={{ 
           background: '#333'
         }}
@@ -712,17 +711,15 @@ export default function AppLayout({socket}) {
           if (acceptedByScrolling) {
             // triggered if user scrolls past threshold
             console.log("Accept was triggered by user scrolling");
-            console.log(getCookieConsentValue("myAwesomeCookieName2"));
           } else {
             console.log("Accept was triggered by clicking the Accept button");
-            console.log(getCookieConsentValue("myAwesomeCookieName2"));
           }
         }}
         enableDeclineButton
         onDecline={() => {
           console.log("nay!");
         }}
-        expires={150}
+        expires={1}
       >
         This website uses cookies to enhance the user experience.{" "}
         <span style={{ fontSize: "10px" }}>This bit of text is smaller :O</span>

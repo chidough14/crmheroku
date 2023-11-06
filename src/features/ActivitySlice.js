@@ -34,12 +34,24 @@ export const ActivitySlice = createSlice({
       state.activities = [...state.activities, action.payload.activity]
     },
     editActivity: (state, action) => {
-      let idx
-      idx = state.activities.findIndex((a) => a.id === action.payload.activity.id)
+      if (action.payload.activity) {
+        let idx
+        idx = state.activities.findIndex((a) => a.id === action.payload.activity.id)
+        
+        let total = state.activities[idx].total
+        state.activities[idx] = action.payload.activity
+        state.activities[idx].total = total
+      } 
       
-      let total = state.activities[idx].total
-      state.activities[idx] = action.payload.activity
-      state.activities[idx].total = total
+      if (action.payload.activityId) {
+        state.activity.comments = [...state.activity.comments, action.payload.comment]
+
+        let idx
+        idx = state.activities.findIndex((a) => a.id === action.payload.activityId)
+        if (idx > -1) {
+          state.activities[idx].comments = [...state.activities[idx].comments, action.payload.comment]
+        }
+      }
     },
     editActivityProbability: (state, action) => {
       let idx
