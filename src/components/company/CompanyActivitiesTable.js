@@ -117,7 +117,6 @@ const ComanyActivitiesTable = ({rows}) => {
       <Table aria-label="collapsible table">
         <TableHead>
           <TableRow>
-            <TableCell />
             <TableCell>Label</TableCell>
             <TableCell>Description</TableCell>
             <TableCell>Assigned To</TableCell>
