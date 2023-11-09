@@ -82,7 +82,6 @@ const Comment = ({
   
     // Listen for 'user stopped typing' events from the server
     socket.on('user stopped typing reply', (data) => {
-
       if (comment.id === data.commentId) {
         usersTypingSet.delete(data.name);
         // Convert the Set back to an array and update the state
@@ -461,7 +460,7 @@ const Comment = ({
                     <div>
                       {
                           usersTyping.map((user) => (
-                            <p key={user}>{user} is typing a reply...</p>
+                            <p key={user} style={{fontSize: "12px"}}>{user} is typing a reply...</p>
                           ))
                       }
                     </div>
@@ -622,6 +621,7 @@ const Comments = ({comments, activityId, socket, params}) => {
 
     let body = {
       content,
+      activity_id: activityId,
       mentions: names,
       paths
     }
@@ -632,20 +632,26 @@ const Comments = ({comments, activityId, socket, params}) => {
       res.data.comment.content = deltaToStringConverter(res.data.comment.content.ops)
       // res.data.comment.content = DeltaToStringConverter(res.data.comment.content.ops)
 
+      //dispatch(editActivity({activityId, comment: res.data.comment}))
+
       socket.emit('comment_edited', { activityId, comment: JSON.stringify(res.data.comment) });
 
       dispatch(editComment({comment: res.data.comment}))
+
       dispatch(setChildCommentContent({content: ""}))
       setCommentId(null)
       setOpenModal(false)
       setParentId(null)
 
-      for (let i=0; i<names.length; i++) {
-        let username = names[i] 
-
-        let userInfo  = allUsers?.find((a) => a.name === username)
-        socket.emit('sendNotification', { recipientId: userInfo.id, message: `You were mentioned by ${name}` });  
+      if (names.length) {
+        for (let i=0; i<names.length; i++) {
+          let username = names[i] 
+  
+          let userInfo  = allUsers?.find((a) => a.name === username)
+          socket.emit('sendNotification', { recipientId: userInfo?.id, message: `You were mentioned by ${name}` });  
+        }
       }
+
     })
   }
 
