@@ -273,7 +273,30 @@ const ActivityDetails = ({socket}) => {
       updateComments(data, user, params, "upvote")
     });
 
-  }, [params.id, socket])
+  }, [socket])
+
+  // useEffect(()=> {
+     
+  //   socket.on('comment_added', (data) => {
+  //     updateComments(data, user, params, "add")
+    
+  //   });
+
+  //   socket.on('comment_deleted', (data) => {
+     
+  //     updateComments(data, user, params, "delete")
+    
+  //   });
+
+  //   socket.on('comment_edited', (data) => {
+  //     updateComments(data, user, params, "edit")
+  //   });
+
+  //   socket.on('comment_upvoted', (data) => {
+  //     updateComments(data, user, params, "upvote")
+  //   });
+
+  // }, [params.id, socket])
 
   const addProductToActivity = async () => {
     dispatch(setProductAdding({productAdding: true}))

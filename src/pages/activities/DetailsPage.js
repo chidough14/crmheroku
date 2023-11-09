@@ -1,9 +1,10 @@
 import { AddOutlined, DeleteOutlined, EditOutlined } from '@mui/icons-material'
 import { Button, Typography } from '@mui/material'
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import {useNavigate } from 'react-router-dom'
 import ActivityEventsTable from './ActivityEventsTable'
 import Comments from '../comments/Comments'
+import { useSelector } from 'react-redux'
 
 const DetailsPage = ({
   activity,
@@ -15,9 +16,32 @@ const DetailsPage = ({
   setOpenDialogDeleteActivity,
   setOpenEditModal,
   socket,
-  params
+  params,
 }) => {
   const navigate = useNavigate()
+  const { exchangeRates, setting } = useSelector(state => state.user)
+  const [currencySymbol, setCurrencySymbol] =  useState("$")
+
+  const renderEarningEstimates = (est) => {
+  
+    if (setting?.currency_mode !== "USD" && setting?.currency_mode !== null) {
+      est = est * exchangeRates[setting?.currency_mode];
+    }
+  
+    return est.toFixed(2);
+  }
+
+  useEffect(() => {
+    let symbol = "$"; // Default currency symbol
+
+    if (setting?.currency_mode === "EUR") {
+      symbol = "€";
+    } else if (setting?.currency_mode === "GBP") {
+      symbol = "£";
+    }
+
+    setCurrencySymbol(symbol);
+  }, [setting, exchangeRates]);
 
   return (
     <>
@@ -40,7 +64,8 @@ const DetailsPage = ({
           </Typography>
 
           <Typography variant="h7" display="block"  gutterBottom>
-            <b>Estimate</b> : {activity?.earningEstimate}
+
+            <b>Estimate</b> : { currencySymbol }{ renderEarningEstimates(activity?.earningEstimate) }
           </Typography>
 
           <Typography variant="h7" display="block"  gutterBottom>

@@ -111,7 +111,7 @@ const Dashboard = ({socket}) => {
             total: a.total * exchangeRates[setting?.currency_mode]
           }
         })
-        console.log(res.data.results, result);
+        
         setDoughnutResults(result)
       }
 
