@@ -45,14 +45,18 @@ const CommentFormQill = ({
   }
 
   const save = async (values) => {
-    setSendingComment(true)
-
     const quillEditor = myInputRef.current.getEditor();
-    const editorContents = quillEditor.getText().trim();
-  
-    if (editorContents === '') {
+    const editorContents = quillEditor.getContents();
+
+    const isNotEmpty = editorContents.ops.some((op) => {
+      // Check if the op is not just whitespace
+      return !(typeof op.insert === 'string' && op.insert.trim() === '');
+    });
+
+    if (!isNotEmpty) {
       alert("Enter message contents");
     } else {
+      setSendingComment(true)
       let arr = myInputRef.current.getEditor().getContents().ops;
 
       let names = arr
@@ -83,13 +87,13 @@ const CommentFormQill = ({
   const update = () => {
     let arr = myInputRef.current.getEditor().getContents().ops
 
-    let names = arr.filter((a) => typeof a.insert === 'object').map((b) => {
-      if (b.insert.mention) {
-        return b.insert.mention.value
-      }
-    })
+    let names = arr
+    .filter((a) => typeof a.insert === 'object' && a.insert.mention)
+    .map((b) => b.insert.mention.value);
 
     updateComment(myInputRef.current.getEditor().getContents(), names, commentFiles)
+
+    handleStoppedTyping();
   }
 
   // const isEditorEmpty = value?.trim().length === 0;
@@ -420,7 +424,7 @@ const CommentFormQill = ({
 
       <div>
         {usersTyping?.length && usersTyping.map((user) => (
-          <p key={user}>{user} is typing...</p>
+          <p key={user} style={{fontSize: "12px"}}>{user} is typing...</p>
         ))}
       </div>
 
