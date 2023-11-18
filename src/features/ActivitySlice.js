@@ -20,7 +20,8 @@ const initialState = {
   downvotes: [],
   reloadActivities: false,
   commentFiles: [],
-  filePaths: []
+  filePaths: [],
+  commentSortOption: ""
 }
 
 export const ActivitySlice = createSlice({
@@ -209,6 +210,9 @@ export const ActivitySlice = createSlice({
     emptyPaths: (state, action) => {
       state.filePaths = []
     },
+    setCommentSortOption: (state, action) => {
+      state.commentSortOption = action.payload.sortOption
+    },
   },
 })
 
@@ -259,7 +263,8 @@ export const {
   addPaths,
   setFilePaths,
   removePaths,
-  emptyPaths
+  emptyPaths,
+  setCommentSortOption
 } = ActivitySlice.actions
 
 export default ActivitySlice.reducer

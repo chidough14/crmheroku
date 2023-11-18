@@ -28,7 +28,7 @@ const getInitials = (string) => {
 function Row(props) {
   const { row } = props;
   const navigate = useNavigate()
-  const {allUsers} = useSelector(state => state.user)
+  const {allUsers, id} = useSelector(state => state.user)
 
   let image_src = allUsers?.find((a)=> a.id === row.user_id)?.profile_pic
 
@@ -57,7 +57,15 @@ function Row(props) {
                     // height: "30px",
                     //margin: "10px",
                   }}
-                  onClick={() => navigate(`/profile/${allUsers?.find((a)=> a.id === row.user_id)?.id}`)}
+                  // onClick={() => navigate(`/profile/${allUsers?.find((a)=> a.id === row.user_id)?.id}`)}
+                  onClick={() => {
+                    let uid = allUsers?.find((a)=> a.id === row.user_id)?.id
+                    if (uid === id) {
+                      navigate(`/profile/mine`)
+                    } else {
+                      navigate(`/profile/${allUsers?.find((a)=> a.id === row.user_id)?.id}`)
+                    }
+                  }}
                 >
                   <p 
                     style={{
@@ -81,7 +89,14 @@ function Row(props) {
                   src={image_src}  
                   alt='profile_pic' 
                   style={{borderRadius: "50%", cursor: "pointer"}} 
-                  onClick={() => navigate(`/profile/${allUsers?.find((a)=> a.id === row.user_id)?.id}`)}
+                  onClick={() => {
+                    let uid = allUsers?.find((a)=> a.id === row.user_id)?.id
+                    if (uid === id) {
+                      navigate(`/profile/mine`)
+                    } else {
+                      navigate(`/profile/${allUsers?.find((a)=> a.id === row.user_id)?.id}`)
+                    }
+                  }}
                 />
               )
             }

@@ -32,7 +32,6 @@ const LineChart = ({ data }) => {
   const movements = data.map(entry => entry.movement);
 
   const formattedMovements = movements.map((a) => a.split("-")[1])
-  console.log(formattedMovements);
 
   // Mapping movement values to desired labels
   const movementLabels = {

@@ -115,7 +115,7 @@ export default function UserManagementTable({rows}) {
   const [userIds, setUserIds] = React.useState([]);
   const [userIdx, setUserIdx] = React.useState(null);
   const [bulkMode, setBulkMode] = React.useState(false);
-  const { showSpinner, showDeleteNotification } = useSelector(state => state.user)
+  const { showSpinner, showDeleteNotification, id } = useSelector(state => state.user)
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
@@ -349,7 +349,13 @@ export default function UserManagementTable({rows}) {
                       borderRadius: "50%",
                       cursor: "pointer",
                     }}
-                    onClick={() => navigate(`/profile/${row?.id}`)}
+                    onClick={() =>{
+                      if (row?.id === id) {
+                        navigate(`/profile/mine`)
+                      } else {
+                        navigate(`/profile/${row?.id}`)
+                      }
+                    }}
                   >
                     <p 
                       style={{
@@ -373,7 +379,14 @@ export default function UserManagementTable({rows}) {
                       src={row.profile_pic}  
                       alt='profile_pic' 
                       style={{borderRadius: "50%", cursor: "pointer"}} 
-                      onClick={() => navigate(`/profile/${row?.id}`)}
+                      // onClick={() => navigate(`/profile/${row?.id}`)}
+                      onClick={() =>{
+                        if (row?.id === id) {
+                          navigate(`/profile/mine`)
+                        } else {
+                          navigate(`/profile/${row?.id}`)
+                        }
+                      }}
                     />
                   )
                 }

@@ -48,7 +48,16 @@ const validationSchema = yup.object({
     .required('Type is required'),
 });
 
-const ActivityModal = ({open, setOpen, companyObject, openActivityModal, activity, editMode, mode, socket}) => {
+const ActivityModal = ({
+  open, 
+  setOpen, 
+  companyObject, 
+  openActivityModal, 
+  activity, 
+  editMode, 
+  mode, 
+  socket
+}) => {
  
   const [openAlert, setOpenAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
