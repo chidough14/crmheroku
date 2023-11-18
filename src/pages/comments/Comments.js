@@ -18,6 +18,7 @@ import emojiData from '@emoji-mart/data'
 import deltaToStringConverter from 'delta-to-string-converter';
 import emoji from 'emoji-dictionary';
 import MuiAlert from '@mui/material/Alert';
+import SortButton from '../orders/SortButton';
 
 
 const Alert = React.forwardRef(function Alert(props, ref) {
@@ -167,7 +168,14 @@ const Comment = ({
             cursor: "pointer",
             marginRight: "10px"
           }}
-          onClick={() => navigate(`/profile/${row?.id}`)}
+          onClick={() => {
+          
+            if (row?.id === userId) {
+              navigate(`/profile/mine`)
+            } else {
+              navigate(`/profile/${row?.id}`)
+            }
+          }}
         >
           <p 
             style={{
@@ -193,7 +201,15 @@ const Comment = ({
           src={row.profile_pic}  
           alt='profile_pic' 
           style={{borderRadius: "50%", cursor: "pointer", marginRight: "10px"}} 
-          onClick={() => navigate(`/profile/${row?.id}`)}
+          // onClick={() => navigate(`/profile/${row?.id}`)}
+          onClick={() => {
+          
+            if (row?.id === userId) {
+              navigate(`/profile/mine`)
+            } else {
+              navigate(`/profile/${row?.id}`)
+            }
+          }}
         />
        )
     }
@@ -327,7 +343,7 @@ const Comment = ({
                     } 
                     • 
                     { 
-                      moment(comment.updated_at).format("DD MMMM YYYY h:m") 
+                      moment(comment.created_at).format("DD MMMM YYYY h:mm") 
                     }
                   </Typography>
         
@@ -513,7 +529,7 @@ const Comment = ({
 
 const Comments = ({comments, activityId, socket, params}) => {
   const { allUsers, id, name } = useSelector(state => state.user)
-  const { upvotes, downvotes } = useSelector(state => state.activity)
+  const { upvotes, downvotes, commentSortOption } = useSelector(state => state.activity)
   const dispatch = useDispatch()
   const [openModal, setOpenModal] = useState(false)
   const [showForm, setShowForm] = useState(false)
@@ -522,6 +538,32 @@ const Comments = ({comments, activityId, socket, params}) => {
   const [hide, setHide] = useState()
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false)
   const [commentId, setCommentId] = useState(null)
+  // const [sortValue, setSortValue] = useState("")
+
+  const [sortedComments, setSortedComments] = useState([]); 
+
+  useEffect(() => {
+    // Initial sorting when comments or sort option change
+    sortComments();
+  }, [comments, commentSortOption]);
+
+  const sortComments = () => {
+    let sorted = [];
+
+    if (commentSortOption === 'latest') {
+      // Sort by the latest added comments
+      sorted = comments?.slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    } else if (commentSortOption === 'top') {
+      // Sort by the likes (you may need to adjust this based on your data structure)
+      sorted = comments?.slice().sort((a, b) => b.likers?.length - a.likers?.length);
+    } else {
+      sorted = comments
+    }
+
+    const nestedSortedComments = createNestedStructure(sorted);
+
+    setSortedComments(nestedSortedComments);
+  };
   
   const createNestedStructure = (comments, parentId = null) => {
     const nestedComments = [];
@@ -584,13 +626,10 @@ const Comments = ({comments, activityId, socket, params}) => {
     
     await instance.post(`comment`, body)
     .then((res) => {
-
-      // const formattedHtml = DeltaToStringConverter(res.data.comment.content.ops);
       const formattedHtml = deltaToStringConverter(res.data.comment.content.ops);
 
       res.data.comment.content = formattedHtml
 
-      //dispatch(addComments({comment: res.data.comment}))
       dispatch(editActivity({activityId, comment: res.data.comment}))
 
 
@@ -667,7 +706,9 @@ const Comments = ({comments, activityId, socket, params}) => {
 
   return (
     <div>
-      {createNestedStructure(comments).map((comment) => (
+
+      {/* {createNestedStructure(comments).map((comment) => ( */}
+        {sortedComments.map((comment) => (
         <Comment 
           key={comment.id} 
           comment={comment} 

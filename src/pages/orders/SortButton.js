@@ -25,14 +25,37 @@ const items = [
   }
 ]
 
+const itemsComments = [
+  {
+    name: "Latest",
+    argument: "latest"
+  },
+  {
+    name: "Top",
+    argument: "top"
+  },
+  {
+    name: "Clear",
+    argument: "clear"
+  }
+]
+
 const style = {
   backgroundColor: "#DDA0DD",
   borderRadius: "13px"
 }
 
 const SortButton = ({ setSortOption, sortOption, title, closeSearch, showTrash }) => {
+
   const [anchorEl, setAnchorEl] = React.useState(null);
+  const [dropDownOptions, setDropDownOptions] = React.useState([]);
   const open = Boolean(anchorEl);
+
+  React.useEffect(() => {
+    const options = title === "Sort Comments" ? itemsComments : items
+    setDropDownOptions(options)
+  }, [title])
+ 
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
     
@@ -100,11 +123,11 @@ const SortButton = ({ setSortOption, sortOption, title, closeSearch, showTrash }
       >
 
         {
-          items.map((a) => (
+          dropDownOptions?.map((a) => (
             <MenuItem
               key={a.name}
               onClick={() => setSortOption(a.argument)}
-              style={sortOption === a.argument ? style : null}
+              style={(sortOption === a.argument) && (sortOption !== "clear") ? style : null}
             >
               {a.name}
              
