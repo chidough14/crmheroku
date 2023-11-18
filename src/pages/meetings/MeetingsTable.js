@@ -151,11 +151,17 @@ const MeetingsTable = ({meetings, showModal, user, own}) => {
             cursor: "pointer",
           }}
           onClick={() => {
-            if (type === "sender") {
-              navigate(`/profile/${user?.allUsers?.find((a)=> a.id === row.user_id)?.id}`)
-            }else if (type === "invited") {
-              navigate(`/profile/${user?.allUsers?.find((a)=> a.email === row)?.id}`)
+            let uid = user?.allUsers?.find((a)=> a.email === row)?.id
+            if (uid === user?.id) {
+              navigate(`/profile/mine`)
+            } else {
+              if (type === "sender") {
+                navigate(`/profile/${user?.allUsers?.find((a)=> a.id === row.user_id)?.id}`)
+              }else if (type === "invited") {
+                navigate(`/profile/${user?.allUsers?.find((a)=> a.email === row)?.id}`)
+              }
             }
+          
           }}
         >
           <p 
@@ -183,11 +189,21 @@ const MeetingsTable = ({meetings, showModal, user, own}) => {
           alt='profile_pic' 
           style={{borderRadius: "50%", cursor: "pointer"}} 
           onClick={() => {
-            if (type === "sender") {
-              navigate(`/profile/${user?.allUsers?.find((a)=> a.id === row.user_id)?.id}`)
-            } else if (type === "invited") {
-              navigate(`/profile/${user?.allUsers?.find((a)=> a.email === row)?.id}`)
+            let uid = user?.allUsers?.find((a)=> a.email === row)?.id
+            if (uid === user?.id) {
+              navigate(`/profile/mine`)
+            } else {
+              if (type === "sender") {
+                navigate(`/profile/${user?.allUsers?.find((a)=> a.id === row.user_id)?.id}`)
+              }else if (type === "invited") {
+                navigate(`/profile/${user?.allUsers?.find((a)=> a.email === row)?.id}`)
+              }
             }
+            // if (type === "sender") {
+            //   navigate(`/profile/${user?.allUsers?.find((a)=> a.id === row.user_id)?.id}`)
+            // } else if (type === "invited") {
+            //   navigate(`/profile/${user?.allUsers?.find((a)=> a.email === row)?.id}`)
+            // }
           }}
         />
       )

@@ -1,10 +1,14 @@
-import { AddOutlined, DeleteOutlined, EditOutlined } from '@mui/icons-material'
-import { Button, Typography } from '@mui/material'
-import React, { useEffect, useState } from 'react'
+import { AddOutlined, CancelOutlined, DeleteOutlined, EditOutlined, InfoOutlined } from '@mui/icons-material'
+import { Button, IconButton, InputAdornment, MenuItem, Select, TextField, Tooltip, Typography } from '@mui/material'
+import React, { useEffect, useReducer, useRef, useState } from 'react'
 import {useNavigate } from 'react-router-dom'
 import ActivityEventsTable from './ActivityEventsTable'
 import Comments from '../comments/Comments'
-import { useSelector } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
+import instance from '../../services/fetchApi'
+import deltaToString from "delta-to-string-converter"
+import { editActivity, setCommentSortOption, setSingleActivity } from '../../features/ActivitySlice'
+import SortButton from '../orders/SortButton'
 
 const DetailsPage = ({
   activity,
@@ -20,16 +24,172 @@ const DetailsPage = ({
 }) => {
   const navigate = useNavigate()
   const { exchangeRates, setting } = useSelector(state => state.user)
+  const { commentSortOption } = useSelector(state => state.activity)
   const [currencySymbol, setCurrencySymbol] =  useState("$")
+  const [isEditing, setEditing] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [timer, setTimer] = useState(null);
+  const [openAlert, setOpenAlert] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
+  const [severity, setSeverity] = useState("");
+  const [rowsToOpen, setRowsToOpen] = useState([]);
+  const dispatch = useDispatch()
+  const latestTypeRef = useRef(null);
+  const latestValueRef = useRef(null);
+  const arrayRef = useRef(null);
 
-  const renderEarningEstimates = (est) => {
-  
-    if (setting?.currency_mode !== "USD" && setting?.currency_mode !== null) {
-      est = est * exchangeRates[setting?.currency_mode];
+  const initialState = {
+    label: "",
+    description: "",
+    assignedTo: "",
+    earningEstimate: 0,
+    type: "",
+    probability: ""
+  };
+
+  const [data, updateData] = useReducer(
+    (state, updates) => ({ ...state, ...updates }),
+    initialState
+  );
+
+  const handleEditClick = () => {
+    setEditing(true);
+  };
+
+  const isValidJson = (string) => {
+    try {
+      JSON.parse(string)
+      return true
+    } catch (error) {
+      return false
     }
-  
-    return est.toFixed(2);
   }
+
+  const addMessage  = async (arr) => {
+
+    await instance.post(`add-message-for-offline-followers`, {arr})
+    .then((res) => {
+      
+    })
+    .catch(() => {
+    
+    })
+  }
+
+  const showAlert = (msg, sev) => {
+    setOpenAlert(true)
+    setAlertMessage(msg)
+    setSeverity(sev)
+  }
+
+  const sendNotificationToFollowers  = (activity, msg, event) => {
+    let onlineUsersIds = user?.onlineUsers?.map((a) => a.userId)
+    let offlineIds = []
+
+    for (let i = 0; i < user?.usersFollowers.length; i++) {
+      if (onlineUsersIds.includes(user?.usersFollowers[i].follower_id)) {
+        socket.emit(event, { 
+          follower_id: user?.usersFollowers[i].follower_id, 
+          message: msg, 
+          sender_id: user?.id,
+          activityId: activity.id 
+        });
+      } else {
+        offlineIds = [...offlineIds, {id: user?.usersFollowers[i].follower_id, message: msg}]
+      }
+  
+    }
+
+    if (offlineIds?.length) {
+      addMessage(offlineIds)
+    }
+   
+  }
+
+  useEffect(() => {
+    return () => {
+      if (timer) {
+        clearTimeout(timer);
+      }
+    };
+  }, [timer]);
+
+  useEffect(() => {
+    arrayRef.current = rowsToOpen;
+  }, [rowsToOpen]);
+
+
+  const handleSave = async () => {
+    const type = latestTypeRef.current;
+    const value = latestValueRef.current;
+
+    if (arrayRef.current.includes(type)) {
+      setSending(true)
+      await instance.patch(`activities/${activity.id}`, {[type] : value})
+      .then((res) => {
+        console.log(res);
+
+        sendNotificationToFollowers(res.data.activity, `${user?.name} edited ${activity.label}`, "activity_edited")
+
+        // showAlert("Activity updated successfully", "success")
+
+        const updatedActivity = {
+          ...res.data.activity,
+          comments: res.data.activity.comments.map((a) => ({
+            ...a,
+            content: isValidJson(a.content) ? deltaToString(JSON.parse(a.content).ops) : a.content
+          }))
+        };
+    
+        dispatch(editActivity({ activity: updatedActivity }));
+        dispatch(setSingleActivity({ activity: updatedActivity }));
+   
+        setSending(false)
+        setRowsToOpen((prevRows) => prevRows.filter((a) => a !== type));
+
+        let symbol = "$";
+
+        if (setting?.currency_mode === "EUR") {
+          symbol = "€";
+        } else if (setting?.currency_mode === "GBP") {
+          symbol = "£";
+        }
+
+        setCurrencySymbol(symbol)
+      })
+      .catch((e)=> {
+        // showAlert("Ooops an error was encountered", "error")
+        // dispatch(setShowSendingSpinner({showSendingSpinner: false}))
+      })
+    }
+    
+  };
+
+  const handleCancel = (txt, type) => {
+    updateData({
+      [type]: txt
+    })
+
+    setRowsToOpen((prevRows) => prevRows.filter((a) => a !== type));
+  };
+
+  const handleChange = (event, type) => {
+    updateData({
+      [type]: event.target.value
+    });
+
+    latestTypeRef.current = type;
+    latestValueRef.current = event.target.value;
+
+    if (timer) {
+      clearTimeout(timer);
+    }
+
+    // Set a new timer to call the save function after 3 seconds
+    setTimer(setTimeout(() => {
+      handleSave();
+    }, 3000));
+  };
 
   useEffect(() => {
     let symbol = "$"; // Default currency symbol
@@ -43,43 +203,221 @@ const DetailsPage = ({
     setCurrencySymbol(symbol);
   }, [setting, exchangeRates]);
 
+  useEffect(() => {
+    // Clear the timer when the component unmounts
+    return () => {
+      if (timer) {
+        clearTimeout(timer);
+      }
+    };
+  }, [timer]);
+
+
+  const renderDropDowns = (value, type) => {
+    return (
+      <>
+        {(rowsToOpen.includes(type)) ? (
+          <>
+            {
+               type === "type" ? (
+                <Select
+                  required
+                  id='type'
+                  name="type"
+                  label="Type"
+                  size='small'
+                  style={{
+                    width: "200px",
+                    height: "35px"
+                  }}
+                  value={data[type]}
+                  onChange={(e) => {
+                    handleChange(e, type)
+                  }}
+                >
+                  <MenuItem value="Call">Call</MenuItem>
+                  <MenuItem value="Email">Email</MenuItem>
+                  <MenuItem value="Meeting">Meeting</MenuItem>
+                
+                </Select>
+               ) : (
+                <Select
+                  required
+                  id='type'
+                  name="type"
+                  label="Type"
+                  size='small'
+                  style={{
+                    width: "200px",
+                    height: "35px"
+                  }}
+                  value={data[type]}
+                  onChange={(e) => {
+                    handleChange(e, type)
+                  }}
+                >
+                  <MenuItem value="Low">Low</MenuItem>
+                  <MenuItem value="Medium">Medium</MenuItem>
+                  <MenuItem value="High">High</MenuItem>
+                  <MenuItem value="Closed">Closed</MenuItem>
+                
+                </Select>
+               )
+            }
+          
+            <IconButton 
+              onMouseDown={(e) => {
+                e.stopPropagation()
+                e.preventDefault();
+                handleCancel(value, type)
+              }}
+            >
+              <CancelOutlined />
+            </IconButton>
+          </>
+        ) : (
+          <span>
+            {value}
+            <IconButton 
+              onClick={() => {
+                updateData({
+                  [type]: value,
+                })
+
+                setRowsToOpen(prev => [...prev, type])
+              }}
+            >
+              <EditOutlined />
+            </IconButton>
+          </span>
+        )}
+      </>
+    );
+  }
+  
+  const renderEditableField = (value, type, originalValue, onEditClick, onCancelClick) => (
+    <>
+      <TextField
+        value={value}
+        onChange={(e) => handleChange(e, type)}
+        autoFocus
+        InputProps={{
+          style: {
+            height: "35px"
+          }
+        }}
+      />
+
+      <Tooltip placement='top' title="Estimates is entered in USD">
+        <InfoOutlined sx={{fontSize: "16px", marginLeft: "10px"}} />
+      </Tooltip>
+
+      <IconButton
+        onMouseDown={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          onCancelClick(originalValue, type);
+        }}
+      >
+        <CancelOutlined />
+      </IconButton>
+    </>
+  );
+  
+  const renderNonEditableField = (value, type, onEditClick) => (
+    <span>
+      {value}
+      <IconButton
+        onClick={() => {
+          onEditClick(value, type);
+          setRowsToOpen((prev) => [...prev, type]);
+        }}
+      >
+        <EditOutlined />
+      </IconButton>
+    </span>
+  );
+  
+  const renderTextField = (txt, type) => {
+    return (
+      <>
+        {rowsToOpen.includes(type)
+          ? renderEditableField(data[type], type, txt, handleSave, handleCancel)
+          : renderNonEditableField(txt, type, (newValue, newType) => {
+              updateData({ [newType]: newValue });
+              setCurrencySymbol("$"); // Assuming this is common for both cases
+            })}
+      </>
+    );
+  };
+  
+  const renderEarningEstimates = (est, type) => {
+    let originalEstimate = est;
+  
+    if (setting?.currency_mode !== "USD" && setting?.currency_mode !== null) {
+      let res = est * exchangeRates[setting?.currency_mode];
+      est = res.toFixed(2);
+    }
+  
+    return (
+      <>
+        {rowsToOpen.includes(type)
+          ? renderEditableField(data[type], type, originalEstimate, handleSave, handleCancel)
+          : renderNonEditableField(est, type, (newValue, newType) => {
+              setCurrencySymbol("$");
+              updateData({ earningEstimate: originalEstimate });
+            })}
+      </>
+    );
+  };
+
+  const setSortOption = (value) => {
+    dispatch(setCommentSortOption({sortOption: value}))
+  }
+  
+
   return (
     <>
       <div style={{display: "flex", justifyContent: "space-between", marginBottom: "20px"}}>
         <div>
-          <Typography variant="h7" display="block"  gutterBottom>
-            <b>Label</b> : {activity?.label}
+
+          <Typography variant="h7" display="block"  gutterBottom  style={{marginBottom: "-5px"}}>
+            <b>Label</b> : { renderTextField(activity?.label, "label") }
           </Typography>
 
-          <Typography variant="h7" display="block"  gutterBottom>
-            <b>Description</b> : {activity?.description}
+          <Typography variant="h7" display="block"  gutterBottom  style={{marginBottom: "-5px"}}>
+            <b>Description</b> : 
+            { renderTextField(activity?.description, "description") }
           </Typography>
 
-          <Typography variant="h7" display="block"  gutterBottom>
-            <b>Assignee</b> : {activity?.assignedTo}
+          <Typography variant="h7" display="block"  gutterBottom  style={{marginBottom: "-5px"}}>
+            <b>Assignee</b> : 
+            { renderTextField(activity?.assignedTo, "assignedTo") }
           </Typography>
 
-          <Typography variant="h7" display="block"  gutterBottom>
-            <b>Type</b> : {activity?.type}
+          <Typography variant="h7" display="block"  gutterBottom style={{marginBottom: "-5px"}}>
+            <b>Type</b> : 
+            {renderDropDowns(activity?.type, "type")}
           </Typography>
 
-          <Typography variant="h7" display="block"  gutterBottom>
+          <Typography variant="h7" display="block"  gutterBottom style={{marginBottom: "-5px"}}>
 
-            <b>Estimate</b> : { currencySymbol }{ renderEarningEstimates(activity?.earningEstimate) }
+            <b>Estimate</b> : { currencySymbol }{ renderEarningEstimates(activity?.earningEstimate, "earningEstimate") }
           </Typography>
 
-          <Typography variant="h7" display="block"  gutterBottom>
-            <b>Probability</b> : {activity?.probability}
+          <Typography variant="h7" display="block"  gutterBottom style={{marginBottom: "-5px"}}>
+            <b>Probability</b> : 
+            {renderDropDowns(activity?.probability, "probability")}
           </Typography>
 
-          <Typography variant="h7" display="block"  gutterBottom>
+          <Typography variant="h7" display="block"  gutterBottom style={{marginBottom: "-5px"}}>
             <b>Company</b> : 
             <Button style={{borderRadius: "30px"}} onClick={() => navigate(`/companies/${activity?.company?.id}`)}>
               {activity?.company?.name}
             </Button>
           </Typography>
 
-          <Button 
+          {/* <Button 
             disabled={activity?.user_id !== user?.id} 
             variant="contained" 
             size='small' 
@@ -87,7 +425,7 @@ const DetailsPage = ({
             style={{borderRadius: "30px"}}
           >
             <EditOutlined />
-          </Button>&nbsp;&nbsp;&nbsp;
+          </Button>&nbsp;&nbsp;&nbsp; */}
 
           <Button 
             disabled={activity?.user_id !== user?.id}  
@@ -98,7 +436,14 @@ const DetailsPage = ({
             style={{borderRadius: "30px"}}
           >
             <DeleteOutlined /> 
-          </Button>
+          </Button>&nbsp;&nbsp;&nbsp;
+
+
+          {
+            sending ? (
+              <span style={{fontSize: "13px", color: "green"}}>Saving ....</span>
+            ) : null
+          }
         </div>
 
         <div style={{margin: "auto", width: "60%"}}>
@@ -126,12 +471,22 @@ const DetailsPage = ({
       </div>
 
       <div>
-        <Typography variant='h6'>
-          Comments &nbsp; &nbsp;
-          {
-            `(${activity?.comments?.length})`
-          }
-        </Typography>
+        <div style={{display: "flex", justifyContent: "space-between"}}>
+          <Typography variant='h6'>
+            Comments &nbsp; &nbsp;
+            {
+              `(${activity?.comments?.length})`
+            }
+          </Typography>
+
+          <SortButton 
+            setSortOption={setSortOption} 
+            sortOption={commentSortOption}  
+            // closeSearch={closeSearch} 
+            title="Sort Comments" 
+          />
+        </div>
+      
         
         <Comments
           comments={activity?.comments}
