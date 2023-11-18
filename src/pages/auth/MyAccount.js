@@ -1,9 +1,9 @@
 import { Box, TextField, Button, Typography, Tooltip, Snackbar, CircularProgress, List, ListItem, ListItemAvatar, Avatar, ListItemText, Checkbox, ListItemButton, IconButton } from '@mui/material';
-import React, { useEffect, useReducer, useState } from 'react';
+import React, { useEffect, useReducer, useRef, useState } from 'react';
 import { getToken } from '../../services/LocalStorageService';
 import { useChangeUserPasswordMutation } from '../../services/userAuthApi';
 import { useDispatch, useSelector } from 'react-redux';
-import { ChangeCircleOutlined, ChatBubbleOutline, CloseOutlined, DeleteOutline, MailOutlined, MessageOutlined, PeopleOutlineOutlined, SaveOutlined, UpdateOutlined} from '@mui/icons-material';
+import { CancelOutlined, ChangeCircleOutlined, ChatBubbleOutline, CloseOutlined, DeleteOutline, EditOutlined, MailOutlined, MessageOutlined, PeopleOutlineOutlined, SaveOutlined, UpdateOutlined} from '@mui/icons-material';
 import moment from 'moment';
 import UploadWidget from './UploadWidget';
 import instance from '../../services/fetchApi';
@@ -58,6 +58,14 @@ const MyAccount = ({ socket }) => {
   const [showFollowersMode, setShowFollowersMode] = useState("followers");
   const [conversationId, setConversationId] = useState()
   const [conversationString, setConversationString] = useState("")
+
+  const [rowsToOpen, setRowsToOpen] = useState([]);
+  const [timer, setTimer] = useState(null);
+  const [sending, setSending] = useState(false);
+  const latestTypeRef = useRef(null);
+  const latestValueRef = useRef(null);
+  const arrayRef = useRef(null);
+
   const params = useParams()
   const navigate = useNavigate()
 
@@ -81,7 +89,6 @@ const MyAccount = ({ socket }) => {
     setLoadingLastSeen(true)
     await instance.get(`userlogout/${user_id}`)
     .then((res) => {
-       console.log(res);
        setLastSeen(res.data.record)
        setLoadingLastSeen(false)
     })
@@ -171,6 +178,19 @@ const MyAccount = ({ socket }) => {
       setImageUrl(allUsers?.find((a)=> a.id === parseInt(params.id))?.profile_pic)
     }
   }, [params.id])
+
+  useEffect(() => {
+    arrayRef.current = rowsToOpen;
+  }, [rowsToOpen]);
+
+  useEffect(() => {
+    // Clear the timer when the component unmounts
+    return () => {
+      if (timer) {
+        clearTimeout(timer);
+      }
+    };
+  }, [timer]);
 
   const initialState = {
     bio: "",
@@ -441,11 +461,110 @@ const MyAccount = ({ socket }) => {
 
     })
   }
+
+  const handleSave = async () => {
+    const type = latestTypeRef.current;
+    const value = latestValueRef.current;
+
+    if (arrayRef.current.includes(type)) {
+      dispatch(setShowSpinner({showSpinner: true}))
+      await instance.post(`update-profile`, {[type] : value})
+      .then((res) => {
+        setProfile(res.data.profile)
+        dispatch(setShowSpinner({showSpinner: false}))
+        setRowsToOpen((prevRows) => prevRows.filter((a) => a !== type));
+      })
+      .catch((e)=> {
+        dispatch(setShowSpinner({showSpinner: false}))
+        showAlert("Ooops an error was encountred", "error")
+      })
+    }
+    
+  };
+
+  const handleCancel = (txt, type) => {
+    updateData({
+      [type]: txt
+    })
+
+    setRowsToOpen((prevRows) => prevRows.filter((a) => a !== type));
+  };
+
+  const handleChange = (event, type) => {
+    updateData({
+      [type]: event.target.value
+    });
+
+    latestTypeRef.current = type;
+    latestValueRef.current = event.target.value;
+
+    if (timer) {
+      clearTimeout(timer);
+    }
+
+    // Set a new timer to call the save function after 3 seconds
+    setTimer(setTimeout(() => {
+      handleSave();
+    }, 3000));
+  };
+
+  const renderTextField = (value, type) => {
+    return (
+      <>
+        {(rowsToOpen.includes(type)) ? (
+          <>
+             <TextField
+                value={data[type]}
+                onChange={(e) => handleChange(e, type)}
+                autoFocus
+                InputProps={{
+                  style: {
+                    height: "35px",
+                    width: "320px"
+                  }
+                }}
+              />
+          
+            <IconButton 
+              onMouseDown={(e) => {
+                e.stopPropagation()
+                e.preventDefault();
+                handleCancel(value, type)
+              }}
+            >
+              <CancelOutlined />
+            </IconButton>
+          </>
+        ) : (
+          <span>
+            {value}
+
+            {
+              params.id === "mine" && (
+                <IconButton 
+                  onClick={() => {
+                    updateData({
+                      [type]: value,
+                    })
+    
+                    setRowsToOpen(prev => [...prev, type])
+                  }}
+                >
+                  <EditOutlined />
+                </IconButton>
+              )
+            }
+           
+          </span>
+        )}
+      </>
+    );
+  }
   
 
   return <>
     <Box sx={{ display: 'flex', flexDirection: 'column', flexWrap: 'wrap', maxWidth: 600, mx: 4 }}>
-      <div style={{display: "flex", justifyContent: 'space-between', marginTop: "30px"}}>
+      <div style={{display: "flex", justifyContent: 'space-between', marginTop: "30px", width: "140%"}}>
         
         <div>
           {
@@ -482,7 +601,7 @@ const MyAccount = ({ socket }) => {
                 </Button>
               </Tooltip>
 
-              <Tooltip title='Update Profile'>
+              {/* <Tooltip title='Update Profile'>
                 <Button
                   size='small' 
                   onClick={()=> {
@@ -493,7 +612,7 @@ const MyAccount = ({ socket }) => {
                 >
                   <UpdateOutlined />
                 </Button>
-              </Tooltip>
+              </Tooltip> */}
 
               <Tooltip title='Change Password'>
                 <Button
@@ -575,37 +694,52 @@ const MyAccount = ({ socket }) => {
                   </>
                 ) : (
                   <>
+                  
+                    <Typography variant="h7"   gutterBottom>
+                      {
+                        showSpinner ? (
+                          <span style={{fontSize: "14px", color: "green"}}>Saving....</span>
+                        ) : null
+                      }
+                    </Typography>
+
                     <Typography variant="h7" display="block"  gutterBottom>
-                      <b>Name</b> : { params.id === "mine" ? name : allUsers?.find((a)=> a.id === parseInt(params.id))?.name }
+                      <b>Name</b> : 
+                      { params.id === "mine" ? name : allUsers?.find((a)=> a.id === parseInt(params.id))?.name }
                     </Typography>
     
                     <Typography variant="h7" display="block"  gutterBottom>
                       <b>Email</b> : {params.id === "mine" ?  email : allUsers?.find((a)=> a.id === parseInt(params.id))?.email }
                     </Typography>
     
-                    <Typography variant="h7" display="block"  gutterBottom>
+                    <Typography variant="h7" display="block"  gutterBottom style={{marginBottom: "-5px"}}>
                       <b>Date Registered</b> : { params.id === "mine" ? moment(created_at).format('MMMM Do YYYY') : moment(allUsers?.find((a)=> a.id === parseInt(params.id))?.created_at).format('MMMM Do YYYY') }
                     </Typography>
     
     
-                    <Typography variant="h7" display="block"  gutterBottom>
-                      <b>Bio</b> : { profile?.bio }
+                    <Typography variant="h7" display="block"  gutterBottom style={{marginBottom: "-5px"}}>
+                      <b>Bio</b> : 
+                      { renderTextField(profile?.bio, "bio") }
                     </Typography>
     
-                    <Typography variant="h7" display="block"  gutterBottom>
-                      <b>Company</b> : { profile?.company }
+                    <Typography variant="h7" display="block"  gutterBottom style={{marginBottom: "-5px"}}>
+                      <b>Company</b> : 
+                      { renderTextField(profile?.company, "company") }
                     </Typography>
     
-                    <Typography variant="h7" display="block"  gutterBottom>
-                      <b>Address</b> :  { profile?.address }
+                    <Typography variant="h7" display="block"  gutterBottom style={{marginBottom: "-5px"}}>
+                      <b>Address</b> :  
+                      { renderTextField(profile?.address, "address") }
                     </Typography>
     
-                    <Typography variant="h7" display="block"  gutterBottom>
-                      <b>Occupation</b> :  { profile?.occupation }
+                    <Typography variant="h7" display="block"  gutterBottom style={{marginBottom: "-5px"}}>
+                      <b>Occupation</b> :  
+                      { renderTextField(profile?.occupation, "occupation") }
                     </Typography>
     
-                    <Typography variant="h7" display="block"  gutterBottom>
-                      <b>Website</b> :  { profile?.website }
+                    <Typography variant="h7" display="block"  gutterBottom style={{marginBottom: "-5px"}}>
+                      <b>Website</b> :  
+                      { renderTextField(profile?.website , "website") }
                     </Typography>
     
                     {
