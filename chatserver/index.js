@@ -84,6 +84,7 @@ const sendUserChatEvent = (arr, data, event) => {
 
 let users = [];
 let arr = []
+const activeUsers = new Set();
 //Add this before the app.get() block
 socketIO.on('connection', (socket) => {
   console.log(`: ${socket.id} user just connected!`);
@@ -104,6 +105,10 @@ socketIO.on('connection', (socket) => {
 
   socket.on('activity_closed', (data) => {
     socketIO.emit('activity_closed', data);
+  });
+
+  socket.on('editedAct', (data) => {
+    socketIO.emit('editedAct', data);
   });
 
   //sends the message to specific user on the server
@@ -255,6 +260,18 @@ socketIO.on('connection', (socket) => {
   });
    //user-admin chat  --------------------------------------------------------
 
+  // get number of users on activity page 
+  socket.on('join', (roomId) => {
+    socket.join(roomId);
+    socketIO.to(roomId).emit('userCount', socketIO.sockets.adapter.rooms.get(roomId)?.size || 0);
+  });
+
+  socket.on('leave', (roomId) => {
+    socket.leave(roomId);
+    socketIO.to(roomId).emit('userCount', socketIO.sockets.adapter.rooms.get(roomId)?.size || 0);
+  });
+  // get number of users on activity page 
+
   socket.on('logout', () => {
     console.log(': A user loggedout');
 
@@ -272,9 +289,11 @@ socketIO.on('connection', (socket) => {
   socket.on('disconnect', () => {
     console.log(': A user disconnected');
 
-    //let record = arr.find((a) => a.id === socket.id)
-    //addLogout(record)
- 
+    let record = arr.find((a) => a.id === socket.id)
+    if (record) {
+      addLogout(record)
+    }
+
     //Updates the list of users when a user disconnects from the server
     arr = arr.filter((user) => user.id !== socket.id)
 
