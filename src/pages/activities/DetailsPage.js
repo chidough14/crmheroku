@@ -21,9 +21,10 @@ const DetailsPage = ({
   setOpenEditModal,
   socket,
   params,
+  userCount
 }) => {
   const navigate = useNavigate()
-  const { exchangeRates, setting } = useSelector(state => state.user)
+  const { exchangeRates, setting, id } = useSelector(state => state.user)
   const { commentSortOption } = useSelector(state => state.activity)
   const [currencySymbol, setCurrencySymbol] =  useState("$")
   const [isEditing, setEditing] = useState(false);
@@ -36,6 +37,7 @@ const DetailsPage = ({
   const dispatch = useDispatch()
   const latestTypeRef = useRef(null);
   const latestValueRef = useRef(null);
+  const latestChangesRef = useRef({});
   const arrayRef = useRef(null);
 
   const initialState = {
@@ -123,13 +125,22 @@ const DetailsPage = ({
     const type = latestTypeRef.current;
     const value = latestValueRef.current;
 
+    const changes = latestChangesRef.current;
+
     if (arrayRef.current.includes(type)) {
       setSending(true)
-      await instance.patch(`activities/${activity.id}`, {[type] : value})
+
+      // await instance.patch(`activities/${activity.id}`, {[type] : value})
+      await instance.patch(`activities/${activity.id}`, changes)
       .then((res) => {
-        console.log(res);
 
         sendNotificationToFollowers(res.data.activity, `${user?.name} edited ${activity.label}`, "activity_edited")
+
+        socket.emit("editedAct", { 
+          message: "Activity edited", 
+          sender_id: user?.id,
+          activityId: activity.id 
+        })
 
         // showAlert("Activity updated successfully", "success")
 
@@ -145,7 +156,12 @@ const DetailsPage = ({
         dispatch(setSingleActivity({ activity: updatedActivity }));
    
         setSending(false)
-        setRowsToOpen((prevRows) => prevRows.filter((a) => a !== type));
+        // setRowsToOpen((prevRows) => prevRows.filter((a) => a !== type));
+      
+        Object.keys(changes).forEach((key) => {
+          // Perform an operation on each key
+          setRowsToOpen((prevRows) => prevRows.filter((a) => a !== key));
+        });
 
         let symbol = "$";
 
@@ -161,6 +177,8 @@ const DetailsPage = ({
         // showAlert("Ooops an error was encountered", "error")
         // dispatch(setShowSendingSpinner({showSendingSpinner: false}))
       })
+
+      latestChangesRef.current = {};
     }
     
   };
@@ -180,6 +198,8 @@ const DetailsPage = ({
 
     latestTypeRef.current = type;
     latestValueRef.current = event.target.value;
+    
+    latestChangesRef.current[type] = event.target.value;
 
     if (timer) {
       clearTimeout(timer);
@@ -213,7 +233,7 @@ const DetailsPage = ({
   }, [timer]);
 
 
-  const renderDropDowns = (value, type) => {
+  const renderDropDowns = (value, type, activityUserId) => {
     return (
       <>
         {(rowsToOpen.includes(type)) ? (
@@ -278,17 +298,23 @@ const DetailsPage = ({
         ) : (
           <span>
             {value}
-            <IconButton 
-              onClick={() => {
-                updateData({
-                  [type]: value,
-                })
 
-                setRowsToOpen(prev => [...prev, type])
-              }}
-            >
-              <EditOutlined />
-            </IconButton>
+            {
+              activityUserId === id ? (
+                <IconButton 
+                  onClick={() => {
+                    updateData({
+                      [type]: value,
+                    })
+    
+                    setRowsToOpen(prev => [...prev, type])
+                  }}
+                >
+                  <EditOutlined />
+                </IconButton>
+              ) : null
+            }
+         
           </span>
         )}
       </>
@@ -324,26 +350,32 @@ const DetailsPage = ({
     </>
   );
   
-  const renderNonEditableField = (value, type, onEditClick) => (
+  const renderNonEditableField = (value, type, userId, onEditClick) => (
     <span>
       {value}
-      <IconButton
-        onClick={() => {
-          onEditClick(value, type);
-          setRowsToOpen((prev) => [...prev, type]);
-        }}
-      >
-        <EditOutlined />
-      </IconButton>
+
+      {
+        userId === id ? (
+          <IconButton
+            onClick={() => {
+              onEditClick(value, type);
+              setRowsToOpen((prev) => [...prev, type]);
+            }}
+          >
+            <EditOutlined />
+          </IconButton>
+        ) : null
+      }
+    
     </span>
   );
   
-  const renderTextField = (txt, type) => {
+  const renderTextField = (txt, type, activityUserId) => {
     return (
       <>
         {rowsToOpen.includes(type)
           ? renderEditableField(data[type], type, txt, handleSave, handleCancel)
-          : renderNonEditableField(txt, type, (newValue, newType) => {
+          : renderNonEditableField(txt, type, activityUserId, (newValue, newType) => {
               updateData({ [newType]: newValue });
               setCurrencySymbol("$"); // Assuming this is common for both cases
             })}
@@ -351,7 +383,7 @@ const DetailsPage = ({
     );
   };
   
-  const renderEarningEstimates = (est, type) => {
+  const renderEarningEstimates = (est, type, activityUserId) => {
     let originalEstimate = est;
   
     if (setting?.currency_mode !== "USD" && setting?.currency_mode !== null) {
@@ -363,7 +395,7 @@ const DetailsPage = ({
       <>
         {rowsToOpen.includes(type)
           ? renderEditableField(data[type], type, originalEstimate, handleSave, handleCancel)
-          : renderNonEditableField(est, type, (newValue, newType) => {
+          : renderNonEditableField(est, type, activityUserId, (newValue, newType) => {
               setCurrencySymbol("$");
               updateData({ earningEstimate: originalEstimate });
             })}
@@ -381,36 +413,36 @@ const DetailsPage = ({
       <div style={{display: "flex", justifyContent: "space-between", marginBottom: "20px"}}>
         <div>
 
-          <Typography variant="h7" display="block"  gutterBottom  style={{marginBottom: "-5px"}}>
-            <b>Label</b> : { renderTextField(activity?.label, "label") }
+          <Typography variant="h7" display="block"  gutterBottom  style={{ marginBottom: activity?.user_id === id ? "-5px" : null}}>
+            <b>Label</b> : { renderTextField(activity?.label, "label", activity?.user_id) }
           </Typography>
 
-          <Typography variant="h7" display="block"  gutterBottom  style={{marginBottom: "-5px"}}>
+          <Typography variant="h7" display="block"  gutterBottom  style={{ marginBottom: activity?.user_id === id ? "-5px" : null}}>
             <b>Description</b> : 
-            { renderTextField(activity?.description, "description") }
+            { renderTextField(activity?.description, "description", activity?.user_id) }
           </Typography>
 
-          <Typography variant="h7" display="block"  gutterBottom  style={{marginBottom: "-5px"}}>
+          <Typography variant="h7" display="block"  gutterBottom  style={{ marginBottom: activity?.user_id === id ? "-5px" : null}}>
             <b>Assignee</b> : 
-            { renderTextField(activity?.assignedTo, "assignedTo") }
+            { renderTextField(activity?.assignedTo, "assignedTo", activity?.user_id) }
           </Typography>
 
-          <Typography variant="h7" display="block"  gutterBottom style={{marginBottom: "-5px"}}>
+          <Typography variant="h7" display="block"  gutterBottom style={{ marginBottom: activity?.user_id === id ? "-5px" : null}}>
             <b>Type</b> : 
-            {renderDropDowns(activity?.type, "type")}
+            {renderDropDowns(activity?.type, "type", activity?.user_id)}
           </Typography>
 
-          <Typography variant="h7" display="block"  gutterBottom style={{marginBottom: "-5px"}}>
+          <Typography variant="h7" display="block"  gutterBottom style={{ marginBottom: activity?.user_id === id ? "-5px" : null}}>
 
-            <b>Estimate</b> : { currencySymbol }{ renderEarningEstimates(activity?.earningEstimate, "earningEstimate") }
+            <b>Estimate</b> : { currencySymbol }{ renderEarningEstimates(activity?.earningEstimate, "earningEstimate", activity?.user_id) }
           </Typography>
 
-          <Typography variant="h7" display="block"  gutterBottom style={{marginBottom: "-5px"}}>
+          <Typography variant="h7" display="block"  gutterBottom style={{ marginBottom: activity?.user_id === id ? "-5px" : null}}>
             <b>Probability</b> : 
-            {renderDropDowns(activity?.probability, "probability")}
+            {renderDropDowns(activity?.probability, "probability", activity?.user_id)}
           </Typography>
 
-          <Typography variant="h7" display="block"  gutterBottom style={{marginBottom: "-5px"}}>
+          <Typography variant="h7" display="block"  gutterBottom style={{ marginBottom: activity?.user_id === id ? "-5px" : null}}>
             <b>Company</b> : 
             <Button style={{borderRadius: "30px"}} onClick={() => navigate(`/companies/${activity?.company?.id}`)}>
               {activity?.company?.name}
@@ -446,7 +478,9 @@ const DetailsPage = ({
           }
         </div>
 
-        <div style={{margin: "auto", width: "60%"}}>
+        <div style={{ width: "60%"}}>
+          <span>{userCount} {userCount > 1 ? "people" : "person"} viewing</span>
+
           <div style={{display: "flex", justifyContent: "space-between"}}>
             <Typography variant='h6'  component="div" sx={{ flexGrow: 2 }}><b>Upcoming Events</b></Typography>
             <Button 

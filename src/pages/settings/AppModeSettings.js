@@ -1,5 +1,5 @@
 import { InputLabel, Select, MenuItem, Button, Snackbar, CircularProgress, FormControlLabel } from '@mui/material'
-import React, { useEffect, useReducer, useState } from 'react'
+import React, { useEffect, useReducer, useRef, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { setShowSaveNotification, updateUserSettings } from '../../features/userSlice'
 import instance from '../../services/fetchApi'
@@ -14,7 +14,10 @@ const Alert = React.forwardRef(function Alert(props, ref) {
 
 const AppModeSettings = ({user}) => {
   const { showSaveNotification } = useSelector(state => state.user)
+  const [timer, setTimer] = useState(null);
+  const [fields, setFields] = useState([]);
   const dispatch = useDispatch()
+  const latestChangesRef = useRef({});
 
   
   const initialState = {
@@ -39,7 +42,19 @@ const AppModeSettings = ({user}) => {
   }
 
   const handleChange = (event) => {
+    setFields(prev => [...prev, "announcements_mode"])
     updateData({announcements_mode: event.target.checked})
+
+    latestChangesRef.current.announcements_mode = event.target.checked ? "show" : "hide";
+
+    if (timer) {
+      clearTimeout(timer);
+    }
+
+    // Set a new timer to call the save function after 3 seconds
+    setTimer(setTimeout(() => {
+      handleSave("announcements_mode");
+    }, 3000));
   };
 
   useEffect(() => {
@@ -55,20 +70,30 @@ const AppModeSettings = ({user}) => {
     }
   }, [user?.setting])
 
-  const updateSettings = async () => {
+  useEffect(() => {
+    return () => {
+      if (timer) {
+        clearTimeout(timer);
+      }
+    };
+  }, [timer]);
+
+  const handleSave = async (name) => {
     dispatch(setShowSaveNotification({showSaveNotification: true}))
-    let body = {
+
+    const changes = latestChangesRef.current;
+
+    let body
+
+    body = {
       user_id: user?.id,
-      dashboard_mode: data.dashboard_mode,
-      calendar_mode: data.calendar_mode,
-      product_sales_mode: data.product_sales_mode,
-      top_sales_mode: data.top_sales_mode,
-      currency_mode: data.currency_mode,
-      announcements_mode: data.announcements_mode ? "show" : "hide",
+      ...changes
     }
 
     await instance.patch(`settings`, body)
     .then((res) => {
+      setFields((prev) => prev.filter((a) => a !== name));
+
       dispatch(setShowSaveNotification({showSaveNotification: false}))
       dispatch(updateUserSettings({setting: res.data.setting}))
       updateData({openAlert: true, severity: "success", text: "Settings updated successfully"})
@@ -77,110 +102,115 @@ const AppModeSettings = ({user}) => {
       dispatch(setShowSaveNotification({showSaveNotification: false}))
       updateData({openAlert: true, severity: "error", text: "Ooops an error was encountered"})
     })
+
+    latestChangesRef.current = {};
+  }
+
+  const renderSelectField = (name, label, value, options) => {
+    return (
+      <>
+        <InputLabel id="demo-select-small">{label}</InputLabel>
+        <Select
+          id={name}
+          name={name}
+          label={label}
+          size='small'
+          style={{width: "50%"}}
+          value={value}
+          onChange={(e)=> {
+            setFields(prev => [...prev, name])
+            updateData({[name]: e.target.value})
+
+            latestChangesRef.current[name] = e.target.value;
+         
+
+            if (timer) {
+              clearTimeout(timer);
+            }
+        
+            // Set a new timer to call the save function after 3 seconds
+            setTimer(setTimeout(() => {
+              handleSave(name);
+            }, 3000));
+          }}
+        >
+
+          {
+            options.map((a, i) => <MenuItem key={i} value={a.value}>{a.text}</MenuItem>)
+          }
+        </Select>
+
+        {
+         showSaveNotification && fields.includes(name) ? <span style={{marginLeft: "10px", color: "green"}}>Saving....</span> : null
+        }
+      </>
+    )
+  }
+
+  const renderSwitch = (name, label, value) => {
+    return (
+       <>
+          <FormControlLabel 
+            control={
+              <Switch
+                checked={value}
+                onChange={handleChange}
+                inputProps={{ 'aria-label': 'controlled' }}
+              />
+            } 
+            label={label}
+          />
+          {
+            showSaveNotification && fields.includes(name) ? <span style={{marginLeft: "10px", color: "green"}}>Saving....</span> : null
+          }
+       </>
+    )
   }
 
   return (
     <div>
-      <InputLabel id="demo-select-small">Dashboard Mode</InputLabel>
-      <Select
-        id='dashboard_mode'
-        name="dashboard_mode"
-        label="Dashboard Mode"
-        size='small'
-        style={{width: "50%"}}
-        //fullWidth
-        value={data.dashboard_mode}
-        onChange={(e)=> updateData({dashboard_mode: e.target.value})}
-      >
-        <MenuItem value="show_graphs">Show All Graphs</MenuItem>
-        <MenuItem value="show_bar_graph">Show Bar Graph</MenuItem>
-        <MenuItem value="show_doughnut_graph">Show Doughnut Graph</MenuItem>
-      </Select>
+      { 
+        renderSelectField("dashboard_mode", "Dashboard Mode", data.dashboard_mode, [
+          {value: "show_graphs", text: "Show All Graphs"}, 
+          {value: "show_bar_graph", text: "Show Bar Graph"}, 
+          {value: "show_doughnut_graph", text: "Show Doughnut Graph"}
+        ]) 
+      }
       <p></p>
 
-    
+      {
+        renderSwitch("announcements_mode", "Show Announcements widget", data.announcements_mode)
+      }
 
-      <FormControlLabel 
-        control={
-          <Switch
-            checked={data.announcements_mode}
-            onChange={handleChange}
-            inputProps={{ 'aria-label': 'controlled' }}
-          />
-        } 
-        label="Show Announcements widget" 
-      />
-
-      <InputLabel id="demo-select-small">Calendar Mode</InputLabel>
-      <Select
-        id='calendar_mode'
-        name="calendar_mode"
-        label="Calendar Mode"
-        size='small'
-        style={{width: "50%"}}
-        //fullWidth
-        value={data.calendar_mode}
-        onChange={(e)=> updateData({calendar_mode: e.target.value})}
-      >
-        <MenuItem value="day">Day</MenuItem>
-        <MenuItem value="week">Week</MenuItem>
-        <MenuItem value="month">Month</MenuItem>
-        <MenuItem value="agenda">Agenda</MenuItem>
-      </Select>
+      { 
+        renderSelectField("calendar_mode", "Calendar Mode", data.calendar_mode, [
+          {value: "day", text: "Day"},   {value: "week", text: "Week"}, {value: "month", text: "Month"},   {value: "agenda", text: "Agenda"}
+        ]) 
+      }
       <p></p>
 
-      <InputLabel id="demo-select-small">Bar Graph Default Mode</InputLabel>
-      <Select
-        id='product_sales_mode'
-        name="product_sales_mode"
-        label="Product Sales Graph Mode"
-        size='small'
-        style={{width: "50%"}}
-        //fullWidth
-        value={data.product_sales_mode}
-        onChange={(e)=> updateData({product_sales_mode: e.target.value})}
-      >
-        <MenuItem value="allusers">All Users</MenuItem>
-        <MenuItem value="mine">Mine</MenuItem>
-      </Select>
+      { 
+        renderSelectField("product_sales_mode", "Bar Graph Default Mode", data.product_sales_mode, [
+          {value: "allusers", text: "All Users"},   {value: "mine", text: "Mine"}
+        ]) 
+      }
       <p></p>
 
-      
-      <InputLabel id="demo-select-small">Doughnut Graph Default Mode</InputLabel>
-      <Select
-        id='top_sales_mode'
-        name="top_sales_mode"
-        label="Top Sales Persons/Products Graph Mode"
-        size='small'
-        style={{width: "50%"}}
-        //fullWidth
-        value={data.top_sales_mode}
-        onChange={(e)=> updateData({top_sales_mode: e.target.value})}
-      >
-        <MenuItem value="salespersons">Sales Persons</MenuItem>
-        <MenuItem value="products">Products</MenuItem>
-      </Select>
+      { 
+        renderSelectField("top_sales_mode", "Doughnut Graph Default Mode", data.top_sales_mode, [
+          {value: "salespersons", text: "Sales Persons"},   {value: "products", text: "Products"}
+        ]) 
+      }
       <p></p>
 
-         
-      <InputLabel id="demo-select-small">Currency mode</InputLabel>
-      <Select
-        id='currency_mode'
-        name="currency_mode"
-        label="Currency Mode"
-        size='small'
-        style={{width: "50%"}}
-        //fullWidth
-        value={data.currency_mode}
-        onChange={(e)=> updateData({currency_mode: e.target.value})}
-      >
-        <MenuItem value="USD">USD</MenuItem>
-        <MenuItem value="EUR">EUR</MenuItem>
-        <MenuItem value="GBP">GBP</MenuItem>
-      </Select>
+      { 
+        renderSelectField("currency_mode", "Currency Mode", data.currency_mode, [
+          {value: "USD", text: "USD"},   {value: "EUR", text: "EUR"},   {value: "GBP", text: "GBP"}
+        ]) 
+      }
       <p></p>
 
-      <Button
+      {/* <Button
         size='small' 
         color="primary" 
         variant="contained" 
@@ -194,7 +224,7 @@ const AppModeSettings = ({user}) => {
               </Box>
             ) : "Save"
           }
-      </Button>
+      </Button> */}
 
 
       <Snackbar open={data.openAlert} autoHideDuration={6000} onClose={handleCloseAlert}>
