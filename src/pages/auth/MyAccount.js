@@ -629,7 +629,7 @@ const MyAccount = ({ socket }) => {
 
           {
             (params.id !== "mine" && profile?.user_id !== id) && (
-              <>
+              <div style={{display: "flex", justifyContent: "space-between"}}>
                 {
                   renderFollowIcon()
                 }
@@ -649,7 +649,8 @@ const MyAccount = ({ socket }) => {
                     <ChatBubbleOutline />
                   </Button>
                 </Tooltip>
-              </>
+                
+              </div>
             
             )
           }
@@ -712,32 +713,32 @@ const MyAccount = ({ socket }) => {
                       <b>Email</b> : {params.id === "mine" ?  email : allUsers?.find((a)=> a.id === parseInt(params.id))?.email }
                     </Typography>
     
-                    <Typography variant="h7" display="block"  gutterBottom style={{marginBottom: "-5px"}}>
+                    <Typography variant="h7" display="block"  gutterBottom style={{marginBottom: params.id === "mine" ? "-5px" : null}}>
                       <b>Date Registered</b> : { params.id === "mine" ? moment(created_at).format('MMMM Do YYYY') : moment(allUsers?.find((a)=> a.id === parseInt(params.id))?.created_at).format('MMMM Do YYYY') }
                     </Typography>
     
     
-                    <Typography variant="h7" display="block"  gutterBottom style={{marginBottom: "-5px"}}>
+                    <Typography variant="h7" display="block"  gutterBottom style={{marginBottom: params.id === "mine" ? "-5px" : null}}>
                       <b>Bio</b> : 
                       { renderTextField(profile?.bio, "bio") }
                     </Typography>
     
-                    <Typography variant="h7" display="block"  gutterBottom style={{marginBottom: "-5px"}}>
+                    <Typography variant="h7" display="block"  gutterBottom style={{marginBottom: params.id === "mine" ? "-5px" : null}}>
                       <b>Company</b> : 
                       { renderTextField(profile?.company, "company") }
                     </Typography>
     
-                    <Typography variant="h7" display="block"  gutterBottom style={{marginBottom: "-5px"}}>
+                    <Typography variant="h7" display="block"  gutterBottom style={{marginBottom: params.id === "mine" ? "-5px" : null}}>
                       <b>Address</b> :  
                       { renderTextField(profile?.address, "address") }
                     </Typography>
     
-                    <Typography variant="h7" display="block"  gutterBottom style={{marginBottom: "-5px"}}>
+                    <Typography variant="h7" display="block"  gutterBottom style={{marginBottom: params.id === "mine" ? "-5px" : null}}>
                       <b>Occupation</b> :  
                       { renderTextField(profile?.occupation, "occupation") }
                     </Typography>
     
-                    <Typography variant="h7" display="block"  gutterBottom style={{marginBottom: "-5px"}}>
+                    <Typography variant="h7" display="block"  gutterBottom style={{marginBottom: params.id === "mine" ? "-5px" : null}}>
                       <b>Website</b> :  
                       { renderTextField(profile?.website , "website") }
                     </Typography>
@@ -751,7 +752,7 @@ const MyAccount = ({ socket }) => {
                     }
 
                     <div>
-                      <PeopleOutlineOutlined style={{marginBottom: "-5px"}} /> 
+                      <PeopleOutlineOutlined style={{marginBottom: "-5px"}}/> 
                       <span 
                         style={{cursor: (params.id === "mine" || profile?.user_id === id) ? "pointer" : null}}
                         onClick={() => {

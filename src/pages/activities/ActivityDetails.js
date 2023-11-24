@@ -91,6 +91,7 @@ const ActivityDetails = ({socket}) => {
   const [severity, setSeverity] =  React.useState("");
   const [currencySymbol, setCurrencySymbol] =  React.useState("$")
   const [updatedProducts, setUpdatedProducts] = React.useState([]);
+  const [userCount, setUserCount] = React.useState(0);
   
   const {state} = useLocation()
 
@@ -159,30 +160,32 @@ const ActivityDetails = ({socket}) => {
     }
   }
 
+  const getActivityDetails = async (id, mode) => {
+    if (mode === null) {
+      setLoading(true)
+    }
+    await instance.get(`activities/${id}`)
+    .then((res) => {
+      let formttedComments = res.data.activity.comments.map((a)=> {
+        return {
+          ...a,
+          content: isValidJson(a.content) ? deltaToString(JSON.parse(a.content).ops) : a.content,
+          // content: isValidJson(a.content) ? DeltaToStringConverter(JSON.parse(a.content).ops) : a.content
+        }
+      })
+
+      res.data.activity.comments = formttedComments
+      dispatch(setSingleActivity({activity: res.data.activity}))
+      setLoading(false)
+    })
+    .catch((e) => {
+      showAlert("Oops an error was encountered", "error")
+    })
+  }
+
   useEffect(()=> {
 
-    const getActivityDetails = async () => {
-      setLoading(true)
-      await instance.get(`activities/${params.id}`)
-      .then((res) => {
-        let formttedComments = res.data.activity.comments.map((a)=> {
-          return {
-            ...a,
-            content: isValidJson(a.content) ? deltaToString(JSON.parse(a.content).ops) : a.content,
-            // content: isValidJson(a.content) ? DeltaToStringConverter(JSON.parse(a.content).ops) : a.content
-          }
-        })
-
-        res.data.activity.comments = formttedComments
-        dispatch(setSingleActivity({activity: res.data.activity}))
-        setLoading(false)
-      })
-      .catch((e) => {
-        showAlert("Oops an error was encountered", "error")
-      })
-    }
-
-    getActivityDetails()
+    getActivityDetails(params.id, null)
 
   }, [params.id])
 
@@ -242,7 +245,7 @@ const ActivityDetails = ({socket}) => {
 
     if(parseInt(params?.id) === actId) {
       if (flag === "add") {
-        dispatch(addComments({comment}))
+        dispatch(addComments({comment, activityId: actId}))
       } else {
         dispatch(editComment({comment}))
       }
@@ -273,30 +276,43 @@ const ActivityDetails = ({socket}) => {
       updateComments(data, user, params, "upvote")
     });
 
-  }, [socket])
+    socket.on('editedAct', (data) => {
+      if (data.sender_id === user.id) {
 
-  // useEffect(()=> {
-     
-  //   socket.on('comment_added', (data) => {
-  //     updateComments(data, user, params, "add")
-    
-  //   });
+      } else {
+        if (data.activityId === parseInt(params.id)) {
+          getActivityDetails(params.id, "socketRelaod")
+        }
+      }
+    });
 
-  //   socket.on('comment_deleted', (data) => {
-     
-  //     updateComments(data, user, params, "delete")
-    
-  //   });
+    // Listen for user count updates
+    socket.on('userCount', (count) => {
+      setUserCount(count);
+    });
 
-  //   socket.on('comment_edited', (data) => {
-  //     updateComments(data, user, params, "edit")
-  //   });
 
-  //   socket.on('comment_upvoted', (data) => {
-  //     updateComments(data, user, params, "upvote")
-  //   });
+    // Clean up event listeners when the component unmounts
+    return () => {
+      socket.off('comment_added');
+      socket.off('comment_deleted');
+      socket.off('comment_edited');
+      socket.off('comment_upvoted');
+      socket.off('updateActiveUsers');
+      socket.off('editedAct');
+      socket.off('userCount');
+    };
 
-  // }, [params.id, socket])
+  }, [])
+
+  useEffect(() => {
+    // Join the room when the component mounts
+    socket.emit('join', params.id);
+
+    return () => {
+      socket.emit('leave', params.id);
+    };
+  }, [params.id]);
 
   const addProductToActivity = async () => {
     dispatch(setProductAdding({productAdding: true}))
@@ -487,7 +503,7 @@ const ActivityDetails = ({socket}) => {
   return (
     <div>
       {/* <Toolbar>
-        <Typography variant='h5'  component="div" sx={{ flexGrow: 2 }}>{`${activity?.label}`}</Typography>
+        <Typography variant='h5'  component="div" sx={{ flexGrow: 2 }}>hdhfhfhhffh</Typography>
       </Toolbar> */}
       {
         loading ? (
@@ -519,6 +535,7 @@ const ActivityDetails = ({socket}) => {
                 setOpenEditModal={setOpenEditModal}
                 socket={socket}
                 params={params}
+                userCount={userCount}
               />
             </TabPanel>
 
