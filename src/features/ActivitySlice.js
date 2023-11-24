@@ -150,6 +150,12 @@ export const ActivitySlice = createSlice({
     },
     addComments: (state, action) => {
       state.activity.comments = [...state.activity.comments, action.payload.comment ]
+
+      let idx
+      idx = state.activities.findIndex((a) => a.id === action.payload.activityId)
+      if (idx > -1) {
+        state.activities[idx].comments = [...state.activities[idx].comments, action.payload.comment]
+      }
     },
     editComment: (state, action) => {
       let idx = state.activity.comments.findIndex((a) => a.id === action.payload.comment.id)
