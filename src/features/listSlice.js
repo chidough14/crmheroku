@@ -13,7 +13,8 @@ const initialState = {
   showCloningNotification: false,
   showUploadNotification: false,
   listIds: [],
-  reloadLists: false
+  reloadLists: false,
+  reloadDashboardLists: false
 }
 
 export const listSlice = createSlice({
@@ -92,6 +93,9 @@ export const listSlice = createSlice({
     },
     setReloadLists: (state, action) => {
       state.reloadLists = action.payload.reloadLists
+    },
+    setReloadDashboardLists: (state, action) => {
+      state.reloadDashboardLists = action.payload.reloadDashboardLists
     }
   },
 })
@@ -117,7 +121,8 @@ export const {
   addListIds,
   removeListId,
   removeListIds,
-  setReloadLists
+  setReloadLists,
+  setReloadDashboardLists
 } = listSlice.actions
 
 export default listSlice.reducer

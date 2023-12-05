@@ -25,7 +25,10 @@ const initialState = {
   usersFollowed: [],
   reload: false,
   followersData: [],
-  exchangeRates: undefined
+  exchangeRates: undefined,
+  list: undefined,
+  events: [],
+  announcementsResults: []
 }
 
 export const userSlice = createSlice({
@@ -167,6 +170,15 @@ export const userSlice = createSlice({
     setExchangeRates: (state, action) => {
       state.exchangeRates = action.payload.exchangeRates
     },
+    setDashboardList: (state, action) => {
+      state.list = action.payload.list
+    },
+    setDashboardEvents: (state, action) => {
+      state.events = action.payload.events
+    },
+    setDashboardAnnouncements: (state, action) => {
+      state.announcementsResults = action.payload.announcementsResults
+    },
   },
 })
 
@@ -196,7 +208,10 @@ export const {
   setFollowersData,
   removeFollowersData,
   emptyFollowersData,
-  setExchangeRates
+  setExchangeRates,
+  setDashboardList,
+  setDashboardEvents,
+  setDashboardAnnouncements
 } = userSlice.actions
 
 export default userSlice.reducer

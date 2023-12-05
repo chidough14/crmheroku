@@ -286,6 +286,16 @@ const ActivityDetails = ({socket}) => {
       }
     });
 
+    socket.on('file_upload', (data) => {
+      if (data.sender_id === user.id) {
+
+      } else {
+        if (data.activityId === parseInt(params.id)) {
+          getActivityDetails(params.id, "socketRelaod")
+        }
+      }
+    });
+
     // Listen for user count updates
     socket.on('userCount', (count) => {
       setUserCount(count);
@@ -640,6 +650,7 @@ const ActivityDetails = ({socket}) => {
               <ActivityFiles 
                 files={activity?.files} 
                 activityUserId={activity?.user_id}
+                socket={socket}
               />
             </TabPanel>
           </Box>

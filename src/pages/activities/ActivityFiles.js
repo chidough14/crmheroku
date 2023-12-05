@@ -8,7 +8,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { setSingleActivity } from '../../features/ActivitySlice';
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
 
-const ActivityFiles = ({files, activityUserId}) => {
+const ActivityFiles = ({files, activityUserId, socket}) => {
   const [currentFile, setCurrentFile] = useState("")
   const [uploadFile, setUploadFile] = useState("")
   const [loading, setLoading] = useState(false)
@@ -70,6 +70,13 @@ const ActivityFiles = ({files, activityUserId}) => {
           setLoading(false)
           // const uploadedFilePath = response.data.filePath;
 
+          
+          socket.emit("file_upload", { 
+            message: "File Upload", 
+            sender_id: id,
+            activityId: activity.id 
+          })
+
           dispatch(setSingleActivity({activity: response.data.activity}))
         
         } catch (error) {
@@ -115,16 +122,24 @@ const ActivityFiles = ({files, activityUserId}) => {
                 <FilePresent />
               )}
 
+
+              {
+                currentFile === a && (
+                  <span
+                    style={{ marginLeft: "6px", color: "lightgreen", cursor: "pointer" }}
+                    onClick={() => {
+                      console.log(a);
+                      downloadFile(a.replace("files/", ""))
+                    }}
+                  >
+                    <DownloadOutlined />
+                  </span> 
+                )
+              }
+
               {
                 (currentFile === a && activityUserId === id) && (
                   <>
-                    <span
-                      style={{ marginLeft: "6px", color: "lightgreen", cursor: "pointer" }}
-                      onClick={() => downloadFile(a.replace("files/", ""))}
-                    >
-                      <DownloadOutlined />
-                    </span>
-
                     <span
                       style={{ marginLeft: "6px", color: "red", cursor: "pointer" }}
                       onClick={() => {

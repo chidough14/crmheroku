@@ -9,17 +9,17 @@ import { useDispatch, useSelector } from "react-redux";
 import Lists from "./pages/Lists";
 import { useEffect, useState } from "react";
 import { getToken } from "./services/LocalStorageService";
-import { setAllUsersData, setExchangeRates, setFollowersData, setLoadingDashboard, setUserInfo } from "./features/userSlice";
+import { setAllUsersData, setDashboardAnnouncements, setDashboardEvents, setDashboardList, setExchangeRates, setFollowersData, setLoadingDashboard, setUserInfo } from "./features/userSlice";
 import { useGetLoggedUserQuery } from "./services/userAuthApi";
 import Activities from "./pages/Activities";
 import SingleList from "./pages/SingleList";
 import CalendarEvents from "./pages/CalendarEvents";
 import Company from "./pages/Company";
 import instance from "./services/fetchApi";
-import { setLists } from "./features/listSlice";
-import { setActivities } from "./features/ActivitySlice";
+import { setLists, setReloadDashboardLists } from "./features/listSlice";
+import { setActivities, setActivitiesLoading, setReloadActivities } from "./features/ActivitySlice";
 import ActivityDetails from "./pages/activities/ActivityDetails";
-import { setEvents } from "./features/EventSlice";
+import { setEvents, setReloadDashboardEvents } from "./features/EventSlice";
 import Messages from "./pages/messages/Messages";
 import Settings from "./pages/settings/Settings";
 import MyMeetings from "./pages/meetings/MyMeetings";
@@ -46,6 +46,9 @@ const socket = socketIO('');
 function App() {
   const token =  getToken()
   const auth = useSelector(state => state.auth)
+  const { reloadActivities } = useSelector(state => state.activity)
+  const { reloadDashboardEvents } = useSelector(state => state.event)
+  const { reloadDashboardLists } = useSelector(state => state.list)
   const dispatch = useDispatch()
   const { data, isSuccess } = useGetLoggedUserQuery(token)
   const navigate = useNavigate()
@@ -102,19 +105,25 @@ function App() {
     }
   }, [data, isSuccess, dispatch])
 
+  const getActivities = async () => {
+    dispatch(setActivitiesLoading({activitiesLoading: true}))
+    await instance.get(`activities`)
+    .then((res)=> {
+      dispatch(setActivities({activities: res.data.activities}))
+      dispatch(setActivitiesLoading({activitiesLoading: false}))
+      return Promise.resolve(true);
+    })
+    .catch((e)=>{
+      return Promise.resolve(false);
+    })
+  }
+
   useEffect(() => {
 
 
     let requests = []
     requests.push(
-      instance.get(`activities`)
-      .then((res)=> {
-        dispatch(setActivities({activities: res.data.activities}))
-        return Promise.resolve(true);
-      })
-      .catch((e)=>{
-        return Promise.resolve(false);
-      }),
+      getActivities(),
       instance.get(`followers-offline-activities`)
       .then((res)=> {
         dispatch(setFollowersData({followersData: res.data.followersData}))
@@ -151,6 +160,53 @@ function App() {
    
   
   }, [auth?.token])
+
+
+
+  const fetchActivities = async () => {
+    await instance.get(`/activities`)
+    .then((res) => {
+      dispatch(setActivities({activities: res.data.activities}))
+      dispatch(setReloadActivities({reloadActivities: false}))
+    })
+  }
+
+  const fetchDashboardEvents = async () => {
+    await instance.get(`dashboardevents`)
+    .then((res) => {
+      dispatch(setDashboardEvents({events: res.data.events}))
+      dispatch(setReloadDashboardEvents({reloadDashboardEvents: false}))
+    })
+  }
+
+  const fetchDashboardList = async () => {
+    await  instance.get(`mylists-dashboard`)
+    .then((res) => {
+      dispatch(setDashboardList({list: res.data.list}))
+      dispatch(setReloadDashboardLists({reloadDashboardLists: false}))
+    })
+  }
+
+  useEffect(() => {
+    if (reloadActivities) {
+      fetchActivities()
+    }
+
+  }, [reloadActivities])
+
+  useEffect(() => {
+    if (reloadDashboardEvents) {
+      fetchDashboardEvents()
+    }
+
+  }, [reloadDashboardEvents])
+
+  useEffect(() => {
+    if (reloadDashboardLists) {
+      fetchDashboardList()
+    }
+
+  }, [reloadDashboardLists])
 
   const renderChatButton = () => {
     if (!data) {

@@ -32,7 +32,7 @@ import { setReloadLists, setSelectedCompanyId } from '../features/listSlice';
 import MuiAlert from '@mui/material/Alert';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
-import { setFollowersData, setFollwed, setFollwers, setOnlineUsers } from '../features/userSlice';
+import { setDashboardAnnouncements, setFollowersData, setFollwed, setFollwers, setOnlineUsers } from '../features/userSlice';
 import ActivityModal from '../components/activities/ActivityModal';
 import { setChatRequests, setInboxMessages, setReloadMessages, setShowSingleMessage, setUsersChats, setUsersChatsRequests } from '../features/MessagesSlice';
 import FollowersNotification from '../components/FollowersNotification';
@@ -331,6 +331,18 @@ export default function AppLayout({socket}) {
     setState({ ...state, openFollowersNotification: true, msg: "You have a new followers notification"});
   }
 
+  const getAnnouncements = async () => {
+    await  instance.get(`dashboardannouncements`)
+    .then((res) => {
+      // dispatch(setShowAnnouncementsLoading({showAnnouncementsLoading: false}))
+      dispatch(setDashboardAnnouncements({announcementsResults: res.data.announcements}))
+    })
+    .catch(()=> {
+      // showAlert("Ooops an error was encountered", "error")
+      // dispatch(setShowAnnouncementsLoading({showAnnouncementsLoading: false}))
+    })
+  }
+
   React.useEffect(()=> {
   
     socket.on('receiveNotification', (message) => {
@@ -446,8 +458,25 @@ export default function AppLayout({socket}) {
       showAlert(message, "info")
     });
 
+    socket.on('new_announcement_created', (arr) => {
+      getAnnouncements()
+    });
+
    
   }, [socket])
+
+
+
+  // useEffect(() => {
+   
+  //   socket.on('new_announcement_created', (arr) => {
+  //     getAnnouncements()
+  //   });
+
+  //   return () => {
+  //     socket.off('new_announcement_created');
+  //   };
+  // }, [socket])
 
   React.useEffect(() => {
     socket.on('all_event_reminder', (data) => {
