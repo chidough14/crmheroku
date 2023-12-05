@@ -12,7 +12,7 @@ import Typography from '@mui/material/Typography';
 import FileUpload from "react-mui-fileuploader"
 import instance from '../../services/fetchApi';
 import { useDispatch, useSelector } from 'react-redux';
-import { addList, setShowUploadNotification } from '../../features/listSlice';
+import { addList, setReloadDashboardLists, setShowUploadNotification } from '../../features/listSlice';
 import Papa from "papaparse";
 import {  Snackbar } from '@mui/material';
 import MuiAlert from '@mui/material/Alert';
@@ -116,6 +116,7 @@ export default function UploadModal({open, setOpen}) {
       showAlert("List uploaded", "success")
       handleClose()
       dispatch(setShowUploadNotification({showUploadNotification: false}))
+      dispatch(setReloadDashboardLists({reloadDashboardLists: true}))
     })
     .catch(()=> {
       dispatch(setShowUploadNotification({showUploadNotification: false}))

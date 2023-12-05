@@ -6,7 +6,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import * as yup from 'yup';
 import moment from 'moment';
 import instance from '../../services/fetchApi';
-import { addEvent, setShowSendingSpinner } from '../../features/EventSlice';
+import { addEvent, setReloadDashboardEvents, setShowSendingSpinner } from '../../features/EventSlice';
 import { CloseOutlined } from '@mui/icons-material';
 import { addEventToActivity } from '../../features/ActivitySlice';
 import { addMeeting } from '../../features/MeetingSlice';
@@ -224,6 +224,8 @@ const EventModal = ({ open, setOpen, startTime, endTime, activities, user, activ
           resetForm();
           dispatch(setShowSendingSpinner({showSendingSpinner: false}))
         }
+
+        dispatch(setReloadDashboardEvents({reloadDashboardEvents: true}))
 
       
       })
