@@ -9,7 +9,7 @@ import "react-big-calendar/lib/css/react-big-calendar.css";
 import {  Backdrop, Button, CircularProgress, Snackbar } from '@mui/material';
 import instance from '../services/fetchApi.js';
 import { useDispatch, useSelector } from 'react-redux';
-import {  setEvents, setOpenMask, updateEvent } from '../features/EventSlice.js';
+import {  setEvents, setOpenMask, setReloadDashboardEvents, updateEvent } from '../features/EventSlice.js';
 import EventModal from '../components/events/EventModal.js';
 import ViewEventModal from '../components/events/ViewEventModal.js';
 import { useNavigate } from 'react-router-dom';
@@ -156,6 +156,8 @@ const CalendarEvents = ({socket}) => {
         }
        
       }
+
+      dispatch(setReloadDashboardEvents({reloadDashboardEvents: true}))
 
       showAlert("Event updated successfully", "success")
     })

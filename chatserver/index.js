@@ -111,6 +111,10 @@ socketIO.on('connection', (socket) => {
     socketIO.emit('editedAct', data);
   });
 
+  socket.on('file_upload', (data) => {
+    socketIO.emit('file_upload', data);
+  });
+
   //sends the message to specific user on the server
   socket.on('sendNotification', (data) => {
     let xx = arr.find((a)=> a.userId === data.recipientId)
@@ -184,7 +188,7 @@ socketIO.on('connection', (socket) => {
   });
 
   socket.on('new_announcement', (data) => {
-    socket.emit('new_announcement_created', data);
+    socketIO.emit('new_announcement_created', data);
   });
 
   socket.on('comment_added', (data) => {

@@ -13,7 +13,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { getToken } from '../../services/LocalStorageService';
 import { useNavigate } from 'react-router-dom';
 import ListModal from './ListModal';
-import { addList, addListId, closeAlert, removeList, removeListId, setShowCloningNotification, setShowSpinner, showAlert } from '../../features/listSlice';
+import { addList, addListId, closeAlert, removeList, removeListId, setReloadDashboardLists, setShowCloningNotification, setShowSpinner, showAlert } from '../../features/listSlice';
 import instance from '../../services/fetchApi';
 import ListTransferModal from './ListTransferModal';
 
@@ -98,6 +98,7 @@ const ListCard = ({list, socket, showSpinner, showTrash}) => {
       dispatch(removeList({listId: id}))
       dispatch(removeListId({id}))
       dispatch(setShowSpinner({showSpinner: false}))
+      dispatch(setReloadDashboardLists({reloadDashboardLists: true}))
     })
     .catch(() => {
       dispatch(setShowSpinner({showSpinner: false}))
@@ -137,6 +138,7 @@ const ListCard = ({list, socket, showSpinner, showTrash}) => {
       dispatch(removeList({listId: id}))
       dispatch(removeListId({id}))
       dispatch(setShowSpinner({showSpinner: false}))
+      dispatch(setReloadDashboardLists({reloadDashboardLists: true}))
     })
     .catch(() => {
       dispatch(setShowSpinner({showSpinner: false}))

@@ -6,7 +6,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import * as yup from 'yup';
 import moment from 'moment';
 import instance from '../../services/fetchApi';
-import { deleteEvent, setShowDeletingNotification, setShowSendingSpinner, updateEvent } from '../../features/EventSlice';
+import { deleteEvent, setReloadDashboardEvents, setShowDeletingNotification, setShowSendingSpinner, updateEvent } from '../../features/EventSlice';
 import { CloseOutlined, DeleteOutlined, EditOutlined } from '@mui/icons-material';
 import { updateActivityEvent } from '../../features/ActivitySlice';
 import { Link } from 'react-router-dom';
@@ -82,11 +82,13 @@ const ViewEventModal = ({ open, setOpen, event, relatedActivity, showForm, dashb
   }
 
   const sendReminders = (event, type) => {
-    let msg
-    msg = type === "update" ? `Your meeting ${event.meeting.meetingName} has been changed. The new time is ${moment(event.start).format('MMMM Do YYYY, h:mm a')}-D`
-                            : `Your meeting ${event.meeting.meetingName} has been deleted-D`
 
     if (event.meeting) {
+
+      let msg
+      msg = type === "update" ? `Your meeting ${event.meeting.meetingName} has been changed. The new time is ${moment(event.start).format('MMMM Do YYYY, h:mm a')}-D`
+                              : `Your meeting ${event.meeting.meetingName} has been deleted-D`
+
       if (event.meeting.invitedUsers.length) {
         let invitedUsersArray = event.meeting.invitedUsers
         for (let i=0; i<invitedUsersArray.length; i++) {
@@ -132,6 +134,7 @@ const ViewEventModal = ({ open, setOpen, event, relatedActivity, showForm, dashb
         handleClose()
         resetForm();
         dispatch(setShowSendingSpinner({showSendingSpinner: false}))
+        dispatch(setReloadDashboardEvents({reloadDashboardEvents: true}))
       })
       .catch(() => {
         showAlert("Ooops an error was encountered", "error")
@@ -175,8 +178,11 @@ const ViewEventModal = ({ open, setOpen, event, relatedActivity, showForm, dashb
       setOpenDialog(false)
       handleClose()
       dispatch(setShowDeletingNotification({showDeletingNotification: false}))
+
+      dispatch(setReloadDashboardEvents({reloadDashboardEvents: true}))
     })
-    .catch(() => {
+    .catch((e) => {
+      console.log(e);
       showAlert("Ooops an error was encountered", "error")
       dispatch(setShowDeletingNotification({showDeletingNotification: false}))
     })

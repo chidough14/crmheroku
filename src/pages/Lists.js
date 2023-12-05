@@ -10,7 +10,7 @@ import ListCard from '../components/lists/ListCard';
 import ListModal from '../components/lists/ListModal';
 import "./list.css"
 import instance from '../services/fetchApi';
-import { addList, addListIds, removeListIds, removeLists, setLists, setReloadLists, setShowCloningNotification, setShowSpinner, setSortOptionValue } from '../features/listSlice';
+import { addList, addListIds, removeListIds, removeLists, setLists, setReloadDashboardLists, setReloadLists, setShowCloningNotification, setShowSpinner, setSortOptionValue } from '../features/listSlice';
 import Pagination from '@mui/material/Pagination';
 import SortButton from './orders/SortButton';
 import { AddOutlined, ContentPasteOff, CopyAllOutlined, DeleteOutline, FolderDelete, MoveUpOutlined, Restore, RestorePage, SearchOutlined } from '@mui/icons-material';
@@ -183,6 +183,7 @@ export default function Lists({socket}) {
        dispatch(removeLists({listIds}))
        dispatch(removeListIds({listIds}))
        dispatch(setShowSpinner({showSpinner: false}))
+       dispatch(setReloadDashboardLists({reloadDashboardLists: true}))
        handleCloseDialog()
        
     })
@@ -221,6 +222,7 @@ export default function Lists({socket}) {
        dispatch(removeListIds({listIds}))
        dispatch(setShowSpinner({showSpinner: false}))
        dispatch(showAlert({alertMessage: "Lists restored", severity: "success"}))
+       dispatch(setReloadDashboardLists({reloadDashboardLists: true}))
        handleCloseDialog()
        
     })

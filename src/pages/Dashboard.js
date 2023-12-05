@@ -8,7 +8,7 @@ import { BarChart } from '../components/dashboard/BarChart';
 import { DoughnutChart } from '../components/dashboard/DoughnutChart';
 import moment from 'moment';
 import instance from '../services/fetchApi';
-import { setLoadingDashboard, setShowAnnouncementsLoading, setShowBarGraphLoadingNotification, setShowDoughnutGraphLoadingNotification } from '../features/userSlice';
+import { setDashboardAnnouncements, setDashboardEvents, setDashboardList, setLoadingDashboard, setShowAnnouncementsLoading, setShowBarGraphLoadingNotification, setShowDoughnutGraphLoadingNotification } from '../features/userSlice';
 import MuiAlert from '@mui/material/Alert';
 import AnnouncementsCard from '../components/dashboard/AnnouncementsCard';
 import { AddOutlined } from '@mui/icons-material';
@@ -32,12 +32,15 @@ const Dashboard = ({socket}) => {
     showBarGraphLoadingNotification, 
     showDoughnutGraphLoadingNotification, 
     showAnnouncementsLoading, 
-    exchangeRates 
+    exchangeRates,
+    list,
+    events,
+    announcementsResults 
   } = useSelector(state => state.user)
-  const [events, setEvents] = useState([])
-  const [list, setList] = useState()
+  // const [events, setEvents] = useState([])
+  // const [list, setList] = useState()
   const [results, setResults] = useState([])
-  const [announcementsResults, setAnnouncementsResults] = useState([])
+  // const [announcementsResults, setAnnouncementsResults] = useState([])
   const [owner, setOwner] = useState(setting?.product_sales_mode)
   const [doughnutResults, setDoughnutResults] = useState()
   const [measurement, setMeasurement] = useState(setting?.top_sales_mode)
@@ -46,6 +49,8 @@ const Dashboard = ({socket}) => {
   const [alertMessage, setAlertMessage] = useState("");
   const [open, setOpen] = useState(false);
   const [currencySymbol, setCurrencySymbol] = useState("$")
+  const [eventsLoading, setEventsLoading] = useState(false)
+  const [listsLoading, setListsLoading] = useState(false)
   // const handleOpen = () => setOpen(true);
 
   const showAlert = (msg, sev) => {
@@ -167,7 +172,8 @@ const Dashboard = ({socket}) => {
     await  instance.get(`dashboardannouncements`)
     .then((res) => {
       dispatch(setShowAnnouncementsLoading({showAnnouncementsLoading: false}))
-      setAnnouncementsResults(res.data.announcements)
+      // setAnnouncementsResults(res.data.announcements)
+      dispatch(setDashboardAnnouncements({announcementsResults: res.data.announcements}))
     })
     .catch(()=> {
       showAlert("Ooops an error was encountered", "error")
@@ -177,9 +183,10 @@ const Dashboard = ({socket}) => {
 
   useEffect(() => {
    
-    socket.on('new_announcement_created', (arr) => {
-      getAnnouncements()
-    });
+    // socket.on('new_announcement_created', (arr) => {
+    //   console.log("wrwrere");
+    //   getAnnouncements()
+    // });
 
     socket.on('activity_closed', (arr) => {
       let arg = `dashboard-total-products/${owner}`
@@ -188,7 +195,12 @@ const Dashboard = ({socket}) => {
       getTotalProductsSales(arg)
       getDoughnutChartResults(arg2)
     });
-  }, [socket])
+
+
+    return () => {
+      socket.off('activity_closed');
+    };
+  }, [])
 
   useEffect(() => {
     if (owner === 'allusers') {
@@ -210,31 +222,73 @@ const Dashboard = ({socket}) => {
     }
   }, [measurement])
 
+  const fetchDashboardEvents = () => {
+    setEventsLoading(true)
+    instance.get(`dashboardevents`)
+    .then((res) => {
+      dispatch(setDashboardEvents({events: res.data.events}))
+      setEventsLoading(false)
+    })
+  }
+
+  const fetchDashboardLists = async () => {
+    setListsLoading(true)
+    await instance.get(`mylists-dashboard`)
+    .then((res) => {
+      setListsLoading(false)
+      dispatch(setDashboardList({list: res.data.list}))
+    })
+  }
+
   useEffect(() => {
 
-    getAnnouncements()
+    if (!announcementsResults.length) {
+      getAnnouncements()
+    }
 
     let requests = []
-    requests.push(
-      instance.get(`dashboardevents`)
-      .then((res) => {
-        setEvents(res.data.events)
-      }),
-      instance.get(`mylists-dashboard`)
-      .then((res) => {
-        setList(res.data.list)
-      }),
-      // instance.get(`activities-summary`)
+
+    if (events.length < 1) {
+      requests.push(
+        fetchDashboardEvents()
+        
+        // instance.get(`dashboardevents`)
+        // .then((res) => {
+        //   dispatch(setDashboardEvents({events: res.data.events}))
+        // }),
+      )
+    }
+
+    if (!list) {
+      fetchDashboardLists()
+      // instance.get(`mylists-dashboard`)
       // .then((res) => {
-      //   setActivitySummary(res.data)
+      //   dispatch(setDashboardList({list: res.data.list}))
       // })
-    )
+    }
+
+    // requests.push(
+    //   instance.get(`dashboardevents`)
+    //   .then((res) => {
+    //     dispatch(setDashboardEvents({events: res.data.events}))
+    //     // setEvents(res.data.events)
+    //   }),
+    //   instance.get(`mylists-dashboard`)
+    //   .then((res) => {
+    //     dispatch(setDashboardList({list: res.data.list}))
+    //     // setList(res.data.list)
+    //   }),
+    //   // instance.get(`activities-summary`)
+    //   // .then((res) => {
+    //   //   setActivitySummary(res.data)
+    //   // })
+    // )
 
     const  runAll = async () => {
-      dispatch(setLoadingDashboard({value: true}))
+      //dispatch(setLoadingDashboard({value: true}))
       await Promise.all(requests).then((results)=>{
       
-        dispatch(setLoadingDashboard({value: false}))
+        //dispatch(setLoadingDashboard({value: false}))
       })
       .catch((err)=> {
         console.log(err);
@@ -287,10 +341,10 @@ const Dashboard = ({socket}) => {
 
             <div style={{display: "flex", justifyContent: "space-between", columnGap: "30px", marginBottom: "30px"}}>
               <div style={{width: "90%"}}>
-                <DashboardCard type="list" list={list}  />
+                <DashboardCard type="list" list={list} listsLoading={listsLoading} />
               </div>
               <div style={{width: "90%"}}>
-                <DashboardCard type="event" events={eventsToday}/>
+                <DashboardCard type="event" events={eventsToday} eventsLoading={eventsLoading}/>
               </div>
               <div style={{width: "90%"}}>
                 <DashboardCard type="activity" />
