@@ -4,7 +4,7 @@ import { useFormik } from 'formik';
 import React, { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import * as yup from 'yup';
-import { addList, setShowSpinner, updateList } from '../../features/listSlice';
+import { addList, setReloadDashboardLists, setShowSpinner, updateList } from '../../features/listSlice';
 import instance from '../../services/fetchApi';
 
 const Alert = React.forwardRef(function Alert(props, ref) {
@@ -102,6 +102,7 @@ const ListModal = ({list, open, setOpen, showSpinner}) => {
           showAlert("List updated successfully", "success")
 
           dispatch(updateList({list: res.data.list}))
+          dispatch(setReloadDashboardLists({reloadDashboardLists: true}))
           handleClose()
           resetForm();
         })
@@ -134,6 +135,7 @@ const ListModal = ({list, open, setOpen, showSpinner}) => {
           showAlert("List created successfully", "success")
 
           dispatch(addList({list: res.data.list}))
+          dispatch(setReloadDashboardLists({reloadDashboardLists: true}))
           handleClose()
           resetForm();
         })

@@ -29,11 +29,11 @@ const bull = (
 );
 const localizer = momentLocalizer(moment);
 
-export default function DashboardCard({type, events, list}) {
+export default function DashboardCard({type, events, list, eventsLoading, listsLoading}) {
   const navigate = useNavigate()
   const [openViewEventModal, setOpenViewEventModal] = useState(false)
   const [eventObj, setEventObj] = useState()
-  const { activities } = useSelector((state) => state.activity) 
+  const { activities, activitiesLoading } = useSelector((state) => state.activity) 
   const [lowActivities, setLowActivities] = useState({count: 0, amount: 0})
   const [mediumActivities, setMediumActivities] = useState({count: 0, amount: 0})
   const [highActivities, setHighActivities] = useState({count: 0, amount: 0})
@@ -156,6 +156,7 @@ export default function DashboardCard({type, events, list}) {
 
                 <ReactCalendar
                   localizer={localizer}
+                  style={{marginBottom: "-10px"}}
                   events={events}
                   onSelectEvent={(e) => {
                     setEventObj(e)
@@ -187,6 +188,10 @@ export default function DashboardCard({type, events, list}) {
                     }
                   }
                 />
+                
+                {
+                  eventsLoading ? <span style={{fontSize: "14px", color: "green"}}>Loading...</span> : null
+                }
               </div>
             </div>
           
@@ -198,10 +203,14 @@ export default function DashboardCard({type, events, list}) {
             <>
               <p style={{fontWeight: "bolder"}}>{list?.name}</p>
 
-              <div style={{display: "flex", justifyContent: "space-between"}}>
+              <div style={{display: "flex", justifyContent: "space-between", marginBottom: "40px"}}>
                 <Button type='default' onClick={()=> navigate(`/lists`)}>My Lists</Button>
                 <Button type='primary' onClick={()=> navigate(`/listsview/${list?.id}`)}>Resume Work</Button>
               </div>
+
+              {
+                listsLoading ? <span style={{fontSize: "14px", color: "green"}}>Loading...</span> : null
+              }
           </>
           )
         }
@@ -219,6 +228,13 @@ export default function DashboardCard({type, events, list}) {
                 </tbody>
               </table>
               <Button type="primary" onClick={()=> navigate("/activities")}>View Activities</Button>
+
+              {
+                activitiesLoading ? 
+                <div style={{float: "right", marginTop: "30px"}}>
+                  <span style={{fontSize: "14px", color: "green"}}>Loading...</span>
+                </div> : null
+              }
             </>
           )
         }
