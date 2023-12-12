@@ -7,7 +7,7 @@ import Box from '@mui/material/Box';
 import UserMessagesTable from './UserMessagesTable';
 import ComposeMessage from './ComposeMessage';
 import instance from '../../services/fetchApi';
-import { setInboxMessages, setOutboxMessages, setPage, setUsersConversations } from '../../features/MessagesSlice';
+import { setDrafts, setDraftsLoading, setFromChat, setInboxMessages, setOutboxMessages, setUsersConversations } from '../../features/MessagesSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getToken } from '../../services/LocalStorageService';
@@ -17,6 +17,7 @@ import MuiAlert from '@mui/material/Alert';
 import SingleMessage from './SingleMessage';
 import Drafts from './Drafts';
 import ChatMessages from './ChatMessages';
+import deltaToString from "delta-to-string-converter"
 
 
 const Alert = React.forwardRef(function Alert(props, ref) {
@@ -64,7 +65,20 @@ const UserMessages = ({socket}) => {
 
   const token = getToken()
   const navigate = useNavigate()
-  const {inbox, outbox, sendingMessage, showSingleMessage, page, currentMessageId}  = useSelector(state => state.message)
+  const {
+    inbox,
+    outbox, 
+    sendingMessage, 
+    showSingleMessage, 
+    currentMessageId,
+    inboxPage,
+    outboxPage,
+    chatsPage,
+    draftsPage,
+    inboxMode,
+    fromChat,
+    draftsLoading
+  }  = useSelector(state => state.message)
   const [openAlert, setOpenAlert] = React.useState(false)
   const [severity, setSeverity] = React.useState("")
   const [text, setText] = React.useState("")
@@ -113,7 +127,14 @@ const UserMessages = ({socket}) => {
 
   const handleChange = (event, newValue) => {
     setValue(newValue);
-    dispatch(setPage({page: 1}))
+
+    // if (newValue === 0) {
+    //   dispatch(setInboxPage({page: 1}))
+    // }
+
+    // if (newValue === 1) {
+    //   dispatch(setOutboxPage({page: 1}))
+    // }
   };
 
   const getConversations = async (page = 1) => {
@@ -153,20 +174,62 @@ const UserMessages = ({socket}) => {
     })
   }
 
+  const isValidJson = (string) => {
+    try {
+      JSON.parse(string)
+      return true
+    } catch (error) {
+      return false
+    }
+  }
+
+  const getDrafts = async (page = 1) => {
+    dispatch(setDraftsLoading({draftsLoading: true}))
+
+    await instance.get(`/drafts?page=${page}`)
+    .then((res) => {
+      let formttedDrafts = res.data.drafts.data.map((a)=> {
+        return {
+          ...a,
+          message: isValidJson(a.message) ? deltaToString(JSON.parse(a.message).ops) : a.message
+        }
+      })
+      res.data.drafts.data = formttedDrafts
+      dispatch(setDrafts({drafts: res.data.drafts}))
+      dispatch(setDraftsLoading({draftsLoading: false}))
+    })
+    .catch(() => {
+
+    })
+  }
+
   React.useEffect(() => {
-    if(value === 0){
-      getInboxMessages(page)
-    } 
+    if (!fromChat) {
+      getInboxMessages(inboxPage)
+    }
+    dispatch(setFromChat({fromChat: false}))
+  }, [inboxPage])
 
-    if(value === 1){
-      getOutboxMessages(page)
-    } 
+  React.useEffect(() => {
+    if (!fromChat) {
+      getOutboxMessages(outboxPage)
+    }
+    dispatch(setFromChat({fromChat: false}))
+  }, [outboxPage])
 
-    if(value === 4){
-      getConversations(page)
-    } 
-    
- }, [page])
+  React.useEffect(() => {
+    if (!fromChat) {
+      getConversations(chatsPage)
+    }
+    dispatch(setFromChat({fromChat: false}))
+  }, [chatsPage])
+
+  React.useEffect(() => {
+    if (!fromChat) {
+      getDrafts(draftsPage)
+    }
+    dispatch(setFromChat({fromChat: false}))
+  }, [draftsPage])
 
  React.useEffect(()=> {
     if (!outbox?.data.length){
@@ -189,6 +252,7 @@ const UserMessages = ({socket}) => {
           <SingleMessage
             currentMessageId={currentMessageId}
             socket={socket}
+            inboxMode={inboxMode}
           />
         </>
       ) :
@@ -211,7 +275,12 @@ const UserMessages = ({socket}) => {
           <Tab icon={<Tooltip title="Chat Messages"><ChatBubbleOutline /></Tooltip>} {...a11yProps(4)} />
         </Tabs>
         <TabPanel value={value} index={0}>
-          <UserMessagesTable messages={inbox} isInbox={true} getInboxMessages={getInboxMessages} loading={inboxLoading} />
+          <UserMessagesTable 
+            messages={inbox} 
+            isInbox={true} 
+            getInboxMessages={getInboxMessages} 
+            loading={inboxLoading} 
+          />
         </TabPanel>
         <TabPanel value={value} index={1}>
           <UserMessagesTable messages={outbox} isInbox={false} getOutboxMessages={getOutboxMessages} loading={outboxLoading} />
@@ -220,7 +289,12 @@ const UserMessages = ({socket}) => {
           <ComposeMessage socket={socket} state={state} sendingMessage={sendingMessage} />
         </TabPanel>
         <TabPanel value={value} index={3}>
-          <Drafts setValue={setValue}  socket={socket} sendingMessage={sendingMessage} />
+          <Drafts 
+            setValue={setValue}  
+            socket={socket} 
+            sendingMessage={sendingMessage} 
+            draftsLoading={draftsLoading}
+          />
         </TabPanel>
         <TabPanel value={value} index={4}>
           <ChatMessages

@@ -41,6 +41,7 @@ import { setReloadEvents } from '../features/EventSlice';
 import ChatRequestNotification from '../components/ChatRequestNotification';
 import UsersChatsRequestNotification from '../components/UsersChatsRequestNotification';
 import CookieConsent, { Cookies, getCookieConsentValue } from "react-cookie-consent";
+import "./app.css"
 
 
 const Alert = React.forwardRef(function Alert(props, ref) {
@@ -309,7 +310,7 @@ export default function AppLayout({socket}) {
 
   React.useEffect(()=> {
      getNotifications("none", "")
-     reloadInbox()
+     //reloadInbox()
   }, [loggedIn, fetchNotifications])
 
   const  generateRandomId = () => {
@@ -833,7 +834,12 @@ export default function AppLayout({socket}) {
         {
             ( loggedIn && isJoinPage?.pathnameBase !== "/join" ) ? (
                 <>
-                  <Drawer variant="permanent" open={open} backgroundColor="red">
+                  <Drawer 
+                    variant="permanent" 
+                    open={open} 
+                    backgroundColor="red"
+                    className='drawer'
+                  >
                     <DrawerHeader>
                       <IconButton onClick={handleDrawerClose}>
                         {theme.direction === 'rtl' ? <ChevronRightIcon /> : <ChevronLeftIcon />}
