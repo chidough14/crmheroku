@@ -21,13 +21,13 @@ import Paper from '@mui/material/Paper';
 import moment from 'moment';
 import React, { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
-import { bulkDeleteUsersConversation, deleteUsersConversation, setPage } from '../../features/MessagesSlice';
+import { bulkDeleteUsersConversation, deleteUsersConversation, setChatsPage } from '../../features/MessagesSlice';
 import instance from '../../services/fetchApi';
 import { useNavigate } from 'react-router';
 import { arraysHaveSameContents } from '../../services/checkers';
 
 const ChatMessages = ({getConversations, loading}) => {
-  const { users_conversations, page } = useSelector(state => state.message)
+  const { users_conversations, chatsPage } = useSelector(state => state.message)
   const { allUsers } = useSelector(state => state.user)
   const dispatch = useDispatch()
   const navigate = useNavigate()
@@ -39,11 +39,13 @@ const ChatMessages = ({getConversations, loading}) => {
   const [rowObj, setRowObj] = useState();
 
   useEffect(() => {
-    getConversations(page)
-  }, [])
+    if (!users_conversations?.data?.length) {
+      getConversations(chatsPage)
+    }
+  }, [users_conversations?.data?.length])
 
   const handleChangePage = (event, newPage) => {
-    dispatch(setPage({page: newPage}))
+    dispatch(setChatsPage({page: newPage}))
   };
 
   const deleteConversation = async () => {
@@ -283,7 +285,7 @@ const ChatMessages = ({getConversations, loading}) => {
           <div style={{marginTop: "20px"}}>
             <Pagination
               count={ Math.ceil(users_conversations?.total / users_conversations?.per_page)}
-              page={page}
+              page={chatsPage}
               onChange={(page, idx) => {
                 handleChangePage(page, idx)
               }}

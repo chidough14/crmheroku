@@ -2,12 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Doughnut } from 'react-chartjs-2';
 import { FormControl, MenuItem, Select, Typography } from '@mui/material';
+import { useDispatch } from 'react-redux'
+import { setDoughnutSelect, setMeasurement } from '../../features/userSlice';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-export function DoughnutChart({results, measurement, setMeasurement, showDoughnutGraphLoadingNotification, currencySymbol}) {
+export function DoughnutChart({results, measurement, showDoughnutGraphLoadingNotification, currencySymbol}) {
   const [keys, setKeys] = useState([])
   const [values, setValues] = useState([])
+  const dispatch = useDispatch()
 
   useEffect(() => {
     if (results) {
@@ -57,7 +60,8 @@ export function DoughnutChart({results, measurement, setMeasurement, showDoughnu
   };
 
   const handleChange = (event) => {
-    setMeasurement(event.target.value);
+    dispatch(setDoughnutSelect({doughnutSelect: true}))
+    dispatch(setMeasurement({measurement: event.target.value}))
   };
 
   return <>

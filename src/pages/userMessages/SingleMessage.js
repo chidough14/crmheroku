@@ -16,7 +16,7 @@ const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
 });
 
-const SingleMessage = ({socket, currentMessageId}) => {
+const SingleMessage = ({socket, currentMessageId, inboxMode}) => {
   const params = useParams()
   const location = useLocation()
   const dispatch = useDispatch()
@@ -64,8 +64,8 @@ const SingleMessage = ({socket, currentMessageId}) => {
   //   const readMessage = async () => {
   //     await instance.patch(`messages/${params.id}/read`, {isRead: true})
   //     .then((res) => {
-  //      // dispatch(readInboxMessages({messageId: res.data.messageDetails.id}))
-  //       dispatch(reloadNotifications())
+  //       dispatch(readInboxMessages({messageId: res.data.messageDetails.id}))
+  //       //dispatch(reloadNotifications())
   //     })
   //   }
 
@@ -79,6 +79,7 @@ const SingleMessage = ({socket, currentMessageId}) => {
   //   }
 
   // }, [params?.id])
+
   const getMessage = async () => {
     setLoading(true)
     await instance.get(`messages/${currentMessageId}`)
@@ -97,17 +98,21 @@ const SingleMessage = ({socket, currentMessageId}) => {
 
   useEffect(() => {
 
-    // const readMessage = async () => {
-    //   await instance.patch(`messages/${currentMessageId}/read`, {isRead: true})
-    //   .then((res) => {
-    //     console.log(inbox, res.data.messageDetails);
-    //     // dispatch(readInboxMessages({messageId: res.data.messageDetails.id}))
-    //     dispatch(reloadNotifications())
-    //   })
-    // }
+    const readMessage = async () => {
+      await instance.patch(`messages/${currentMessageId}/read`, {isRead: true})
+      .then((res) => {
+        console.log(inbox, res.data.messageDetails);
+        dispatch(readInboxMessages({messageId: res.data.messageDetails.id, isRead: true}))
+        //dispatch(reloadNotifications())
+      })
+    }
 
     if (currentMessageId && !singleDraft) {
       getMessage()
+      
+      if (inboxMode) {
+        readMessage()
+      }
     
     }
 
