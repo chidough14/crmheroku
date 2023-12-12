@@ -15,14 +15,29 @@ import FirstPageIcon from '@mui/icons-material/FirstPage';
 import KeyboardArrowLeft from '@mui/icons-material/KeyboardArrowLeft';
 import KeyboardArrowRight from '@mui/icons-material/KeyboardArrowRight';
 import LastPageIcon from '@mui/icons-material/LastPage';
-import { Button, Checkbox, Chip, CircularProgress, Menu, MenuItem, Pagination, Snackbar, TableHead, Tooltip, Typography } from '@mui/material';
-import { ArrowDropDown, ContentPasteOff, DeleteOutlined, EditOutlined, MarkAsUnreadOutlined, MarkEmailRead, ReadMoreOutlined } from '@mui/icons-material';
+import { Button, Checkbox, Chip, Menu, MenuItem, Pagination, Snackbar, TableHead, Tooltip, Typography } from '@mui/material';
+import { ArrowDropDown, ContentPasteOff, DeleteOutlined, MarkAsUnreadOutlined, MarkEmailRead } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
 import moment from 'moment';
 import { useNavigate } from 'react-router-dom';
 import DeleteDialog from './DeleteDialog';
 import instance from '../../services/fetchApi';
-import { massReadInboxMessages, readInboxMessages, reloadNotifications, removeMessage, removeMessages, setCurrentMessageId, setInboxMessages, setPage, setReloadMessages, setShowDeleteNotification, setShowSingleMessage, setShowUpdateNotification } from '../../features/MessagesSlice';
+import { 
+  massReadInboxMessages, 
+  readInboxMessages, 
+  reloadNotifications, 
+  removeMessage, 
+  removeMessages, 
+  setCurrentMessageId, 
+  setInboxMessages, 
+  setInboxMode, 
+  setInboxPage, 
+  setOutboxPage, 
+  setReloadMessages, 
+  setShowDeleteNotification, 
+  setShowSingleMessage, 
+  setShowUpdateNotification 
+} from '../../features/MessagesSlice';
 import MuiAlert from '@mui/material/Alert';
 import deltaToString from "delta-to-string-converter"
 
@@ -92,11 +107,19 @@ TablePaginationActions.propTypes = {
   rowsPerPage: PropTypes.number.isRequired,
 };
 
-const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessages, loading}) => {
-
-  // const [page, setPage] = React.useState(1);
+const UserMessagesTable = ({
+  messages, 
+  isInbox,
+  loading
+}) => {
   const {allUsers} = useSelector(state => state.user)
-  const {showUpdateNotification, showDeleteteNotification, reloadMessages, page} = useSelector(state => state.message)
+  const {
+    showUpdateNotification, 
+    showDeleteteNotification, 
+    reloadMessages, 
+    inboxPage, 
+    outboxPage
+  } = useSelector(state => state.message)
   const navigate = useNavigate()
   const [openDialog, setOpenDialog] = React.useState(false);
   const [messageId, setMessageId] = React.useState();
@@ -155,7 +178,7 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
   }
 
   React.useEffect(() => {
-    if (reloadMessages && page === 1) {
+    if (reloadMessages && inboxPage === 1) {
      reloadInbox()
     }
   }, [reloadMessages])
@@ -166,8 +189,11 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
   }
 
   const handleChangePage = (event, newPage) => {
-    // setPage(newPage)
-    dispatch(setPage({page: newPage}))
+    if (isInbox) {
+      dispatch(setInboxPage({page: newPage}))
+    } else {
+      dispatch(setOutboxPage({page: newPage}))
+    }
   };
 
   const deleteMessage = (message) => {
@@ -406,8 +432,6 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
     }
   };
 
-
-
   return (
     <>
       <div style={{display: "flex"}}>
@@ -596,6 +620,12 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
                           onClick={()=> {
                             dispatch(setShowSingleMessage({showSingleMessage: true}))
                             dispatch(setCurrentMessageId({currentMessageId: row.id}))
+
+                            if (isInbox) {
+                              dispatch(setInboxMode({inboxMode: true}))
+                            } else {
+                              dispatch(setInboxMode({inboxMode: false}))
+                            }
                             // navigate(`/messages/${row.id}`, {state: {isInbox, isRead: row.isRead, auto: !row.sender_id ? true : false}})
                           }}
                         >
@@ -697,7 +727,7 @@ const UserMessagesTable = ({messages, isInbox, getInboxMessages, getOutboxMessag
       <div style={{marginTop: "20px"}}>
         <Pagination
           count={ Math.ceil(messages?.total / messages?.per_page)}
-          page={page}
+          page={isInbox ? inboxPage : outboxPage}
           onChange={(page, idx) => {
             handleChangePage(page, idx)
           }}

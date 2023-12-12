@@ -8,7 +8,21 @@ import { BarChart } from '../components/dashboard/BarChart';
 import { DoughnutChart } from '../components/dashboard/DoughnutChart';
 import moment from 'moment';
 import instance from '../services/fetchApi';
-import { setDashboardAnnouncements, setDashboardEvents, setDashboardList, setLoadingDashboard, setShowAnnouncementsLoading, setShowBarGraphLoadingNotification, setShowDoughnutGraphLoadingNotification } from '../features/userSlice';
+import { 
+  setBarSelect,
+  setDashboardAnnouncements, 
+  setDashboardEvents, 
+  setDashboardList, 
+  setDoughnutChartResults, 
+  setDoughnutSelect, 
+  setLoadingDashboard, 
+  setMeasurement, 
+  setOwner, 
+  setShowAnnouncementsLoading, 
+  setShowBarGraphLoadingNotification, 
+  setShowDoughnutGraphLoadingNotification, 
+  setTotalProductsSales 
+} from '../features/userSlice';
 import MuiAlert from '@mui/material/Alert';
 import AnnouncementsCard from '../components/dashboard/AnnouncementsCard';
 import { AddOutlined } from '@mui/icons-material';
@@ -23,7 +37,6 @@ const Alert = React.forwardRef(function Alert(props, ref) {
 const Dashboard = ({socket}) => {
   const navigate = useNavigate()
   const token = getToken()
-  //const { events } = useSelector(state => state.event)
   const { lists } = useSelector(state => state.list)
   const [eventsToday, setEventsToday] = useState([])
   const { 
@@ -35,15 +48,14 @@ const Dashboard = ({socket}) => {
     exchangeRates,
     list,
     events,
-    announcementsResults 
+    announcementsResults,
+    totalProductSales,
+    doughnutChartResults,
+    doughnutSelect,
+    measurement,
+    owner,
+    barSelect 
   } = useSelector(state => state.user)
-  // const [events, setEvents] = useState([])
-  // const [list, setList] = useState()
-  const [results, setResults] = useState([])
-  // const [announcementsResults, setAnnouncementsResults] = useState([])
-  const [owner, setOwner] = useState(setting?.product_sales_mode)
-  const [doughnutResults, setDoughnutResults] = useState()
-  const [measurement, setMeasurement] = useState(setting?.top_sales_mode)
   const [openAlert, setOpenAlert] = useState(false);
   const [severity, setSeverity] = useState("");
   const [alertMessage, setAlertMessage] = useState("");
@@ -77,13 +89,17 @@ const Dashboard = ({socket}) => {
   }, [token])
 
   useEffect(() => {
-    setOwner(setting?.product_sales_mode)
-  }, [setting?.product_sales_mode])
+    if (!owner) {
+      dispatch(setOwner({owner: setting?.product_sales_mode}))
+    }
+  }, [owner, setting?.product_sales_mode])
 
   
   useEffect(() => {
-    setMeasurement(setting?.top_sales_mode)
-  }, [setting?.top_sales_mode])
+    if (!measurement) {
+      dispatch(setMeasurement({measurement: setting?.top_sales_mode}))
+    }
+  }, [measurement, setting?.top_sales_mode])
 
   // Store User Data in Local State
   // useEffect(() => {
@@ -98,9 +114,10 @@ const Dashboard = ({socket}) => {
     dispatch(setShowDoughnutGraphLoadingNotification({showDoughnutGraphLoadingNotification: true}))
     await  instance.get(`${url}`)
     .then((res) => {
+
       if (setting?.currency_mode === "USD" || setting?.currency_mode === null) {
         setCurrencySymbol("$")
-        setDoughnutResults(res.data.results)
+        dispatch(setDoughnutChartResults({doughnutChartResults: res.data.results}))
       } else {
         if (setting?.currency_mode === "EUR") {
           setCurrencySymbol("€")
@@ -117,11 +134,12 @@ const Dashboard = ({socket}) => {
           }
         })
         
-        setDoughnutResults(result)
+        
+        dispatch(setDoughnutChartResults({doughnutChartResults: result}))
       }
 
-      // setDoughnutResults(res.data.results)
       dispatch(setShowDoughnutGraphLoadingNotification({showDoughnutGraphLoadingNotification: false}))
+      dispatch(setDoughnutSelect({doughnutSelect: false}))
     
     })
     .catch(()=> {
@@ -134,9 +152,10 @@ const Dashboard = ({socket}) => {
     dispatch(setShowBarGraphLoadingNotification({showBarGraphLoadingNotification: true}))
     await  instance.get(`${url}`)
     .then((res) => {
+
       if (setting?.currency_mode === "USD" || setting?.currency_mode === null) {
         setCurrencySymbol("$")
-        setResults(res.data.results)
+        dispatch(setTotalProductsSales({totalProductSales: res.data.results}))
       } else {
         if (setting?.currency_mode === "EUR") {
           setCurrencySymbol("€")
@@ -155,11 +174,11 @@ const Dashboard = ({socket}) => {
           }
           return newObj;
         });
-
-        setResults(result)
+        dispatch(setTotalProductsSales({totalProductSales: result}))
       }
 
       dispatch(setShowBarGraphLoadingNotification({showBarGraphLoadingNotification: false}))
+      dispatch(setBarSelect({barSelect: false}))
     })
     .catch(()=> {
       showAlert("Ooops an error was encountered", "error")
@@ -172,7 +191,6 @@ const Dashboard = ({socket}) => {
     await  instance.get(`dashboardannouncements`)
     .then((res) => {
       dispatch(setShowAnnouncementsLoading({showAnnouncementsLoading: false}))
-      // setAnnouncementsResults(res.data.announcements)
       dispatch(setDashboardAnnouncements({announcementsResults: res.data.announcements}))
     })
     .catch(()=> {
@@ -182,11 +200,6 @@ const Dashboard = ({socket}) => {
   }
 
   useEffect(() => {
-   
-    // socket.on('new_announcement_created', (arr) => {
-    //   console.log("wrwrere");
-    //   getAnnouncements()
-    // });
 
     socket.on('activity_closed', (arr) => {
       let arg = `dashboard-total-products/${owner}`
@@ -203,22 +216,26 @@ const Dashboard = ({socket}) => {
   }, [])
 
   useEffect(() => {
-    if (owner === 'allusers') {
-      getTotalProductsSales('dashboard-total-products/allusers')
-    } 
-
-    if(owner === 'mine') {
-      getTotalProductsSales('dashboard-total-products/mine')
-    }
+    if (!totalProductSales.length || barSelect) {
+      if (owner === 'allusers') {
+        getTotalProductsSales('dashboard-total-products/allusers')
+      } 
+  
+      if(owner === 'mine') {
+        getTotalProductsSales('dashboard-total-products/mine')
+      }
+    }  
   }, [owner])
 
   useEffect(() => {
-    if (measurement === 'salespersons') {
-      getDoughnutChartResults('dashboard-total-sales-users')
-    } 
-
-    if(measurement === 'products') {
-      getDoughnutChartResults('dashboard-total-sales-topproducts')
+    if (!doughnutChartResults.length || doughnutSelect) {
+      if (measurement === 'salespersons') {
+        getDoughnutChartResults('dashboard-total-sales-users')
+      } 
+  
+      if(measurement === 'products') {
+        getDoughnutChartResults('dashboard-total-sales-topproducts')
+      }
     }
   }, [measurement])
 
@@ -251,38 +268,12 @@ const Dashboard = ({socket}) => {
     if (events.length < 1) {
       requests.push(
         fetchDashboardEvents()
-        
-        // instance.get(`dashboardevents`)
-        // .then((res) => {
-        //   dispatch(setDashboardEvents({events: res.data.events}))
-        // }),
       )
     }
 
     if (!list) {
       fetchDashboardLists()
-      // instance.get(`mylists-dashboard`)
-      // .then((res) => {
-      //   dispatch(setDashboardList({list: res.data.list}))
-      // })
     }
-
-    // requests.push(
-    //   instance.get(`dashboardevents`)
-    //   .then((res) => {
-    //     dispatch(setDashboardEvents({events: res.data.events}))
-    //     // setEvents(res.data.events)
-    //   }),
-    //   instance.get(`mylists-dashboard`)
-    //   .then((res) => {
-    //     dispatch(setDashboardList({list: res.data.list}))
-    //     // setList(res.data.list)
-    //   }),
-    //   // instance.get(`activities-summary`)
-    //   // .then((res) => {
-    //   //   setActivitySummary(res.data)
-    //   // })
-    // )
 
     const  runAll = async () => {
       //dispatch(setLoadingDashboard({value: true}))
@@ -314,16 +305,6 @@ const Dashboard = ({socket}) => {
 
     setEventsToday(ev)
   }, [events])
-
-  const renderGraph = (type) => {
-    if(type === "") {
-
-    } else {
-
-    }
-  }
-
-
 
   return (
     <>
@@ -357,7 +338,7 @@ const Dashboard = ({socket}) => {
                   <div style={{ width: setting.dashboard_mode === 'show_doughnut_graph' ? '40%' : '50%' }}>
                     {setting.dashboard_mode === 'show_graphs' && (
                       <BarChart
-                        results={results}
+                        results={totalProductSales}
                         owner={owner}
                         setOwner={setOwner}
                         showBarGraphLoadingNotification={showBarGraphLoadingNotification}
@@ -366,7 +347,7 @@ const Dashboard = ({socket}) => {
                     )}
                     {setting.dashboard_mode === 'show_bar_graph' && (
                       <BarChart
-                        results={results}
+                        results={totalProductSales}
                         owner={owner}
                         setOwner={setOwner}
                         showBarGraphLoadingNotification={showBarGraphLoadingNotification}
@@ -377,7 +358,7 @@ const Dashboard = ({socket}) => {
                   <div style={{ width: setting.dashboard_mode === 'show_doughnut_graph' ? '30%' : '35%' }}>
                     {setting.dashboard_mode === 'show_graphs' && (
                       <DoughnutChart
-                        results={doughnutResults}
+                        results={doughnutChartResults}
                         measurement={measurement}
                         setMeasurement={setMeasurement}
                         showDoughnutGraphLoadingNotification={showDoughnutGraphLoadingNotification}
