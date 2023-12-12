@@ -4,7 +4,7 @@ import moment from 'moment';
 import React, { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import instance from '../../services/fetchApi';
-import { bulkRemoveDrafts, removeDraft, setCurrentMessageId, setDrafts, setPage, setShowSingleMessage, setSingleDraft } from '../../features/MessagesSlice';
+import { bulkRemoveDrafts, removeDraft, setCurrentMessageId, setDrafts, setDraftsLoading, setDraftsPage, setShowSingleMessage, setSingleDraft } from '../../features/MessagesSlice';
 import Paper from '@mui/material/Paper';
 import deltaToString from "delta-to-string-converter"
 import { arraysHaveSameContents } from '../../services/checkers';
@@ -12,7 +12,7 @@ import ComposeMessage from './ComposeMessage';
 
 const Drafts = ({setValue, socket, sendingMessage}) => {
 
-  const { drafts, page, singleDraft } = useSelector(state => state.message)
+  const { drafts, page, singleDraft, draftsPage, draftsLoading } = useSelector(state => state.message)
   const [loading, setLoading] = useState(false)
   const [messageId, setMessageId] = useState();
   const [rowObj, setRowObj] = useState();
@@ -21,10 +21,11 @@ const Drafts = ({setValue, socket, sendingMessage}) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showDeleteNotification, setShowDeleteNotification] = useState(false)
   const [editMode, setEditMode] = useState(false)
+
   const dispatch = useDispatch()
 
   const handleChangePage = (event, newPage) => {
-    dispatch(setPage({page: newPage}))
+    dispatch(setDraftsPage({page: newPage}))
   };
 
   const isValidJson = (string) => {
@@ -36,10 +37,10 @@ const Drafts = ({setValue, socket, sendingMessage}) => {
     }
   }
 
-  const getDrafts = async () => {
-    setLoading(true)
+  const getDrafts = async (page = 1) => {
+    dispatch(setDraftsLoading({draftsLoading: true}))
 
-    await instance.get(`/drafts`)
+    await instance.get(`/drafts?page=${page}`)
     .then((res) => {
       let formttedDrafts = res.data.drafts.data.map((a)=> {
         return {
@@ -49,7 +50,7 @@ const Drafts = ({setValue, socket, sendingMessage}) => {
       })
       res.data.drafts.data = formttedDrafts
       dispatch(setDrafts({drafts: res.data.drafts}))
-      setLoading(false)
+      dispatch(setDraftsLoading({draftsLoading: false}))
     })
     .catch(() => {
 
@@ -57,8 +58,10 @@ const Drafts = ({setValue, socket, sendingMessage}) => {
   }
 
   useEffect(() => {
-    getDrafts()
-  }, [])
+    if (!drafts?.data?.length) {
+      getDrafts()
+    }
+  }, [drafts?.data?.length])
 
   const renderMessageColumn = (row) => {
     let msg = row?.message;
@@ -193,7 +196,7 @@ const Drafts = ({setValue, socket, sendingMessage}) => {
                     ) : (
                       <>
                       {
-                          loading ? (
+                          draftsLoading ? (
                             <div style={{ marginLeft: "200%", marginTop: "70px" }}>
                               <Typography variant='h7'>
                                   <b>Loading...</b>
@@ -340,7 +343,7 @@ const Drafts = ({setValue, socket, sendingMessage}) => {
           <div style={{marginTop: "20px"}}>
             <Pagination
               count={ Math.ceil(drafts?.total / drafts?.per_page)}
-              page={page}
+              page={draftsPage}
               onChange={(page, idx) => {
                 handleChangePage(page, idx)
               }}

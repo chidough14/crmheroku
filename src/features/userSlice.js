@@ -28,7 +28,13 @@ const initialState = {
   exchangeRates: undefined,
   list: undefined,
   events: [],
-  announcementsResults: []
+  announcementsResults: [],
+  totalProductSales: [],
+  doughnutChartResults: [],
+  doughnutSelect: false,
+  measurement: null,
+  barSelect: false,
+  owner: null 
 }
 
 export const userSlice = createSlice({
@@ -179,6 +185,24 @@ export const userSlice = createSlice({
     setDashboardAnnouncements: (state, action) => {
       state.announcementsResults = action.payload.announcementsResults
     },
+    setTotalProductsSales: (state, action) => {
+      state.totalProductSales = action.payload.totalProductSales
+    },
+    setDoughnutChartResults: (state, action) => {
+      state.doughnutChartResults = action.payload.doughnutChartResults
+    },
+    setDoughnutSelect: (state, action) => {
+      state.doughnutSelect = action.payload.doughnutSelect
+    },
+    setMeasurement: (state, action) => {
+      state.measurement = action.payload.measurement
+    },
+    setBarSelect: (state, action) => {
+      state.barSelect = action.payload.barSelect
+    },
+    setOwner: (state, action) => {
+      state.owner = action.payload.owner
+    },
   },
 })
 
@@ -211,7 +235,13 @@ export const {
   setExchangeRates,
   setDashboardList,
   setDashboardEvents,
-  setDashboardAnnouncements
+  setDashboardAnnouncements,
+  setTotalProductsSales,
+  setDoughnutChartResults,
+  setDoughnutSelect,
+  setMeasurement,
+  setBarSelect,
+  setOwner
 } = userSlice.actions
 
 export default userSlice.reducer

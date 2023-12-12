@@ -13,7 +13,9 @@ import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
 import { Typography } from '@mui/material';
+import { useDispatch } from 'react-redux'
 import moment from 'moment';
+import { setBarSelect, setOwner } from '../../features/userSlice';
 
 ChartJS.register(
   CategoryScale,
@@ -37,10 +39,13 @@ export const options = {
   },
 };
 
-export function BarChart({results, owner, setOwner, showBarGraphLoadingNotification, currencySymbol}) {
+export function BarChart({results, owner, showBarGraphLoadingNotification, currencySymbol}) {
+
+  const dispatch = useDispatch()
 
   const handleChange = (event) => {
-    setOwner(event.target.value);
+    dispatch(setBarSelect({barSelect: true}))
+    dispatch(setOwner({owner: event.target.value}))
   };
 
  

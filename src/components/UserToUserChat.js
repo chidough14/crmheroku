@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router'
 import instance from '../services/fetchApi';
 import { useDispatch, useSelector } from 'react-redux';
-import { setUsersChats } from '../features/MessagesSlice';
+import { setFromChat, setUsersChats } from '../features/MessagesSlice';
 import { ArrowBack, AssignmentInd, DeleteOutlined, Done, DoneAll, DownloadOutlined, FilePresent, UploadFileOutlined } from '@mui/icons-material';
 import { init } from 'emoji-mart'
 import emojiData from '@emoji-mart/data'
@@ -24,6 +24,7 @@ const UserToUserChat = ({socket}) => {
   const chatDivRef = useRef(null);
   const [disabled, setDisabled] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [messagesLoading, setMessagesLoading] = useState(false)
   const [currentFile, setCurrentFile] = useState("")
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [conversationId, setConversationId] = useState(location?.state?.conversationId);
@@ -44,12 +45,14 @@ const UserToUserChat = ({socket}) => {
     padding: "10px"
   }
 
-  const fetchChatMessages = async (id) => [
+  const fetchChatMessages = async (id) => {
+    setMessagesLoading(true)
     await instance.get(`users-chats/${id}`)
     .then((res) => {
       dispatch(setUsersChats({userschats: res.data.chats}))
+      setMessagesLoading(false)
     })
-  ]
+  }
 
   // useEffect(() => {
   //   setConversationId(location?.state?.conversationId)
@@ -426,6 +429,7 @@ const UserToUserChat = ({socket}) => {
           onClick={() => {
 
             navigate("/messages", {state: {chat: true}})
+            dispatch(setFromChat({fromChat: true}))
           }}
         >
           <ArrowBack />
@@ -463,7 +467,9 @@ const UserToUserChat = ({socket}) => {
                 <AssignmentInd />
               ) : null}
             </Typography> 
-            {chat.map((message, index) => (
+            {
+            messagesLoading ? <span>Loading....</span>  :
+            chat.map((message, index) => (
               <div  style={{alignSelf: message.user === name ? "flex-end" : "flex-start"}}>
                 <Typography variant="h7">
                   { renderName(message.user) }

@@ -14,6 +14,10 @@ const initialState = {
   reloadMessages: false,
   showSingleMessage: false,
   page: 1,
+  inboxPage: 1,
+  outboxPage: 1,
+  draftsPage: 1,
+  chatsPage: 1,
   currentMessageId: undefined,
   fromBell: false,
   drafts: undefined,
@@ -27,7 +31,10 @@ const initialState = {
   newChat: false,
   usersRequests: [],
   userschats: [],
-  users_conversations: []
+  users_conversations: [],
+  inboxMode: false,
+  fromChat: true,
+  draftsLoading: false
 }
 
 export const MessageSlice = createSlice({
@@ -115,6 +122,18 @@ export const MessageSlice = createSlice({
     setPage: (state, action) => {
       state.page = action.payload.page
     },
+    setInboxPage: (state, action) => {
+      state.inboxPage = action.payload.page
+    },
+    setOutboxPage: (state, action) => {
+      state.outboxPage = action.payload.page
+    },
+    setDraftsPage: (state, action) => {
+      state.draftsPage = action.payload.page
+    },
+    setChatsPage: (state, action) => {
+      state.chatsPage = action.payload.page
+    },
     setCurrentMessageId: (state, action) => {
       state.currentMessageId = action.payload.currentMessageId
     },
@@ -177,6 +196,15 @@ export const MessageSlice = createSlice({
     bulkDeleteUsersConversation: (state, action) => {
       state.users_conversations.data = state.users_conversations.data.filter((a) => !action.payload.conversationIds.includes(a.id))
     },
+    setInboxMode: (state, action) => {
+      state.inboxMode = action.payload.inboxMode
+    },
+    setFromChat: (state, action) => {
+      state.fromChat = action.payload.fromChat
+    },
+    setDraftsLoading: (state, action) => {
+      state.draftsLoading = action.payload.draftsLoading
+    },
   },
 })
 
@@ -201,6 +229,10 @@ export const {
   setReloadMessages,
   setShowSingleMessage,
   setPage,
+  setInboxPage,
+  setOutboxPage,
+  setDraftsPage,
+  setChatsPage,
   setCurrentMessageId,
   setFromBell,
   setDrafts,
@@ -220,7 +252,10 @@ export const {
   setUsersChats,
   setUsersConversations,
   deleteUsersConversation,
-  bulkDeleteUsersConversation
+  bulkDeleteUsersConversation,
+  setInboxMode,
+  setFromChat,
+  setDraftsLoading
 } = MessageSlice.actions
 
 export default MessageSlice.reducer
