@@ -7,21 +7,15 @@ import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
 import Divider from '@mui/material/Divider';
-import InboxIcon from '@mui/icons-material/Inbox';
-import DraftsIcon from '@mui/icons-material/Drafts';
-import { CardHeader } from '@mui/material';
 import moment from 'moment';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 const AnnouncementsCard = ({announcements, showAnnouncementsLoading}) => {
   const navigate = useNavigate()
 
   return (
-    <>
+    <div style={{width: "50%"}}>
        <Card sx={{ minWidth: 275 }}>
         <CardContent>
           <Box sx={{ width: '100%', bgcolor: 'background.paper' }}>
@@ -74,7 +68,7 @@ const AnnouncementsCard = ({announcements, showAnnouncementsLoading}) => {
           </Button>
         </CardActions>
       </Card>
-    </>
+    </div>
   )
 }
 
