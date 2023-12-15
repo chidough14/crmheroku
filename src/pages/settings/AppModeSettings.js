@@ -1,10 +1,9 @@
-import { InputLabel, Select, MenuItem, Button, Snackbar, CircularProgress, FormControlLabel } from '@mui/material'
+import { InputLabel, Select, MenuItem, Snackbar, FormControlLabel } from '@mui/material'
 import React, { useEffect, useReducer, useRef, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { setShowSaveNotification, updateUserSettings } from '../../features/userSlice'
 import instance from '../../services/fetchApi'
 import MuiAlert from '@mui/material/Alert';
-import { Box } from '@mui/system'
 import Switch from '@mui/material/Switch';
 
 
@@ -27,6 +26,8 @@ const AppModeSettings = ({user}) => {
     announcements_mode: false,
     top_sales_mode: "",
     currency_mode: "",
+    temperature_mode: "",
+    show_weather_widget: false,
     openAlert: false,
     text: "",
     severity: ""
@@ -41,11 +42,11 @@ const AppModeSettings = ({user}) => {
     updateData({openAlert: false})
   }
 
-  const handleChange = (event) => {
-    setFields(prev => [...prev, "announcements_mode"])
-    updateData({announcements_mode: event.target.checked})
+  const handleChange = (event, name) => {
+    setFields(prev => [...prev, name])
+    updateData({[name]: event.target.checked})
 
-    latestChangesRef.current.announcements_mode = event.target.checked ? "show" : "hide";
+    latestChangesRef.current[name] = event.target.checked ? "show" : "hide";
 
     if (timer) {
       clearTimeout(timer);
@@ -53,7 +54,7 @@ const AppModeSettings = ({user}) => {
 
     // Set a new timer to call the save function after 3 seconds
     setTimer(setTimeout(() => {
-      handleSave("announcements_mode");
+      handleSave(name);
     }, 3000));
   };
 
@@ -66,6 +67,8 @@ const AppModeSettings = ({user}) => {
         top_sales_mode: user?.setting?.top_sales_mode,
         currency_mode: user?.setting?.currency_mode,
         announcements_mode: user?.setting?.announcements_mode === "show" ? true : false,
+        show_weather_widget: user?.setting?.show_weather_widget === "show" ? true : false,
+        temperature_mode: user?.setting?.temperature_mode,
       })
     }
   }, [user?.setting])
@@ -154,7 +157,7 @@ const AppModeSettings = ({user}) => {
             control={
               <Switch
                 checked={value}
-                onChange={handleChange}
+                onChange={(e) => handleChange(e, name)}
                 inputProps={{ 'aria-label': 'controlled' }}
               />
             } 
@@ -181,6 +184,11 @@ const AppModeSettings = ({user}) => {
       {
         renderSwitch("announcements_mode", "Show Announcements widget", data.announcements_mode)
       }
+      <br></br>
+      
+      {
+        renderSwitch("show_weather_widget", "Show Weather widget", data.show_weather_widget)
+      }
 
       { 
         renderSelectField("calendar_mode", "Calendar Mode", data.calendar_mode, [
@@ -206,6 +214,13 @@ const AppModeSettings = ({user}) => {
       { 
         renderSelectField("currency_mode", "Currency Mode", data.currency_mode, [
           {value: "USD", text: "USD"},   {value: "EUR", text: "EUR"},   {value: "GBP", text: "GBP"}
+        ]) 
+      }
+      <p></p>
+
+      { 
+        renderSelectField("temperature_mode", "Temperature Mode", data.temperature_mode, [
+          {value: "celcius", text: "Celcius"},   {value: "fahrenheit", text: "Fahrenheit"}
         ]) 
       }
       <p></p>

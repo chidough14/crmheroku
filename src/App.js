@@ -9,25 +9,22 @@ import { useDispatch, useSelector } from "react-redux";
 import Lists from "./pages/Lists";
 import { useEffect, useState } from "react";
 import { getToken } from "./services/LocalStorageService";
-import { setAllUsersData, setDashboardAnnouncements, setDashboardEvents, setDashboardList, setExchangeRates, setFollowersData, setLoadingDashboard, setUserInfo } from "./features/userSlice";
+import { setAllUsersData, setConnectionError, setDashboardEvents, setDashboardList, setExchangeRates, setFollowersData, setUserInfo, setWeatherDetails, setWeatherLoading } from "./features/userSlice";
 import { useGetLoggedUserQuery } from "./services/userAuthApi";
 import Activities from "./pages/Activities";
 import SingleList from "./pages/SingleList";
 import CalendarEvents from "./pages/CalendarEvents";
 import Company from "./pages/Company";
 import instance from "./services/fetchApi";
-import { setLists, setReloadDashboardLists } from "./features/listSlice";
+import {  setReloadDashboardLists } from "./features/listSlice";
 import { setActivities, setActivitiesLoading, setReloadActivities } from "./features/ActivitySlice";
 import ActivityDetails from "./pages/activities/ActivityDetails";
-import { setEvents, setReloadDashboardEvents } from "./features/EventSlice";
-import Messages from "./pages/messages/Messages";
+import { setReloadDashboardEvents } from "./features/EventSlice";
 import Settings from "./pages/settings/Settings";
 import MyMeetings from "./pages/meetings/MyMeetings";
 import JoinMeeting from "./pages/meetings/JoinMeeting";
 import UserMessages from "./pages/userMessages/UserMessages";
-import { setInboxMessages, setOutboxMessages } from "./features/MessagesSlice";
 import SingleMessage from "./pages/userMessages/SingleMessage";
-import { setInvitedMeetings, setMeetings } from "./features/MeetingSlice";
 import AppLayout from "./pages/AppLayout";
 import { setUserToken } from "./features/authSlice";
 import Orders from "./pages/orders/Orders";
@@ -39,6 +36,7 @@ import Announcements from "./pages/announcements/Announcements";
 import ChatButton from "./components/ChatButton";
 import Conversations from "./components/Conversations";
 import UserToUserChat from "./components/UserToUserChat";
+import Weather from "./pages/weather/Weather";
 
 const socket = socketIO('');
 // const socket = socketIO('http://localhost:4000');
@@ -54,7 +52,7 @@ function App() {
   const navigate = useNavigate()
 
   const fetchExchangeRates = async () => {
-    await instance.get(`https://api.currencyfreaks.com/v2.0/rates/latest?apikey=${process.env.CURRENCY_API_SECRET_KEY}`)
+    await instance.get(`https://api.currencyfreaks.com/v2.0/rates/latest?apikey=${process.env.REACT_APP_CURRENCY_API_SECRET_KEY}`)
     .then((res) => {
       dispatch(setExchangeRates({exchangeRates: res.data.rates}))
     })
@@ -62,6 +60,43 @@ function App() {
        console.log(e);
     })
   }
+
+  const fetchWeatherUpdate = async () => {
+    dispatch(setWeatherLoading({weatherLoading: true}))
+    dispatch(setConnectionError({connectionError: false}))
+
+    await instance.get(`http://api.weatherapi.com/v1/forecast.json?key=${process.env.REACT_APP_WEATHER_API_KEY}&q=auto:ip&days=7`)
+    .then((res) => {
+      console.log(res.data);
+      dispatch(setWeatherDetails({weatherDetails: res.data}))
+      dispatch(setConnectionError({connectionError: false}))
+      dispatch(setWeatherLoading({weatherLoading: false}))
+    })
+    .catch((e) => {
+      dispatch(setConnectionError({connectionError: true}))
+      dispatch(setWeatherLoading({weatherLoading: false}))
+    })
+  }
+
+
+  useEffect(() => {
+    const fetchDataAtIntervals = async () => {
+      // Initial delay of 15 minutes
+      await new Promise(resolve => setTimeout(resolve, 15 * 60 * 1000));
+
+      // Fetch data initially
+      await fetchWeatherUpdate();
+
+      // Set up interval to fetch data every 15 minutes
+      const intervalId = setInterval(async () => {
+        await fetchWeatherUpdate();
+      }, 15 * 60 * 1000);
+      
+      return () => clearInterval(intervalId);
+    };
+
+    fetchDataAtIntervals();
+  }, []);
 
   useEffect(() => {
     let rates = {
@@ -248,6 +283,7 @@ function App() {
             <Route path="/orders" element={<Orders  />} /> 
             <Route path="/checkout-success" element={<CheckoutSuccess />} />
             <Route path="/announcements" element={<Announcements />} />
+            <Route path="/weather" element={<Weather fetchWeatherUpdate={fetchWeatherUpdate} />} />
             <Route path="/conversations/:id" element={<Conversations socket={socket}/>} />
             <Route path="/messages/users-conversations/:id" element={<UserToUserChat socket={socket}/>} />
           </Route>
