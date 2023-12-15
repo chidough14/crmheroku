@@ -34,7 +34,10 @@ const initialState = {
   doughnutSelect: false,
   measurement: null,
   barSelect: false,
-  owner: null 
+  owner: null,
+  weatherDetails: undefined,
+  weatherLoading: false, 
+  connectionError: false
 }
 
 export const userSlice = createSlice({
@@ -203,6 +206,15 @@ export const userSlice = createSlice({
     setOwner: (state, action) => {
       state.owner = action.payload.owner
     },
+    setWeatherDetails: (state, action) => {
+      state.weatherDetails = action.payload.weatherDetails
+    },
+    setWeatherLoading: (state, action) => {
+      state.weatherLoading = action.payload.weatherLoading
+    },
+    setConnectionError: (state, action) => {
+      state.connectionError = action.payload.connectionError
+    },
   },
 })
 
@@ -241,7 +253,10 @@ export const {
   setDoughnutSelect,
   setMeasurement,
   setBarSelect,
-  setOwner
+  setOwner,
+  setWeatherDetails,
+  setWeatherLoading,
+  setConnectionError
 } = userSlice.actions
 
 export default userSlice.reducer

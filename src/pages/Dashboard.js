@@ -1,4 +1,4 @@
-import {  CircularProgress,  Typography, Box, Snackbar, Button, Tooltip } from '@mui/material';
+import {  CircularProgress,  Typography, Box, Snackbar} from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { getToken } from '../services/LocalStorageService';
 import React, { useEffect, useState } from 'react';
@@ -10,6 +10,7 @@ import moment from 'moment';
 import instance from '../services/fetchApi';
 import { 
   setBarSelect,
+  setConnectionError,
   setDashboardAnnouncements, 
   setDashboardEvents, 
   setDashboardList, 
@@ -21,12 +22,14 @@ import {
   setShowAnnouncementsLoading, 
   setShowBarGraphLoadingNotification, 
   setShowDoughnutGraphLoadingNotification, 
-  setTotalProductsSales 
+  setTotalProductsSales, 
+  setWeatherDetails,
+  setWeatherLoading
 } from '../features/userSlice';
 import MuiAlert from '@mui/material/Alert';
 import AnnouncementsCard from '../components/dashboard/AnnouncementsCard';
-import { AddOutlined } from '@mui/icons-material';
 import ActivityModal from '../components/activities/ActivityModal';
+import WeatherCard from '../components/dashboard/WeatherCard';
 
 
 const Alert = React.forwardRef(function Alert(props, ref) {
@@ -54,7 +57,8 @@ const Dashboard = ({socket}) => {
     doughnutSelect,
     measurement,
     owner,
-    barSelect 
+    barSelect,
+    weatherDetails 
   } = useSelector(state => state.user)
   const [openAlert, setOpenAlert] = useState(false);
   const [severity, setSeverity] = useState("");
@@ -257,6 +261,29 @@ const Dashboard = ({socket}) => {
     })
   }
 
+  const fetchWeatherUpdate = async () => {
+    dispatch(setWeatherLoading({weatherLoading: true}))
+    dispatch(setConnectionError({connectionError: false}))
+
+    await instance.get(`http://api.weatherapi.com/v1/forecast.json?key=${process.env.REACT_APP_WEATHER_API_KEY}&q=auto:ip&days=7`)
+    .then((res) => {
+      dispatch(setWeatherDetails({weatherDetails: res.data}))
+      dispatch(setConnectionError({connectionError: false}))
+      dispatch(setWeatherLoading({weatherLoading: false}))
+    })
+    .catch((e) => {
+      dispatch(setConnectionError({connectionError: true}))
+      dispatch(setWeatherLoading({weatherLoading: false}))
+
+    })
+  }
+
+  useEffect(() => {
+    if (!weatherDetails) {
+      fetchWeatherUpdate()
+    }
+  }, [weatherDetails])
+
   useEffect(() => {
 
     if (!announcementsResults.length) {
@@ -305,6 +332,7 @@ const Dashboard = ({socket}) => {
 
     setEventsToday(ev)
   }, [events])
+
 
   return (
     <>
@@ -370,16 +398,25 @@ const Dashboard = ({socket}) => {
               )}
             </div>
 
-            {
-              setting?.announcements_mode === "show" && (
-                <div style={{width: "50%"}}>
+            <div style={{display: "flex", justifyContent: "space-between", columnGap: "200px"}}>
+              {
+                 setting?.announcements_mode === "show" && (
                   <AnnouncementsCard
                     announcements={announcementsResults}
                     showAnnouncementsLoading={showAnnouncementsLoading}
                   />
-                </div>
-              )
-            }
+                 )
+              }
+
+              {
+                 setting?.show_weather_widget === "show" && (
+                  <WeatherCard 
+                    weatherDetails={weatherDetails}
+                    fetchWeatherUpdate={fetchWeatherUpdate}
+                  />
+                 )
+              }
+            </div>
           
           </div>
         )
