@@ -37,7 +37,15 @@ const initialState = {
   owner: null,
   weatherDetails: undefined,
   weatherLoading: false, 
-  connectionError: false
+  connectionError: false,
+  labels: [],
+  currentLabelId: undefined,
+  labelActions: false,
+  openEditLabelModal: false,
+  labelsLoading: false, 
+  openDeleteDialog: false, 
+  deletingLabel: false, 
+  showDropdown: false
 }
 
 export const userSlice = createSlice({
@@ -215,6 +223,41 @@ export const userSlice = createSlice({
     setConnectionError: (state, action) => {
       state.connectionError = action.payload.connectionError
     },
+    addLabel: (state, action) => {
+      state.labels = [...state.labels, action.payload.label]
+    },
+    setLabels: (state, action) => {
+      state.labels = action.payload.labels
+    },
+    setCurrentLabelId: (state, action) => {
+      state.currentLabelId = action.payload.currentLabelId
+    },
+    setShowLabelActions: (state, action) => {
+      state.labelActions = action.payload.labelActions
+    },
+    setOpenEditLabelModal: (state, action) => {
+      state.openEditLabelModal = action.payload.openEditLabelModal
+    },
+    editLabel: (state, action) => {
+      let idx
+      idx = state.labels.findIndex((a) => a.id === action.payload.label.id)
+      state.labels[idx] = action.payload.label
+    },
+    removeLabel: (state, action) => {
+      state.labels = state.labels.filter((a) => a.id !== action.payload.id || a.parent === action.payload.id)
+    },
+    setLabelsLoading: (state, action) => {
+      state.labelsLoading = action.payload.labelsLoading
+    },
+    setOpenDeleteDialog: (state, action) => {
+      state.openDeleteDialog = action.payload.openDeleteDialog
+    },
+    setDeletingLabel: (state, action) => {
+      state.deletingLabel = action.payload.deletingLabel
+    },
+    setShowDropdown: (state, action) => {
+      state.showDropdown = action.payload.showDropdown
+    }
   },
 })
 
@@ -256,7 +299,18 @@ export const {
   setOwner,
   setWeatherDetails,
   setWeatherLoading,
-  setConnectionError
+  setConnectionError,
+  addLabel,
+  setLabels,
+  setCurrentLabelId,
+  setShowLabelActions,
+  setOpenEditLabelModal,
+  editLabel,
+  removeLabel,
+  setLabelsLoading,
+  setOpenDeleteDialog,
+  setDeletingLabel,
+  setShowDropdown
 } = userSlice.actions
 
 export default userSlice.reducer
