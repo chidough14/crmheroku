@@ -9,7 +9,7 @@ import { useDispatch, useSelector } from "react-redux";
 import Lists from "./pages/Lists";
 import { useEffect, useState } from "react";
 import { getToken } from "./services/LocalStorageService";
-import { setAllUsersData, setConnectionError, setDashboardEvents, setDashboardList, setExchangeRates, setFollowersData, setUserInfo, setWeatherDetails, setWeatherLoading } from "./features/userSlice";
+import { setAllUsersData, setConnectionError, setDashboardEvents, setDashboardList, setExchangeRates, setFollowersData, setLabels, setLabelsLoading, setUserInfo, setWeatherDetails, setWeatherLoading } from "./features/userSlice";
 import { useGetLoggedUserQuery } from "./services/userAuthApi";
 import Activities from "./pages/Activities";
 import SingleList from "./pages/SingleList";
@@ -37,6 +37,7 @@ import ChatButton from "./components/ChatButton";
 import Conversations from "./components/Conversations";
 import UserToUserChat from "./components/UserToUserChat";
 import Weather from "./pages/weather/Weather";
+import MyLabel from "./pages/labels/MyLabel";
 
 const socket = socketIO('');
 // const socket = socketIO('http://localhost:4000');
@@ -67,7 +68,6 @@ function App() {
 
     await instance.get(`http://api.weatherapi.com/v1/forecast.json?key=${process.env.REACT_APP_WEATHER_API_KEY}&q=auto:ip&days=7`)
     .then((res) => {
-      console.log(res.data);
       dispatch(setWeatherDetails({weatherDetails: res.data}))
       dispatch(setConnectionError({connectionError: false}))
       dispatch(setWeatherLoading({weatherLoading: false}))
@@ -153,12 +153,26 @@ function App() {
     })
   }
 
+  const getLabels = async () => {
+    dispatch(setLabelsLoading({labelsLoading: true}))
+    await instance.get(`labels`)
+    .then((res)=> {
+      dispatch(setLabels({labels: res.data.labels}))
+      dispatch(setLabelsLoading({labelsLoading: false}))
+      return Promise.resolve(true);
+    })
+    .catch((e)=>{
+      return Promise.resolve(false);
+    })
+  }
+
   useEffect(() => {
 
 
     let requests = []
     requests.push(
       getActivities(),
+      getLabels(),
       instance.get(`followers-offline-activities`)
       .then((res)=> {
         dispatch(setFollowersData({followersData: res.data.followersData}))
@@ -285,6 +299,7 @@ function App() {
             <Route path="/announcements" element={<Announcements />} />
             <Route path="/weather" element={<Weather fetchWeatherUpdate={fetchWeatherUpdate} />} />
             <Route path="/conversations/:id" element={<Conversations socket={socket}/>} />
+            <Route path="/labels/:id" element={<MyLabel socket={socket}/>} />
             <Route path="/messages/users-conversations/:id" element={<UserToUserChat socket={socket}/>} />
           </Route>
           <Route path="*" element={<h1>Error 404 Page not found !!</h1>} />
