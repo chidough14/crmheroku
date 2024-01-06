@@ -18,7 +18,7 @@ import ListItemText from '@mui/material/ListItemText';
 import { Link, matchPath, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { getToken } from "../services/LocalStorageService";
-import { AddOutlined, ChatBubbleRounded, DashboardOutlined, DensitySmallOutlined, ImportExportSharp, MeetingRoomOutlined, MessageOutlined, PeopleOutline, SettingsOutlined, ShoppingCartOutlined } from '@mui/icons-material';
+import { AddOutlined, ChatBubbleRounded, DashboardOutlined, DeleteOutlined, DensitySmallOutlined, EditOutlined, ImportExportSharp, LabelOutlined, MeetingRoomOutlined, MessageOutlined, OpenInBrowserOutlined, PeopleOutline, SettingsOutlined, ShoppingCartOutlined } from '@mui/icons-material';
 import ListIcon from '@mui/icons-material/List';
 import PointOfSaleIcon from '@mui/icons-material/PointOfSale';
 import CalendarMonthIcon from '@mui/icons-material/CalendarViewMonth';
@@ -32,7 +32,7 @@ import { setReloadLists, setSelectedCompanyId } from '../features/listSlice';
 import MuiAlert from '@mui/material/Alert';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
-import { setDashboardAnnouncements, setFollowersData, setFollwed, setFollwers, setOnlineUsers } from '../features/userSlice';
+import { removeLabel, setCurrentLabelId, setDashboardAnnouncements, setDeletingLabel, setFollowersData, setFollwed, setFollwers, setOnlineUsers, setOpenDeleteDialog, setOpenEditLabelModal, setShowLabelActions } from '../features/userSlice';
 import ActivityModal from '../components/activities/ActivityModal';
 import { setChatRequests, setInboxMessages, setReloadMessages, setShowSingleMessage, setUsersChats, setUsersChatsRequests } from '../features/MessagesSlice';
 import FollowersNotification from '../components/FollowersNotification';
@@ -42,6 +42,8 @@ import ChatRequestNotification from '../components/ChatRequestNotification';
 import UsersChatsRequestNotification from '../components/UsersChatsRequestNotification';
 import CookieConsent, { Cookies, getCookieConsentValue } from "react-cookie-consent";
 import "./app.css"
+import AddLabelModal from '../components/label/AddLabelModal';
+import Labels from '../components/label/Labels';
 
 
 const Alert = React.forwardRef(function Alert(props, ref) {
@@ -172,7 +174,7 @@ export default function AppLayout({socket}) {
   const [openActivityModal, setOpenActivityModal] = React.useState(false);
 
   const token = getToken()
-  const {id, role, name, allUsers, profile_pic, onlineUsers, showLogoutNotification, followersData} = useSelector(state => state.user)
+  const {id, role, name, allUsers, profile_pic, onlineUsers, showLogoutNotification, followersData, labels, currentLabelId, labelActions} = useSelector(state => state.user)
   const {list, loadingCompanies} = useSelector(state => state.list)
   const [loggedIn, setLoggedIn] = React.useState(false)
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -189,16 +191,25 @@ export default function AppLayout({socket}) {
   const [text, setText] = React.useState("")
   const [alertType, setAlertType] = React.useState("")
   const [msgArray, setMsgArray] = React.useState([])
+  const [openAddLabelModal, setOpenAddLabelModal] = React.useState(false)
   const navigate = useNavigate()
 
   const location = useLocation()
   const handleOpen = () => setOpenActivityModal(true);
 
   const [openUsersMenu, setOpenUsersMenu] = React.useState(false);
+  // const [openLabelsMenu, setOpenLabelsMenu] = React.useState(false);
+  // const [currentLabel, setCurrentLabel] = React.useState("");
+
+  const [openLabels, setOpenLabels] = React.useState({});
 
   const handleOpenUsersMenu = () => {
     setOpenUsersMenu(!openUsersMenu);
   };
+
+  // const handleOpenLabelsMenu = () => {
+  //   setOpenLabelsMenu(!openLabelsMenu);
+  // };
 
   const [state, setState] = React.useState({
     openNotification: false,
@@ -757,6 +768,83 @@ export default function AppLayout({socket}) {
     )
   }
 
+  const deleteLabel = async (id) => {
+    dispatch(setDeletingLabel({deletingLabel: true}))
+    await instance.delete(`labels/${id}`)
+    .then((res) => {
+      dispatch(removeLabel({id}))
+      dispatch(setDeletingLabel({deletingLabel: false}))
+    })
+    .catch((err) => {
+
+    })
+  }
+
+  const renderSubLabels = (label) => {
+    return (
+      <Collapse 
+        // in={openLabelsMenu && labels.some(obj => obj.parent === label?.id) &&  currentLabel === label?.value} 
+        in={openLabels[label.name]}
+        timeout="auto" 
+        unmountOnExit
+      >
+        <List component="div" disablePadding>
+          {
+            labels.filter((c) => c.parent === label?.id).map((d) => (
+              <ListItem 
+                disablePadding 
+                sx={{ 
+                  display: 'block',
+                }}
+                onMouseEnter={() => {
+                  dispatch(setCurrentLabelId({currentLabelId: d.id}))
+                  dispatch(setShowLabelActions({labelActions: true}))
+                }}
+                onMouseLeave={() => {
+                  dispatch(setShowLabelActions({labelActions: false}))
+                }}
+              >
+                <ListItemButton sx={{ pl: 4 }}  onClick={() => {}}>
+                  <ListItemText primary={d.name} />
+
+                  {
+                    (labelActions && currentLabelId === d.id) ? (
+                      <>
+                        <EditOutlined
+                          style={{cursor: "pointer", fontSize: "16px", marginRight: "5px"}}
+                          onClick={() => {
+                            dispatch(setOpenEditLabelModal({openEditLabelModal: true}))
+                          }}
+                        />
+
+                        <DeleteOutlined
+                          style={{cursor: "pointer", fontSize: "16px", color: "red", marginRight: "5px"}}
+                          onClick={() => {
+                            // deleteLabel(d.id)
+                            dispatch(setOpenDeleteDialog({openDeleteDialog: true}))
+                          }}
+                        />
+
+                        <OpenInBrowserOutlined
+                          style={{cursor: "pointer", fontSize: "16px", color: "green", marginRight: "5px"}}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            navigate(`labels/${d.id}`)
+                          }}
+                        />
+                      </>
+                    ) : null
+                  }
+                </ListItemButton>
+              </ListItem>
+            ))
+          }
+        
+        </List>
+      </Collapse>
+    )
+  }
+
   return (
     <div
     style={{
@@ -991,50 +1079,63 @@ export default function AppLayout({socket}) {
 
                       {
                          isListPage?.pathnameBase !== "/listsview" &&  (
-                          <Tooltip title="Online users">
-                            <ListItem 
-                              disablePadding 
-                              sx={{ 
-                                display: 'block',
-                              }}
-                            >
-                              <ListItemButton 
-                                onClick={handleOpenUsersMenu}
-                                sx={{
-                                  minHeight: 48,
-                                  justifyContent: open ? 'initial' : 'center',
-                                  px: 2.5,
+                          <>
+                            <Tooltip title="Online users">
+                              <ListItem 
+                                disablePadding 
+                                sx={{ 
+                                  display: 'block',
                                 }}
                               >
-                                {
-                                  renderOnlineUsres(onlineUsers.filter((b) => b.userId !== id))
-                                }
-
-                                {/* <ListItemText primary="Online Users" sx={{ opacity: open ? 1 : 0 }}  /> */}
-
-                                {open && <span style={{marginTop: "3px"}}>{onlineUsers.filter((b) => b.userId !== id).length}</span>}
-
-                                {
-                                  open ? renderExpandIcon(openUsersMenu) : null
-                                }
-                              </ListItemButton>
-                              <Collapse in={openUsersMenu} timeout="auto" unmountOnExit>
-                                <List component="div" disablePadding>
-      
+                                <ListItemButton 
+                                  onClick={handleOpenUsersMenu}
+                                  sx={{
+                                    minHeight: 48,
+                                    justifyContent: open ? 'initial' : 'center',
+                                    px: 2.5,
+                                  }}
+                                >
                                   {
-                                    onlineUsers.filter((b) => b.userId !== id).map((a) => (
-                                      <Tooltip title={allUsers?.find((c) => c.id === a.userId)?.name}>
-                                        <ListItemButton sx={{ pl: 4 }}  onClick={() => navigate(`/profile/${allUsers?.find((c)=> c.id === a.userId)?.id}`)}>
-                                        {getImage(a.userId)}
-                                          <ListItemText primary={allUsers?.find((c) => c.id === a.userId)?.name} />
-                                        </ListItemButton>
-                                      </Tooltip>
-                                    ))
+                                    renderOnlineUsres(onlineUsers.filter((b) => b.userId !== id))
                                   }
-                                </List>
-                              </Collapse>
-                            </ListItem>
-                          </Tooltip>
+
+                                  {/* <ListItemText primary="Online Users" sx={{ opacity: open ? 1 : 0 }}  /> */}
+
+                                  {open && <span style={{marginTop: "3px"}}>{onlineUsers.filter((b) => b.userId !== id).length}</span>}
+
+                                  {
+                                    open ? renderExpandIcon(openUsersMenu) : null
+                                  }
+                                </ListItemButton>
+                                <Collapse in={openUsersMenu} timeout="auto" unmountOnExit>
+                                  <List component="div" disablePadding>
+        
+                                    {
+                                      onlineUsers.filter((b) => b.userId !== id).map((a) => (
+                                        <Tooltip title={allUsers?.find((c) => c.id === a.userId)?.name}>
+                                          <ListItemButton sx={{ pl: 4 }}  onClick={() => navigate(`/profile/${allUsers?.find((c)=> c.id === a.userId)?.id}`)}>
+                                          {getImage(a.userId)}
+                                            <ListItemText primary={allUsers?.find((c) => c.id === a.userId)?.name} />
+                                          </ListItemButton>
+                                        </Tooltip>
+                                      ))
+                                    }
+                                  </List>
+                                </Collapse>
+                              </ListItem>
+                            </Tooltip>
+
+
+                            <Labels 
+                              setOpenLabels={setOpenLabels}
+                              openLabels={openLabels}
+                              open={open}
+                              renderSubLabels={renderSubLabels}
+                              renderExpandIcon={renderExpandIcon}
+                              setOpenAddLabelModal={setOpenAddLabelModal}
+                              deleteLabel={deleteLabel}
+                            />
+                          </>
                          )
                       }
                     </List>
@@ -1059,6 +1160,11 @@ export default function AppLayout({socket}) {
         setOpen={setOpenActivityModal}
         mode="sidebar"
         socket={socket}
+      />
+
+      <AddLabelModal
+        openAddLabelModal={openAddLabelModal}
+        setOpenAddLabelModal={setOpenAddLabelModal}
       />
 
       <Snackbar
